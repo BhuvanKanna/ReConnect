@@ -1,4 +1,4 @@
-"""End-to-end smoke test for Mend.
+"""End-to-end smoke test for ReConnect.
 
 Opens the computer page and a simulated phone in headless Chromium, pairs them through
 PeerJS, plays one full Lantern Lift session with simulated phone tilt, then plays every

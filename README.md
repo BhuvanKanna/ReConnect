@@ -1,6 +1,6 @@
-# Mend
+# ReConnect
 
-Phone-controlled stroke rehab activities. Open Mend on a computer, scan the QR code with your phone,
+Phone-controlled stroke rehab activities. Open ReConnect on a computer, scan the QR code with your phone,
 and play six short activities by tilting the phone. Each session records repetitions, range of motion
 and movement smoothness, and saves it to a log you can share with a therapist.
 
@@ -104,4 +104,4 @@ The test pairs a simulated phone, plays a phone-controlled session, then plays a
 - [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) 1.4.4 by Kazuhiko Arase, MIT license (header of `vendor/qrcode.js`)
 - Fonts: Bricolage Grotesque, Atkinson Hyperlegible and IBM Plex Mono via Google Fonts
 
-Mend's own code is MIT licensed; see `LICENSE`.
+ReConnect's own code is MIT licensed; see `LICENSE`.

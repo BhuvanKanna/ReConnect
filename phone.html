@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#0f1a29">
-<title>Mend Controller</title>
+<title>ReConnect Controller</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
@@ -71,7 +71,7 @@ ol.tip { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap:
 <body>
 <div class="wrap">
   <header>
-    <div class="brand">Mend<span>.</span></div>
+    <div class="brand">ReConnect<span>.</span></div>
     <div id="pill" class="pill"><i></i><span id="pillText">Not paired</span></div>
   </header>
 
@@ -88,8 +88,8 @@ ol.tip { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap:
   <!-- Step 2: allow motion -->
   <section id="vMotion" hidden>
     <div class="card">
-      <h1>Let Mend read your phone's tilt</h1>
-      <p>Your phone becomes the controller. Mend only reads which way the phone is tilted. Nothing is recorded on the phone.</p>
+      <h1>Let ReConnect read your phone's tilt</h1>
+      <p>Your phone becomes the controller. ReConnect only reads which way the phone is tilted. Nothing is recorded on the phone.</p>
       <ol class="tip">
         <li>Sit in a sturdy chair with your forearm resting on a table.</li>
         <li>Hold the phone flat in your affected hand, screen up, or strap it to your forearm.</li>
@@ -184,7 +184,7 @@ ol.tip { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap:
     const c = peer.connect(PEER_PREFIX + code, { serialization: "json", reliable: true });
     conn = c;
     clearTimeout(joinTimer);
-    joinTimer = setTimeout(() => { if (conn === c && !c.open) { if (paired) retry(); else badCode("Couldn't reach the computer. Check that Mend is open on it and both devices are online."); } }, 15000);
+    joinTimer = setTimeout(() => { if (conn === c && !c.open) { if (paired) retry(); else badCode("Couldn't reach the computer. Check that ReConnect is open on it and both devices are online."); } }, 15000);
     c.on("open", () => {
       clearTimeout(joinTimer);
       paired = true;
@@ -196,7 +196,7 @@ ol.tip { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap:
     const lost = () => {
       if (conn !== c || !paired) return;
       setPill("bad", "Reconnecting…");
-      setStatus({ task: "Waiting", title: "Lost the computer", text: "Keep Mend open on the computer. This phone reconnects by itself.", tone: "warn" });
+      setStatus({ task: "Waiting", title: "Lost the computer", text: "Keep ReConnect open on the computer. This phone reconnects by itself.", tone: "warn" });
       retry();
     };
     c.on("close", lost); c.on("error", lost);

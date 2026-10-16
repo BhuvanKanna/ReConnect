@@ -1,6 +1,6 @@
-# CLAUDE.md: publish Mend to GitHub Pages
+# CLAUDE.md: publish ReConnect to GitHub Pages
 
-This folder is a finished static web app (Mend, a phone-controlled stroke rehab prototype).
+This folder is a finished static web app (ReConnect, a phone-controlled stroke rehab prototype).
 Your job is to put it in a GitHub repository and turn on GitHub Pages so it runs at
 `https://<owner>.github.io/<repo>/`. No build step is needed: the files are served as they are.
 
@@ -26,7 +26,7 @@ Do not rewrite or "improve" the app code. Only change files if a check below fai
 
 Ask, in one message:
 - their GitHub username, and
-- the repo name to use (suggest `mend-rehab`), and whether it already exists.
+- the repo name to use (suggest `ReConnect`), and whether it already exists.
 
 Free GitHub Pages requires a **public** repo. Tell the user the repo will be public and get a yes.
 If they name an existing repo that already has files, stop and ask whether to use a different name or
@@ -51,7 +51,7 @@ From this folder:
 ```bash
 git init -b main
 git add -A
-git commit -m "Mend: phone-controlled stroke rehab prototype"
+git commit -m "ReConnect: phone-controlled stroke rehab prototype"
 ```
 
 If git has no identity configured, ask the user for the name and email to use rather than inventing one.

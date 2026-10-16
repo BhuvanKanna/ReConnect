@@ -1,7 +1,7 @@
 # Exercise catalog
 
 Exercises from home and clinic stroke-rehab systems that have been tested with stroke survivors, and the
-Mend activity that trains the same movement. Compiled October 2026 from public sources. Some vendors publish
+ReConnect activity that trains the same movement. Compiled October 2026 from public sources. Some vendors publish
 only part of their catalog; that's noted where it applies.
 
 ## mRehab (smartphone + 3D-printed household objects, University at Buffalo)
@@ -10,7 +10,7 @@ Evidence: 18 people with chronic stroke used it in a 6-week home program; upper-
 The phone measured repetitions, duration and smoothness (normalized jerk score, zero-crossing rate).
 Full list of 12 activities:
 
-| Activity | What the patient does | Mend |
+| Activity | What the patient does | ReConnect |
 | --- | --- | --- |
 | Vertical bowl | Two-handed lift of a bowl onto a box and back | Lantern Lift |
 | Horizontal bowl | Two-handed slide of a bowl across a panel | – |
@@ -34,7 +34,7 @@ Evidence: randomized controlled trial in subacute stroke; reduced arm impairment
 exercise book. 40 exercises for hands, arms, trunk and legs, 10 difficulty levels.
 Flint publishes about 20 of the 40 by name; the full list is in the trial's supplementary material.
 
-| Exercise | Body area | Mend |
+| Exercise | Body area | ReConnect |
 | --- | --- | --- |
 | Diagonal reach | Arm and shoulder | Lantern Lift |
 | Object rotation | Forearm | Sort It |
@@ -69,7 +69,7 @@ Sources: [RCT](https://pmc.ncbi.nlm.nih.gov/articles/PMC9896541),
 
 Evidence: Stanford phase 2 randomized trial (vREHAB) and a 20-patient unsupervised home feasibility study.
 
-| Movement or game | Type | Mend |
+| Movement or game | Type | ReConnect |
 | --- | --- | --- |
 | Forearm supination and pronation | Movement | Pour the Tea |
 | Wrist flexion and extension | Movement | Tilt Maze |
@@ -89,7 +89,7 @@ Sources: [Stanford protocol](https://cdn.clinicaltrials.gov/large-docs/00/NCT037
 Evidence: in a 12-person trial, grasping small objects improved more than with conventional hand therapy,
 and participants found it more motivating. Full list of trained grips:
 
-| Grip | Description | Mend |
+| Grip | Description | ReConnect |
 | --- | --- | --- |
 | Pincer grip | Thumb to index fingertip | – |
 | Key-pinch grip | Thumb to side of index finger | – |
@@ -102,7 +102,7 @@ Sources: [trial](https://pmc.ncbi.nlm.nih.gov/articles/PMC4022276), [design pape
 FDA-listed VR system used in hospitals under therapist supervision; records range of motion each session.
 Individual activity names are proprietary; published activity areas:
 
-| Area | Mend |
+| Area | ReConnect |
 | --- | --- |
 | Shoulder range of motion and flexion | Lantern Lift |
 | Wrist and forearm range of motion | Pour the Tea |
@@ -119,7 +119,7 @@ Evidence: in 3,686 people with post-stroke aphasia, home users mastered tasks in
 for clinic users. Therapists assign tasks and see results remotely. 80+ task types sit inside these 17
 categories, each with levels 1–10; individual task names aren't all public.
 
-| Category | Domain | Mend |
+| Category | Domain | ReConnect |
 | --- | --- | --- |
 | Attention | Cognitive | Memory Moves |
 | Auditory memory | Cognitive | – |
@@ -146,7 +146,7 @@ Sources: [exercise guide](https://constanttherapyhealth.com/downloadable-resourc
 
 Designed with a therapist and 13 stroke patients; uses only the phone's built-in sensors.
 
-| Exercise type | Mend |
+| Exercise type | ReConnect |
 | --- | --- |
 | Movement exercises | Lantern Lift |
 | Gesture exercises | Memory Moves |

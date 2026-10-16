@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Mend: phone-controlled stroke rehab activities. Pick an activity, pair your phone by QR code, and play with motion controls.">
+<meta name="description" content="ReConnect: phone-controlled stroke rehab activities. Pick an activity, pair your phone by QR code, and play with motion controls.">
 <style>[hidden]{display:none!important}</style>
 <script src="vendor/peerjs.min.js"></script>
 <script src="vendor/qrcode.js"></script>
-<title>Mend Home Rehab</title>
+<title>ReConnect Home Rehab</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -172,7 +172,7 @@ td.inmend { white-space: nowrap; }
 <body>
 <div class="app">
   <header class="top">
-    <div class="brand"><b>Mend<span>.</span></b><small>Home stroke rehab</small></div>
+    <div class="brand"><b>ReConnect<span>.</span></b><small>Home stroke rehab</small></div>
     <nav class="tabs" role="tablist" aria-label="Sections">
       <button role="tab" id="tabHome" aria-selected="true" data-view="vHome">Activities</button>
       <button role="tab" id="tabEvidence" aria-selected="false" data-view="vEvidence">Evidence</button>
@@ -205,7 +205,7 @@ td.inmend { white-space: nowrap; }
         <h2>Connect your phone</h2>
         <div id="pHosted" hidden>
           <div class="qrbox">
-            <div class="qr" id="qrBox" role="img" aria-label="QR code that opens the Mend controller on your phone"></div>
+            <div class="qr" id="qrBox" role="img" aria-label="QR code that opens the ReConnect controller on your phone"></div>
             <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
               <span class="muted" style="font-size:14px">Scan with the phone camera, or open the address below and type this code</span>
               <span class="code num" id="pCode">······</span>
@@ -217,7 +217,7 @@ td.inmend { white-space: nowrap; }
         <div id="pArtifact" hidden>
           <p class="muted">This preview can't talk to a phone, so it runs in mouse mode. Move the mouse over the stage to stand in for the tilt of your hand.</p>
           <ol class="steps">
-            <li>Open Mend at its GitHub Pages address on your computer.</li>
+            <li>Open ReConnect at its GitHub Pages address on your computer.</li>
             <li>Scan the QR code with your phone and tap <b>Start motion</b>.</li>
           </ol>
         </div>
@@ -256,8 +256,8 @@ td.inmend { white-space: nowrap; }
     <div class="prose">
       <span class="eyebrow">Exercise library</span>
       <h1>What the tested systems ask patients to do</h1>
-      <p class="muted">Every exercise below comes from a home or clinic rehab system that has been tested with stroke survivors. The right column shows which Mend activity trains the same movement. Some vendors publish only part of their catalog, noted where it applies.</p>
-      <p class="evidence">The 2025 Cochrane review of 190 trials found game-based and virtual-reality rehab slightly better than other therapy for arm function and balance, with larger gains when it adds practice time on top of usual care. Mend is built to add that practice time at home.</p>
+      <p class="muted">Every exercise below comes from a home or clinic rehab system that has been tested with stroke survivors. The right column shows which ReConnect activity trains the same movement. Some vendors publish only part of their catalog, noted where it applies.</p>
+      <p class="evidence">The 2025 Cochrane review of 190 trials found game-based and virtual-reality rehab slightly better than other therapy for arm function and balance, with larger gains when it adds practice time on top of usual care. ReConnect is built to add that practice time at home.</p>
     </div>
     <div class="evgrid" id="evgrid"></div>
   </section>
@@ -606,7 +606,7 @@ function begin() {
 function pauseForPhone() {
   Game.state = "paused";
   $("overlay").hidden = false;
-  $("sheet").innerHTML = `<span class="eyebrow">Paused</span><h2>The phone disconnected</h2><p class="muted">Keep the Mend page open on the phone. The activity resumes as soon as it reconnects.</p><div class="actions"><button class="btn alt" id="resMouse">Continue in mouse mode</button></div>`;
+  $("sheet").innerHTML = `<span class="eyebrow">Paused</span><h2>The phone disconnected</h2><p class="muted">Keep the ReConnect page open on the phone. The activity resumes as soon as it reconnects.</p><div class="actions"><button class="btn alt" id="resMouse">Continue in mouse mode</button></div>`;
   $("resMouse").onclick = () => { Input.mode = "mouse"; settings.mouse = true; renderConn(); resume(); };
 }
 function resume() { Game.state = "play"; $("overlay").hidden = true; pushStatus(true); }
@@ -694,7 +694,7 @@ function frame(now) {
       if (Game.rec.length > 40000) Game.rec.splice(0, 1000);
       for (const e of Game.inst.events.splice(0)) fx(e);
       if (Game.inst.done) finish();
-      if (Input.mode === "phone" && Input.phone && now - Input.lastAt > 3000) flash("No motion data from the phone", "Check that the phone screen is on and Mend is open.", "warn");
+      if (Input.mode === "phone" && Input.phone && now - Input.lastAt > 3000) flash("No motion data from the phone", "Check that the phone screen is on and ReConnect is open.", "warn");
     }
     $("gReps").textContent = Game.inst ? `${Game.inst.reps()} / ${Game.inst.goal()}` : `0 / ${settings.reps}`;
     draw(a, now);
@@ -1239,7 +1239,7 @@ function renderLog() {
 function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 $("btnCopy").addEventListener("click", () => {
   const log = store.get("mend.log", []);
-  const lines = ["Mend home rehab summary", `Generated ${new Date().toLocaleString()}`, ""];
+  const lines = ["ReConnect home rehab summary", `Generated ${new Date().toLocaleString()}`, ""];
   if (!log.length) lines.push("No sessions recorded yet.");
   for (const e of log.slice(-30)) {
     lines.push(`${new Date(e.at).toLocaleDateString()} · ${e.name} (${e.movement}) · ${e.side} side · ${e.reps}/${e.goal} reps in ${fmtTime(e.seconds)}` +
@@ -1283,7 +1283,7 @@ function renderEvidence() {
       <header><h2>${s.sys}</h2><span class="kind">${s.kind}</span></header>
       <p class="evidence">${s.ev}</p>
       ${s.note ? `<p class="note">${s.note}</p>` : ""}
-      <div class="tablewrap"><table><thead><tr><th>Exercise</th><th>Movement or type</th><th>In Mend</th></tr></thead><tbody>
+      <div class="tablewrap"><table><thead><tr><th>Exercise</th><th>Movement or type</th><th>In ReConnect</th></tr></thead><tbody>
       ${s.rows.map(([n, m, id]) => `<tr><td>${n}</td><td class="muted">${m}</td><td class="inmend">${id ? `<span class="tag">${nameOf(id)}</span>` : '<span class="muted">–</span>'}</td></tr>`).join("")}
       </tbody></table></div>
     </article>`).join("");
