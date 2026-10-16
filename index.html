@@ -1,0 +1,1307 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Mend: phone-controlled stroke rehab activities. Pick an activity, pair your phone by QR code, and play with motion controls.">
+<style>[hidden]{display:none!important}</style>
+<script src="vendor/peerjs.min.js"></script>
+<script src="vendor/qrcode.js"></script>
+<title>Mend Home Rehab</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* Layout: a clinic "session console". Library of activities on the left, the phone pairing
+   panel on the right; play happens on one large stage with a degree readout, like a goniometer. */
+:root {
+  --paper: #f3f6f8;      /* page ground, cool clinical white */
+  --surface: #ffffff;
+  --ink: #13203a;        /* deep ink blue for text */
+  --muted: #56677c;
+  --line: #d6dee6;
+  --accent: #e3962a;     /* amber: targets, the thing to reach for */
+  --accent-ink: #8f5400;
+  --go: #16876a;         /* success / within range */
+  --warn: #c2413a;       /* spill, wrong answer */
+  --btn: #13203a; --btn-ink: #ffffff;
+  --sky-top: #cfe3f2; --sky-bot: #f7efe1; --hill: #b9cfdc;
+  --stage: #eaf0f4;
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --body: "Atkinson Hyperlegible", "Verdana", "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0e1724; --surface: #162233; --ink: #e9eff5; --muted: #9aacbf; --line: #2a3a4f;
+    --accent: #f2b04e; --accent-ink: #f2b04e; --go: #3cc39b; --warn: #ff6b5f;
+    --btn: #e9eff5; --btn-ink: #0e1724;
+    --sky-top: #0f2236; --sky-bot: #2a3347; --hill: #1c2c40; --stage: #111d2c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0e1724; --surface: #162233; --ink: #e9eff5; --muted: #9aacbf; --line: #2a3a4f;
+  --accent: #f2b04e; --accent-ink: #f2b04e; --go: #3cc39b; --warn: #ff6b5f;
+  --btn: #e9eff5; --btn-ink: #0e1724;
+  --sky-top: #0f2236; --sky-bot: #2a3347; --hill: #1c2c40; --stage: #111d2c;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.5 var(--body); }
+[hidden] { display: none !important; }
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+
+.app { max-width: 1240px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 14px 40px; display: flex; flex-direction: column; gap: 22px; }
+
+/* ---------- header ---------- */
+.top { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; justify-content: space-between; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.brand { display: flex; align-items: baseline; gap: 10px; }
+.brand b { font: 800 28px/1 var(--display); letter-spacing: -0.02em; }
+.brand b span { color: var(--accent); }
+.brand small { font: 500 12px/1 var(--mono); color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; }
+nav.tabs { display: flex; gap: 4px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px; }
+nav.tabs button { border: 0; background: transparent; padding: 8px 16px; border-radius: 999px; font-weight: 700; color: var(--muted); }
+nav.tabs button[aria-selected="true"] { background: var(--btn); color: var(--btn-ink); }
+.conn { display: inline-flex; align-items: center; gap: 8px; font: 500 13px/1 var(--mono); padding: 9px 13px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); }
+.conn i { width: 9px; height: 9px; border-radius: 50%; background: var(--muted); }
+.conn.on { color: var(--go); } .conn.on i { background: var(--go); box-shadow: 0 0 0 4px color-mix(in srgb, var(--go) 22%, transparent); }
+.conn.demo { color: var(--accent-ink); } .conn.demo i { background: var(--accent); }
+
+h1, h2, h3 { font-family: var(--display); letter-spacing: -0.015em; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(28px, 3.4vw, 40px); line-height: 1.05; font-weight: 700; }
+h2 { font-size: 22px; line-height: 1.15; font-weight: 700; }
+h3 { font-size: 19px; line-height: 1.2; font-weight: 700; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.eyebrow { font: 600 12px/1 var(--mono); letter-spacing: 0.09em; text-transform: uppercase; color: var(--accent-ink); }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+/* ---------- home ---------- */
+.home { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 28px; align-items: start; }
+@media (max-width: 980px) { .home { grid-template-columns: minmax(0, 1fr); } .side { order: -1; } }
+.lib { display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.intro { display: flex; flex-direction: column; gap: 10px; max-width: 64ch; }
+.settings { display: flex; flex-wrap: wrap; gap: 10px 18px; align-items: end; padding: 14px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font: 600 12px/1 var(--mono); letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg button { border: 0; background: transparent; padding: 8px 13px; font-weight: 700; color: var(--muted); border-right: 1px solid var(--line); }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 22%, var(--surface)); color: var(--ink); }
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 14px; }
+.card { text-align: left; display: flex; flex-direction: column; gap: 10px; padding: 16px; border-radius: var(--r); border: 1px solid var(--line); background: var(--surface); transition: border-color .15s, transform .15s; min-width: 0; }
+.card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.card .glyph { height: 92px; border-radius: 10px; background: var(--stage); overflow: hidden; }
+.card .glyph canvas { width: 100%; height: 100%; display: block; }
+.card .meta { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font: 500 12px/1 var(--mono); padding: 6px 8px; border-radius: 6px; background: color-mix(in srgb, var(--line) 55%, transparent); color: var(--ink); }
+.chip.brain { background: color-mix(in srgb, var(--go) 18%, transparent); }
+.card p { font-size: 15px; color: var(--muted); }
+.card .src { font-size: 13px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 8px; margin-top: auto; }
+
+.side { display: flex; flex-direction: column; gap: 14px; position: sticky; top: 14px; }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+#pHosted, #pArtifact { display: flex; flex-direction: column; gap: 10px; }
+.qrbox { display: grid; grid-template-columns: 132px minmax(0,1fr); gap: 14px; align-items: center; }
+.qr { width: 132px; height: 132px; border-radius: 10px; background: #fff; padding: 6px; border: 1px solid var(--line); display: grid; place-items: center; }
+.qr svg { width: 100%; height: 100%; display: block; }
+.code { font: 600 32px/1 var(--mono); letter-spacing: 0.08em; }
+.url { font: 400 12px/1.4 var(--mono); color: var(--muted); word-break: break-all; }
+.steps { margin: 0; padding-left: 18px; display: grid; gap: 6px; color: var(--muted); font-size: 15px; }
+.steps code, .note code { font: 400 13px/1 var(--mono); background: color-mix(in srgb, var(--line) 60%, transparent); padding: 2px 5px; border-radius: 4px; color: var(--ink); }
+.toggle { display: flex; gap: 10px; align-items: center; font-weight: 700; font-size: 15px; }
+.toggle input { width: 20px; height: 20px; accent-color: var(--accent); }
+.week { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.week div { display: flex; flex-direction: column; gap: 2px; }
+.week b { font: 600 24px/1 var(--mono); font-variant-numeric: tabular-nums; }
+.week span { font-size: 12px; color: var(--muted); }
+.btn { border: 0; border-radius: 12px; padding: 13px 18px; font-weight: 700; background: var(--btn); color: var(--btn-ink); }
+.btn.alt { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.btn.amber { background: var(--accent); color: #1f1404; }
+.btn:disabled { opacity: .45; cursor: not-allowed; }
+select { padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
+
+/* ---------- play ---------- */
+.playhead { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.playhead .grow { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 4px; }
+.gauges { display: flex; gap: 8px; flex-wrap: wrap; }
+.gauge { font: 500 14px/1 var(--mono); padding: 9px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); font-variant-numeric: tabular-nums; }
+.gauge b { font-weight: 600; }
+.stagewrap { position: relative; height: clamp(380px, 64vh, 720px); border-radius: 18px; overflow: hidden; border: 1px solid var(--line); background: var(--stage); touch-action: none; }
+#stage { width: 100%; height: 100%; display: block; }
+.banner { position: absolute; left: 50%; top: 16px; transform: translateX(-50%); max-width: calc(100% - 32px); background: color-mix(in srgb, var(--surface) 90%, transparent); border: 1px solid var(--line); border-radius: 14px; padding: 12px 18px; text-align: center; backdrop-filter: blur(6px); display: flex; flex-direction: column; gap: 2px; }
+.banner b { font: 700 clamp(18px, 2.2vw, 26px)/1.15 var(--display); }
+.banner span { color: var(--muted); font-size: 15px; }
+.banner.good { border-color: var(--go); } .banner.warn { border-color: var(--warn); }
+.overlay { position: absolute; inset: 0; display: grid; place-items: center; padding: 16px; background: color-mix(in srgb, var(--paper) 72%, transparent); backdrop-filter: blur(4px); overflow: auto; }
+.sheet { width: min(640px, 100%); background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 24px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 20px 60px -30px rgba(10,20,40,.45); }
+.sheet .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.count { font: 800 120px/1 var(--display); text-align: center; color: var(--accent-ink); }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+.stat { border: 1px solid var(--line); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+.stat b { font: 600 24px/1.1 var(--mono); font-variant-numeric: tabular-nums; }
+.stat span { font-size: 13px; color: var(--muted); }
+.howto { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
+
+/* ---------- evidence / log ---------- */
+.prose { max-width: 70ch; display: flex; flex-direction: column; gap: 10px; }
+.evgrid { display: flex; flex-direction: column; gap: 18px; }
+.sys { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+.sys header { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline; justify-content: space-between; }
+.sys .kind { font: 500 12px/1 var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 600 12px/1.2 var(--mono); text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+td.inmend { white-space: nowrap; }
+.tag { font: 600 12px/1 var(--mono); padding: 5px 7px; border-radius: 6px; background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--ink); }
+.note { font-size: 14px; color: var(--muted); }
+.evidence { border-left: 3px solid var(--go); padding: 2px 0 2px 12px; font-size: 15px; }
+.empty { padding: 40px 20px; text-align: center; border: 1px dashed var(--line); border-radius: var(--r); color: var(--muted); display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.logtop { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; }
+@media (max-width: 560px) { .qrbox { grid-template-columns: minmax(0,1fr); justify-items: start; } .count { font-size: 88px; } }
+@media (prefers-reduced-motion: reduce) { .card { transition: none; } .card:hover { transform: none; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><b>Mend<span>.</span></b><small>Home stroke rehab</small></div>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button role="tab" id="tabHome" aria-selected="true" data-view="vHome">Activities</button>
+      <button role="tab" id="tabEvidence" aria-selected="false" data-view="vEvidence">Evidence</button>
+      <button role="tab" id="tabLog" aria-selected="false" data-view="vLog">Session log</button>
+    </nav>
+    <div id="conn" class="conn"><i></i><span id="connText">No phone</span></div>
+  </header>
+
+  <!-- ===== Activities ===== -->
+  <section id="vHome" class="home">
+    <div class="lib">
+      <div class="intro">
+        <span class="eyebrow">Between therapy visits</span>
+        <h1>Pick an activity. Your phone becomes the controller.</h1>
+        <p class="muted">Each activity trains a movement used in published home-rehab systems, records your range of motion and repetitions, and adds the session to a log your therapist can read.</p>
+      </div>
+      <div class="settings" role="group" aria-label="Session settings">
+        <div class="field"><label>Affected side</label>
+          <div class="seg" id="segSide"><button data-v="left">Left</button><button data-v="right">Right</button></div></div>
+        <div class="field"><label>Range target</label>
+          <div class="seg" id="segLevel"><button data-v="1">15°</button><button data-v="2">30°</button><button data-v="3">45°</button></div></div>
+        <div class="field"><label>Repetitions</label>
+          <div class="seg" id="segReps"><button data-v="6">6</button><button data-v="10">10</button><button data-v="15">15</button></div></div>
+      </div>
+      <div class="cards" id="cards"></div>
+    </div>
+
+    <aside class="side">
+      <div class="panel" id="phonePanel">
+        <h2>Connect your phone</h2>
+        <div id="pHosted" hidden>
+          <div class="qrbox">
+            <div class="qr" id="qrBox" role="img" aria-label="QR code that opens the Mend controller on your phone"></div>
+            <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+              <span class="muted" style="font-size:14px">Scan with the phone camera, or open the address below and type this code</span>
+              <span class="code num" id="pCode">······</span>
+            </div>
+          </div>
+          <p class="url" id="pUrl"></p>
+          <p class="note" id="pStatus" aria-live="polite">Starting pairing…</p>
+        </div>
+        <div id="pArtifact" hidden>
+          <p class="muted">This preview can't talk to a phone, so it runs in mouse mode. Move the mouse over the stage to stand in for the tilt of your hand.</p>
+          <ol class="steps">
+            <li>Open Mend at its GitHub Pages address on your computer.</li>
+            <li>Scan the QR code with your phone and tap <b>Start motion</b>.</li>
+          </ol>
+        </div>
+        <div id="pLive" hidden class="evidence">Phone connected. Tilt it and the dot on the stage follows.</div>
+        <label class="toggle"><input type="checkbox" id="useMouse"> Use the mouse instead of a phone</label>
+      </div>
+      <div class="panel">
+        <h3>This week</h3>
+        <div class="week" id="week"></div>
+        <button class="btn alt" id="toLog">Open session log</button>
+      </div>
+    </aside>
+  </section>
+
+  <!-- ===== Play ===== -->
+  <section id="vPlay" hidden style="display:flex;flex-direction:column;gap:14px">
+    <div class="playhead">
+      <button class="btn alt" id="btnBack">Activities</button>
+      <div class="grow"><span class="eyebrow" id="pMove">Movement</span><h2 id="pTitle">Activity</h2></div>
+      <div class="gauges">
+        <span class="gauge">Pitch <b id="gP">+0°</b></span>
+        <span class="gauge">Roll <b id="gR">+0°</b></span>
+        <span class="gauge">Reps <b id="gReps">0 / 0</b></span>
+        <button class="gauge" id="btnSound" aria-pressed="true">Sound on</button>
+      </div>
+    </div>
+    <div class="stagewrap" id="stageWrap">
+      <canvas id="stage"></canvas>
+      <div class="banner" id="banner" hidden><b id="bTitle"></b><span id="bText"></span></div>
+      <div class="overlay" id="overlay"><div class="sheet" id="sheet"></div></div>
+    </div>
+  </section>
+
+  <!-- ===== Evidence ===== -->
+  <section id="vEvidence" hidden style="display:flex;flex-direction:column;gap:20px">
+    <div class="prose">
+      <span class="eyebrow">Exercise library</span>
+      <h1>What the tested systems ask patients to do</h1>
+      <p class="muted">Every exercise below comes from a home or clinic rehab system that has been tested with stroke survivors. The right column shows which Mend activity trains the same movement. Some vendors publish only part of their catalog, noted where it applies.</p>
+      <p class="evidence">The 2025 Cochrane review of 190 trials found game-based and virtual-reality rehab slightly better than other therapy for arm function and balance, with larger gains when it adds practice time on top of usual care. Mend is built to add that practice time at home.</p>
+    </div>
+    <div class="evgrid" id="evgrid"></div>
+  </section>
+
+  <!-- ===== Log ===== -->
+  <section id="vLog" hidden style="display:flex;flex-direction:column;gap:16px">
+    <div class="logtop">
+      <div class="prose"><span class="eyebrow">For you and your therapist</span><h1>Session log</h1>
+        <p class="muted">Sessions are saved in this browser only. Copy the summary to share it with your care team.</p></div>
+      <div class="actions" style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn" id="btnCopy">Copy summary for my therapist</button>
+        <button class="btn alt" id="btnClear">Clear log</button>
+      </div>
+    </div>
+    <p class="note" id="copyMsg" aria-live="polite"></p>
+    <textarea id="copyFallback" hidden rows="8" style="width:100%;font:13px/1.4 var(--mono);padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--surface)"></textarea>
+    <div id="logBody"></div>
+  </section>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = (id) => document.getElementById(id);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const TAU = Math.PI * 2;
+const reduceMotion = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+// ---------------------------------------------------------------- storage
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (_) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (_) {} },
+};
+const settings = Object.assign({ side: "right", level: 2, reps: 10, mouse: false, sound: true }, store.get("mend.settings", {}));
+const saveSettings = () => store.set("mend.settings", settings);
+
+// ---------------------------------------------------------------- theme colors for canvas
+let T = {};
+function readTheme() {
+  const cs = getComputedStyle(document.documentElement);
+  for (const k of ["paper","surface","ink","muted","line","accent","accent-ink","go","warn","sky-top","sky-bot","hill","stage"]) T[k] = cs.getPropertyValue("--" + k).trim();
+  T.display = cs.getPropertyValue("--display"); T.mono = cs.getPropertyValue("--mono"); T.body = cs.getPropertyValue("--body");
+}
+readTheme();
+if (window.matchMedia) matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change", () => { readTheme(); drawGlyphs(); });
+new MutationObserver(() => { readTheme(); drawGlyphs(); }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+function alpha(color, a) {
+  const m = /^#([0-9a-f]{6})$/i.exec(String(color).trim());
+  if (!m) return color;
+  const n = parseInt(m[1], 16);
+  return `rgba(${n >> 16},${(n >> 8) & 255},${n & 255},${a})`;
+}
+function txt(g, s, x, y, size, color, opts = {}) {
+  g.font = `${opts.weight || 700} ${size}px ${opts.font || T.display}`;
+  g.fillStyle = color; g.textAlign = opts.align || "center"; g.textBaseline = opts.base || "middle";
+  g.fillText(s, x, y);
+}
+function rr(g, x, y, w, h, r) { g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, r) : g.rect(x, y, w, h); }
+
+// ---------------------------------------------------------------- sound
+let actx = null;
+function chime(kind) {
+  if (!settings.sound) return;
+  try {
+    actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+    const notes = kind === "success" ? [660, 880] : kind === "big" ? [523, 659, 784, 1047] : kind === "error" ? [220, 180] : [520];
+    notes.forEach((f, i) => {
+      const o = actx.createOscillator(), v = actx.createGain(), t0 = actx.currentTime + i * 0.09;
+      o.type = kind === "error" ? "triangle" : "sine"; o.frequency.value = f;
+      v.gain.setValueAtTime(0.0001, t0); v.gain.exponentialRampToValueAtTime(0.18, t0 + 0.015); v.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.28);
+      o.connect(v).connect(actx.destination); o.start(t0); o.stop(t0 + 0.3);
+    });
+  } catch (_) {}
+}
+
+// ---------------------------------------------------------------- input
+const Input = {
+  phone: false, raw: { b: 0, g: 0 }, f: { b: 0, g: 0 }, neutral: { b: 0, g: 0 }, lastAt: 0,
+  mouse: { p: 0, r: 0 }, mf: { p: 0, r: 0 }, mode: "mouse",
+};
+function wrap180(d) { return ((d + 540) % 360) - 180; }
+function angles() {
+  if (Input.mode === "phone") return { pitch: Input.f.b - Input.neutral.b, roll: wrap180(Input.f.g - Input.neutral.g), demo: false };
+  return { pitch: Input.mf.p, roll: Input.mf.r, demo: true };
+}
+function smoothInput(dt) {
+  const k = 1 - Math.exp(-dt * 14);
+  Input.f.b += (Input.raw.b - Input.f.b) * k;
+  Input.f.g += wrap180(Input.raw.g - Input.f.g) * k;
+  Input.mf.p += (Input.mouse.p - Input.mf.p) * k;
+  Input.mf.r += (Input.mouse.r - Input.mf.r) * k;
+}
+
+// Mouse / touch stand-in: position on the stage = tilt of the hand. Up = raise / tilt top edge up.
+const stageWrap = $("stageWrap");
+stageWrap.addEventListener("pointermove", (e) => {
+  const r = stageWrap.getBoundingClientRect();
+  Input.mouse.r = clamp(((e.clientX - r.left) / r.width - 0.5) * 2 * 60, -60, 60);
+  Input.mouse.p = clamp(-((e.clientY - r.top) / r.height - 0.5) * 2 * 60, -60, 60);
+});
+window.addEventListener("keydown", (e) => {
+  if ($("vPlay").hidden || Input.mode !== "mouse") return;
+  const step = e.shiftKey ? 10 : 4;
+  if (e.key === "ArrowUp") Input.mouse.p = clamp(Input.mouse.p + step, -60, 60);
+  else if (e.key === "ArrowDown") Input.mouse.p = clamp(Input.mouse.p - step, -60, 60);
+  else if (e.key === "ArrowLeft") Input.mouse.r = clamp(Input.mouse.r - step, -60, 60);
+  else if (e.key === "ArrowRight") Input.mouse.r = clamp(Input.mouse.r + step, -60, 60);
+  else return;
+  e.preventDefault();
+});
+
+// ---------------------------------------------------------------- phone link
+// The computer registers a short code with the free PeerJS broker; the phone connects to it
+// and the two talk peer-to-peer over WebRTC. No server of our own is needed, so the site can
+// be hosted as static files (GitHub Pages). PeerJS falls back to its public TURN relay when a
+// network blocks direct connections.
+const PEER_PREFIX = "mend-rehab-";
+const Link = { hosted: false, peer: null, conn: null, code: null, retry: null };
+function sendPhone(obj) { if (Link.conn && Link.conn.open && Input.phone) { try { Link.conn.send(obj); } catch (_) {} } }
+
+function phoneUrl() { return new URL("phone.html", location.href).href.split("#")[0].split("?")[0]; }
+function renderPairing() {
+  if (!Link.hosted) return;
+  $("pCode").textContent = Link.code || "······";
+  const url = phoneUrl() + (Link.code ? "?c=" + Link.code : "");
+  $("pUrl").textContent = url;
+  if (Link.code && window.qrcode) {
+    const qr = window.qrcode(0, "M"); qr.addData(url); qr.make();
+    $("qrBox").innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+  }
+}
+function setPairStatus(t) { $("pStatus").textContent = t; }
+
+function onPhoneMessage(m) {
+  if (!m || typeof m !== "object") return;
+  if (m.type === "m") {
+    if (typeof m.b !== "number" || typeof m.g !== "number") return;
+    Input.raw.b = clamp(m.b, -180, 180); Input.raw.g = clamp(m.g, -90, 90); Input.lastAt = performance.now();
+    if (!Input.phone) setPhone(true);
+  } else if (m.type === "recenter") {
+    Input.neutral = { b: Input.raw.b, g: Input.raw.g };
+    flash("Center reset", "Your current position is the new resting point.", "good");
+  }
+}
+
+function startPeer() {
+  clearTimeout(Link.retry);
+  if (Link.peer) { try { Link.peer.destroy(); } catch (_) {} }
+  const code = store.get("mend.code6", null) || String(Math.floor(100000 + Math.random() * 900000));
+  const peer = new window.Peer(PEER_PREFIX + code, Object.assign({ debug: 0 }, window.MEND_PEER_OPTS || {}));
+  Link.peer = peer;
+  setPairStatus("Starting pairing…");
+  peer.on("open", () => { Link.code = code; store.set("mend.code6", code); renderPairing(); setPairStatus("Waiting for your phone. Phone and computer can be on any network."); });
+  peer.on("disconnected", () => { setPairStatus("Reconnecting to the pairing service…"); try { peer.reconnect(); } catch (_) {} });
+  peer.on("error", (e) => {
+    if (e.type === "unavailable-id") { store.set("mend.code6", null); Link.retry = setTimeout(startPeer, 300); return; }
+    if (["network", "server-error", "socket-error", "socket-closed"].includes(e.type)) {
+      setPairStatus("Can't reach the pairing service. Check the internet connection; retrying…");
+      Link.retry = setTimeout(startPeer, 4000);
+    }
+  });
+  peer.on("connection", (conn) => {
+    conn.on("open", () => {
+      if (Link.conn && Link.conn !== conn) { try { Link.conn.send({ type: "replaced" }); Link.conn.close(); } catch (_) {} }
+      Link.conn = conn; setPhone(true); chime("success"); pushStatus(true);
+      setPairStatus("Phone paired.");
+    });
+    conn.on("data", onPhoneMessage);
+    const gone = () => { if (Link.conn === conn) { Link.conn = null; setPhone(false); setPairStatus("Phone disconnected. Waiting for it to reconnect."); } };
+    conn.on("close", gone); conn.on("error", gone);
+  });
+}
+window.addEventListener("beforeunload", () => { try { Link.peer && Link.peer.destroy(); } catch (_) {} });
+function setPhone(on) {
+  const was = Input.phone;
+  Input.phone = on;
+  if (!on && Input.mode === "phone" && Game.state === "play") pauseForPhone();
+  if (on && Input.mode === "phone" && Game.state === "paused") resume();
+  if (on !== was && Game.state === "setup") renderSetup();
+  renderConn();
+}
+function renderConn() {
+  const c = $("conn");
+  if (Input.phone && !settings.mouse) { c.className = "conn on"; $("connText").textContent = "Phone connected"; }
+  else if (settings.mouse || !Link.hosted) { c.className = "conn demo"; $("connText").textContent = "Mouse mode"; }
+  else { c.className = "conn"; $("connText").textContent = "No phone"; }
+  $("pLive").hidden = !(Input.phone && !settings.mouse);
+  $("useMouse").checked = !!settings.mouse || !Link.hosted;
+  $("useMouse").disabled = !Link.hosted;
+}
+$("useMouse").addEventListener("change", (e) => {
+  settings.mouse = e.target.checked; saveSettings();
+  Input.mode = settings.mouse || !Input.phone ? "mouse" : "phone";
+  renderConn();
+});
+
+// Tell the phone what to do, so the person never has to look away to read instructions.
+let lastStatus = "", lastStatusAt = 0;
+function pushStatus(force) {
+  if (!force && performance.now() - lastStatusAt < 300) return;
+  const st = Game.current ? Game.statusText() : { title: "Choose an activity on your computer", text: "Keep this screen open while you play.", tone: "" };
+  const msg = { type: "status", task: Game.current ? Game.current.def.name : "Paired", title: st.title, text: st.text || "", tone: st.tone || "" };
+  const key = JSON.stringify(msg);
+  if (!force && key === lastStatus) return;
+  lastStatus = key; lastStatusAt = performance.now(); sendPhone(msg);
+}
+
+// ---------------------------------------------------------------- activities
+const LEVEL_AMP = { 1: 15, 2: 30, 3: 45 };
+
+const ACTIVITIES = [
+  {
+    id: "lift", name: "Lantern Lift", movement: "Shoulder flexion · arm raise", axes: "Pitch",
+    brain: false, mount: "Strap the phone to the forearm of your affected arm, screen up, top edge toward your hand. Or hold it flat in your palm.",
+    desc: "Raise your arm to lift the lantern to the line, hold it there, then lower slowly.",
+    source: "FitMi and Flint arm raises; Penumbra REAL shoulder range-of-motion activities.",
+    how: ["Sit tall with your arm resting on the table.", "Raise your arm forward until the lantern touches the line.", "Hold while the ring fills, then lower slowly to rest."],
+    make: (S) => LanternLift(S),
+  },
+  {
+    id: "pour", name: "Pour the Tea", movement: "Forearm rotation · slow control", axes: "Roll",
+    brain: false, mount: "Hold the phone in your affected hand like a teapot handle, screen up, forearm resting on the table.",
+    desc: "Turn your forearm to tip the pot and fill each cup to the line. Pour too fast and it spills.",
+    source: "mRehab Slow Pour and Quick Twist; RAPAEL Smart Glove pouring and supination–pronation games.",
+    how: ["Keep your elbow on the table.", "Turn your palm to tip the pot toward the cup.", "Pour slowly. Return upright when the cup is full."],
+    make: (S) => PourTea(S),
+  },
+  {
+    id: "lock", name: "Combination Lock", movement: "Forearm rotation · working memory", axes: "Roll",
+    brain: true, mount: "Hold the phone in your affected hand, screen up, like a key you are about to turn.",
+    desc: "Memorize the code, then turn your wrist to dial each number and hold it there.",
+    source: "mRehab Unlock with Key and Turn Doorknob; Constant Therapy visual memory tasks.",
+    how: ["Read the code while it is showing.", "Turn your wrist to move the pointer to each number.", "Hold still on a number to enter it."],
+    make: (S) => ComboLock(S),
+  },
+  {
+    id: "maze", name: "Tilt Maze", movement: "Wrist flexion, extension, and deviation", axes: "Pitch + Roll",
+    brain: true, mount: "Hold the phone flat in your affected hand, screen up, like a tray.",
+    desc: "Tilt your hand like a tray to roll the ball to the flag without bumping the walls.",
+    source: "RAPAEL Smart Glove wrist flexion/extension and radial/ulnar deviation games.",
+    how: ["Rest your forearm on the table so the wrist does the work.", "Tip your hand forward, back, left or right to roll the ball.", "Gentle tilts are enough. Bring your hand level to stop."],
+    make: (S) => TiltMaze(S),
+  },
+  {
+    id: "sort", name: "Sort It", movement: "Forearm rotation · word categories", axes: "Roll",
+    brain: true, mount: "Hold the phone in your affected hand, screen up, forearm resting on the table.",
+    desc: "Read the word and turn your hand toward the group it belongs to.",
+    source: "Constant Therapy categorization and reading tasks; FitMi object rotation.",
+    how: ["Start with your hand level.", "Read the word in the middle.", "Turn left or right toward its group and hold for a moment."],
+    make: (S) => SortIt(S),
+  },
+  {
+    id: "simon", name: "Memory Moves", movement: "Multi-direction tilt · sequence memory", axes: "Pitch + Roll",
+    brain: true, mount: "Hold the phone flat in your affected hand, screen up.",
+    desc: "Watch the arrows light up, then repeat the pattern by tilting your hand in each direction.",
+    source: "Simon-style serious games for stroke rehab; Constant Therapy sequence and memory tasks.",
+    how: ["Watch the whole pattern first.", "Tilt your hand toward each arrow in order.", "Return to level between moves."],
+    make: (S) => MemoryMoves(S),
+  },
+];
+
+// ---------------------------------------------------------------- game engine
+const canvas = $("stage"), g = canvas.getContext("2d");
+let W = 800, H = 500, DPR = 1;
+function resize() {
+  const r = stageWrap.getBoundingClientRect(); DPR = Math.min(2, window.devicePixelRatio || 1);
+  W = Math.max(300, r.width); H = Math.max(300, r.height);
+  canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+}
+new ResizeObserver(() => { resize(); }).observe(stageWrap);
+
+const Game = {
+  state: "idle", current: null, inst: null, rec: [], t0: 0, now: 0, banner: null,
+  statusText() {
+    if (this.state === "setup") return { title: "Get into position", text: this.current.def.mount };
+    if (this.state === "calibrate") return { title: "Hold still", text: "Finding your resting position", tone: "" };
+    if (this.state === "paused") return { title: "Paused", text: "Reconnecting to this phone", tone: "warn" };
+    if (this.state === "results") return { title: "Session complete", text: "Nice work. See your results on the computer.", tone: "good" };
+    if (this.inst) { const s = this.inst.status(); return { title: s.title, text: s.text, tone: s.tone }; }
+    return { title: "", text: "" };
+  },
+};
+
+function fx(kind) {
+  chime(kind);
+  sendPhone({ type: "haptic", pattern: kind === "error" ? [120, 60, 120] : kind === "big" ? [60, 40, 60, 40, 120] : [50] });
+}
+
+function openActivity(def) {
+  Game.current = { def }; Game.inst = null; Game.state = "setup";
+  $("pTitle").textContent = def.name; $("pMove").textContent = def.movement;
+  show("vPlay"); resize(); renderSetup(); pushStatus(true);
+}
+
+function settingsObj() { return { amp: LEVEL_AMP[settings.level], level: settings.level, reps: settings.reps, side: settings.side }; }
+
+function renderSetup() {
+  const d = Game.current.def; const sideTxt = settings.side === "left" ? "left" : "right";
+  const phoneReady = Input.phone && !settings.mouse;
+  $("overlay").hidden = false; $("banner").hidden = true;
+  $("sheet").innerHTML = `
+    <span class="eyebrow">${d.movement}</span>
+    <h2>${d.name}</h2>
+    <p>${d.desc}</p>
+    <p class="muted"><b>Phone:</b> ${d.mount.replace("affected", sideTxt + " (affected)")}</p>
+    <ol class="howto">${d.how.map((h) => `<li>${h}</li>`).join("")}</ol>
+    <p class="note">Target ${LEVEL_AMP[settings.level]}° of movement · ${settings.reps} repetitions · Sit in a sturdy chair. Stop if anything hurts.</p>
+    <div class="actions">
+      <button class="btn amber" id="goPhone" ${phoneReady ? "" : "disabled"}>Start with phone</button>
+      <button class="btn alt" id="goMouse">${phoneReady ? "Use mouse instead" : "Start in mouse mode"}</button>
+    </div>
+    ${phoneReady ? "" : `<p class="note">${Link.hosted ? "Scan the QR code on the Activities page to connect your phone." : "Mouse mode: move the pointer over the stage (or use the arrow keys). Up means raise or tip the top edge up."}</p>`}`;
+  $("goPhone").onclick = () => { Input.mode = "phone"; startCalibration(); };
+  $("goMouse").onclick = () => { Input.mode = "mouse"; renderConn(); begin(); };
+}
+
+function startCalibration() {
+  Game.state = "calibrate"; pushStatus(true);
+  let n = 3; const samples = [];
+  $("sheet").innerHTML = `<span class="eyebrow">Calibrating</span><h2>Rest in your starting position and hold still</h2><div class="count num" id="cnt">3</div><p class="muted">This sets the zero point, so every target is measured from where your arm is comfortable.</p>`;
+  const iv = setInterval(() => {
+    samples.push({ b: Input.f.b, g: Input.f.g });
+    if (samples.length % 10 === 0) { n--; const el = $("cnt"); if (el) el.textContent = Math.max(n, 1); chime("tick"); }
+    if (samples.length >= 30) {
+      clearInterval(iv);
+      const tail = samples.slice(-12);
+      Input.neutral = { b: tail.reduce((s, x) => s + x.b, 0) / tail.length, g: tail.reduce((s, x) => s + x.g, 0) / tail.length };
+      sendPhone({ type: "calibrated" });
+      begin();
+    }
+  }, 100);
+}
+
+function begin() {
+  const S = settingsObj();
+  Game.inst = Game.current.def.make(S);
+  Game.inst.S = S;
+  Game.rec = []; Game.t0 = performance.now(); Game.state = "play";
+  Input.mouse = { p: 0, r: 0 }; Input.mf = { p: 0, r: 0 };
+  $("overlay").hidden = true; $("banner").hidden = false;
+  pushStatus(true);
+}
+
+function pauseForPhone() {
+  Game.state = "paused";
+  $("overlay").hidden = false;
+  $("sheet").innerHTML = `<span class="eyebrow">Paused</span><h2>The phone disconnected</h2><p class="muted">Keep the Mend page open on the phone. The activity resumes as soon as it reconnects.</p><div class="actions"><button class="btn alt" id="resMouse">Continue in mouse mode</button></div>`;
+  $("resMouse").onclick = () => { Input.mode = "mouse"; settings.mouse = true; renderConn(); resume(); };
+}
+function resume() { Game.state = "play"; $("overlay").hidden = true; pushStatus(true); }
+
+let flashT = 0;
+function flash(title, text, tone) { Game.banner = { title, text, tone }; flashT = performance.now() + 1600; }
+
+function finish() {
+  Game.state = "results";
+  const def = Game.current.def, inst = Game.inst, S = inst.S;
+  const a = analyze(Game.rec, inst.reps());
+  const own = inst.stats();
+  const durationS = (performance.now() - Game.t0) / 1000;
+  const entry = {
+    at: new Date().toISOString(), id: def.id, name: def.name, movement: def.movement, side: S.side, targetDeg: S.amp,
+    reps: inst.reps(), goal: inst.goal(), seconds: Math.round(durationS), input: Input.mode,
+    pitch: a.pitch, roll: a.roll, peaksPerRep: a.peaksPerRep, activeS: Math.round(a.activeS),
+    extra: own.map(([k, v]) => [k, String(v)]),
+  };
+  const log = store.get("mend.log", []); log.push(entry); store.set("mend.log", log.slice(-500));
+  fx("big");
+  $("overlay").hidden = false; $("banner").hidden = true;
+  const fmtR = (r) => r ? `${r[0] > 0 ? "+" : ""}${r[0]}° to ${r[1] > 0 ? "+" : ""}${r[1]}°` : "–";
+  const stats = [
+    ["Repetitions", `${entry.reps} / ${entry.goal}`],
+    ["Time", fmtTime(entry.seconds)],
+    ...own,
+    ["Pitch range", fmtR(a.pitch)],
+    ["Roll range", fmtR(a.roll)],
+    ["Speed peaks per rep (smoothness)", a.peaksPerRep == null ? "–" : String(a.peaksPerRep)],
+  ];
+  $("sheet").innerHTML = `
+    <span class="eyebrow">Session complete · ${entry.input === "mouse" ? "mouse mode" : "phone"}</span>
+    <h2>${def.name}: ${entry.reps} repetitions in ${fmtTime(entry.seconds)}</h2>
+    <div class="stats">${stats.map(([k, v]) => `<div class="stat"><b>${v}</b><span>${k}</span></div>`).join("")}</div>
+    <p class="note">Smoothness counts speed peaks per repetition, as mRehab does with its jerk score. Fewer peaks means a smoother, more controlled movement. Saved to the session log.</p>
+    <div class="actions"><button class="btn amber" id="again">Play again</button><button class="btn alt" id="home">Back to activities</button></div>`;
+  $("again").onclick = () => renderSetupAgain();
+  $("home").onclick = () => goHome();
+  pushStatus(true);
+  renderWeek();
+}
+function renderSetupAgain() { Game.state = "setup"; renderSetup(); pushStatus(true); }
+function fmtTime(s) { const m = Math.floor(s / 60); return m ? `${m}m ${String(Math.round(s % 60)).padStart(2, "0")}s` : `${Math.round(s)}s`; }
+
+// Range of motion and a simple smoothness measure from the recorded angles.
+// Angles are resampled to 20 Hz, angular speed is smoothed, and prominent speed peaks are counted.
+// A smooth out-and-back repetition has about two peaks; jerky, corrected movements have more.
+function analyze(rec, reps) {
+  if (rec.length < 5) return { pitch: null, roll: null, peaksPerRep: null, activeS: 0 };
+  let pMin = Infinity, pMax = -Infinity, rMin = Infinity, rMax = -Infinity;
+  for (const s of rec) { pMin = Math.min(pMin, s.p); pMax = Math.max(pMax, s.p); rMin = Math.min(rMin, s.r); rMax = Math.max(rMax, s.r); }
+  const DT = 0.05, rs = []; let j = 0;
+  for (let t = rec[0].t; t <= rec[rec.length - 1].t; t += DT) {
+    while (j < rec.length - 2 && rec[j + 1].t < t) j++;
+    const a = rec[j], b = rec[j + 1], u = clamp((t - a.t) / Math.max(1e-6, b.t - a.t), 0, 1);
+    rs.push({ p: lerp(a.p, b.p, u), r: lerp(a.r, b.r, u) });
+  }
+  const sp = []; for (let i = 1; i < rs.length; i++) sp.push(Math.hypot(rs[i].p - rs[i - 1].p, rs[i].r - rs[i - 1].r) / DT);
+  const sm = sp.map((_, i) => { let s = 0, n = 0; for (let k = Math.max(0, i - 2); k <= Math.min(sp.length - 1, i + 2); k++) { s += sp[k]; n++; } return s / n; });
+  const sorted = sm.slice().sort((x, y) => x - y), p90 = sorted.length ? sorted[Math.floor(sorted.length * 0.9)] : 0, thr = Math.max(10, p90 * 0.25);
+  let peaks = 0, inPeak = false, pk = 0, trough = Infinity, activeS = 0;
+  for (const v of sm) {
+    if (v > 6) activeS += DT;
+    if (!inPeak) { trough = Math.min(trough, v); if (v > thr && v > trough * 1.6 + 2) { inPeak = true; pk = v; } }
+    else { pk = Math.max(pk, v); if (v < pk * 0.6) { peaks++; inPeak = false; trough = v; } }
+  }
+  if (inPeak) peaks++;
+  const R = (x) => Math.round(x);
+  return { pitch: [R(pMin), R(pMax)], roll: [R(rMin), R(rMax)], peaksPerRep: reps ? +(peaks / reps).toFixed(1) : null, activeS };
+}
+
+// ---------------------------------------------------------------- main loop
+let last = performance.now();
+function frame(now) {
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  smoothInput(dt);
+  const a = angles();
+  if (!$("vPlay").hidden) {
+    $("gP").textContent = (a.pitch >= 0 ? "+" : "") + Math.round(a.pitch) + "°";
+    $("gR").textContent = (a.roll >= 0 ? "+" : "") + Math.round(a.roll) + "°";
+    if (Game.state === "play" && Game.inst) {
+      Game.inst.update(dt, a);
+      Game.rec.push({ t: (now - Game.t0) / 1000, p: a.pitch, r: a.roll });
+      if (Game.rec.length > 40000) Game.rec.splice(0, 1000);
+      for (const e of Game.inst.events.splice(0)) fx(e);
+      if (Game.inst.done) finish();
+      if (Input.mode === "phone" && Input.phone && now - Input.lastAt > 3000) flash("No motion data from the phone", "Check that the phone screen is on and Mend is open.", "warn");
+    }
+    $("gReps").textContent = Game.inst ? `${Game.inst.reps()} / ${Game.inst.goal()}` : `0 / ${settings.reps}`;
+    draw(a, now);
+    if (Game.state === "play") pushStatus(false);
+  }
+  requestAnimationFrame(frame);
+}
+
+function draw(a, now) {
+  g.setTransform(DPR, 0, 0, DPR, 0, 0);
+  g.clearRect(0, 0, W, H);
+  if (Game.inst && (Game.state === "play" || Game.state === "paused" || Game.state === "results")) Game.inst.draw(g, W, H, a, now / 1000);
+  else drawIdle(a, now / 1000);
+  // live tilt cursor in the corner: always shows the input is alive
+  const cx = W - 46, cy = H - 46, R = 30;
+  g.beginPath(); g.arc(cx, cy, R, 0, TAU); g.fillStyle = alpha(T.surface, 0.85); g.fill(); g.strokeStyle = T.line; g.lineWidth = 1; g.stroke();
+  g.beginPath(); g.moveTo(cx - R, cy); g.lineTo(cx + R, cy); g.moveTo(cx, cy - R); g.lineTo(cx, cy + R); g.stroke();
+  const dx = clamp(a.roll / 60, -1, 1) * (R - 7), dy = -clamp(a.pitch / 60, -1, 1) * (R - 7);
+  g.beginPath(); g.arc(cx + dx, cy + dy, 6, 0, TAU); g.fillStyle = T.accent; g.fill();
+  // banner
+  let b = null;
+  if (Game.state === "play" && Game.inst) b = Game.inst.status();
+  if (flashT > now && Game.banner) b = Game.banner;
+  const bn = $("banner");
+  if (b && Game.state === "play") {
+    bn.hidden = false;
+    if ($("bTitle").textContent !== b.title) $("bTitle").textContent = b.title;
+    if ($("bText").textContent !== (b.text || "")) $("bText").textContent = b.text || "";
+    bn.className = "banner " + (b.tone || "");
+  }
+}
+function drawIdle(a, t) {
+  const grd = g.createLinearGradient(0, 0, 0, H); grd.addColorStop(0, T["sky-top"]); grd.addColorStop(1, T["sky-bot"]);
+  g.fillStyle = grd; g.fillRect(0, 0, W, H);
+}
+
+// ================================================================ ACTIVITIES
+
+function base(S, goal) {
+  return { S, events: [], done: false, _reps: 0, reps() { return this._reps; }, goal() { return goal; } };
+}
+
+// ---- 1. Lantern Lift: shoulder flexion with hold --------------------------------
+function LanternLift(S) {
+  const amp = S.amp, G = base(S, S.reps);
+  let state = "rest", restT = 0, hold = 0, target = amp, peak = -99, peaks = [], holdTimes = [], sparkle = [];
+  const HOLD = 1.2;
+  G.update = function (dt, a) {
+    const p = a.pitch;
+    if (state === "rest") {
+      if (p < amp * 0.35) { restT += dt; if (restT > 0.4) { state = "raise"; restT = 0; peak = -99; hold = 0; target = amp * (0.9 + Math.random() * 0.2); } } else restT = 0;
+    } else if (state === "raise") {
+      peak = Math.max(peak, p);
+      if (p >= target * 0.9) { hold += dt; if (hold >= HOLD) { this._reps++; peaks.push(peak); state = "lower"; this.events.push("success"); burst(); } }
+      else hold = Math.max(0, hold - dt * 1.5);
+    } else if (state === "lower") {
+      peak = Math.max(peak, p);
+      if (p < amp * 0.35) { if (peaks.length) peaks[peaks.length - 1] = peak; state = "rest"; restT = 0; if (this._reps >= S.reps) this.done = true; }
+    }
+    sparkle = sparkle.filter((s) => (s.life -= dt) > 0); sparkle.forEach((s) => { s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 40 * dt; });
+  };
+  function burst() { if (reduceMotion) return; for (let i = 0; i < 18; i++) { const ang = Math.random() * TAU, sp = 40 + Math.random() * 90; sparkle.push({ x: 0, y: 0, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, life: 0.8 }); } }
+  G.status = function () {
+    if (state === "rest") return { title: "Rest your arm", text: "Lower your arm to start the next lift." };
+    if (state === "raise") return hold > 0.05 ? { title: "Hold it there", text: `${Math.max(0, HOLD - hold).toFixed(1)} s`, tone: "good" } : { title: "Raise your arm to the line", text: `Target ${Math.round(target)}°` };
+    return { title: "Good. Lower slowly.", text: `${this._reps} of ${S.reps} done`, tone: "good" };
+  };
+  G.stats = () => [["Best lift", peaks.length ? `${Math.round(Math.max(...peaks))}°` : "–"], ["Average lift", peaks.length ? `${Math.round(peaks.reduce((s, x) => s + x, 0) / peaks.length)}°` : "–"]];
+  G.draw = function (g, W, H, a, t) {
+    const grd = g.createLinearGradient(0, 0, 0, H); grd.addColorStop(0, T["sky-top"]); grd.addColorStop(1, T["sky-bot"]);
+    g.fillStyle = grd; g.fillRect(0, 0, W, H);
+    // hills
+    g.fillStyle = T.hill; g.beginPath(); g.moveTo(0, H);
+    for (let x = 0; x <= W; x += 20) g.lineTo(x, H - 60 - Math.sin(x / 140) * 18 - Math.sin(x / 57) * 6);
+    g.lineTo(W, H); g.fill();
+    const top = 170, bottom = H - 80;
+    const yOf = (deg) => lerp(bottom, top, clamp((deg + 5) / (amp * 1.35 + 5), 0, 1));
+    // target line
+    const ty = yOf(target);
+    g.setLineDash([10, 8]); g.strokeStyle = T.accent; g.lineWidth = 3; g.beginPath(); g.moveTo(40, ty); g.lineTo(W - 90, ty); g.stroke(); g.setLineDash([]);
+    txt(g, `${Math.round(target)}°`, W - 80, ty, 16, T["accent-ink"], { align: "left", font: T.mono, weight: 600 });
+    // lantern
+    const lx = W * 0.42, ly = yOf(a.pitch);
+    g.strokeStyle = alpha(T.ink, 0.35); g.lineWidth = 2; g.beginPath(); g.moveTo(lx, ly + 34); g.lineTo(lx, H); g.stroke();
+    const glow = g.createRadialGradient(lx, ly, 4, lx, ly, 70); glow.addColorStop(0, alpha(T.accent, 0.55)); glow.addColorStop(1, alpha(T.accent, 0));
+    g.fillStyle = glow; g.beginPath(); g.arc(lx, ly, 70, 0, TAU); g.fill();
+    rr(g, lx - 22, ly - 30, 44, 60, 14); g.fillStyle = T.accent; g.fill();
+    g.fillStyle = alpha(T.surface, 0.6); rr(g, lx - 12, ly - 18, 24, 36, 8); g.fill();
+    if (state === "raise" && hold > 0) { g.strokeStyle = T.go; g.lineWidth = 6; g.lineCap = "round"; g.beginPath(); g.arc(lx, ly, 46, -Math.PI / 2, -Math.PI / 2 + TAU * (hold / HOLD)); g.stroke(); g.lineCap = "butt"; }
+    g.fillStyle = T.accent; sparkle.forEach((s) => { g.globalAlpha = clamp(s.life / 0.8, 0, 1); g.beginPath(); g.arc(lx + s.x, ty + s.y, 3, 0, TAU); g.fill(); }); g.globalAlpha = 1;
+    // goniometer
+    drawGonio(g, W - 230, H - 24, Math.min(110, W * 0.12), a.pitch, target, "Arm raise");
+  };
+  return G;
+}
+
+function drawGonio(g, cx, cy, R, deg, target, label) {
+  g.save();
+  g.fillStyle = alpha(T.surface, 0.85); g.beginPath(); g.arc(cx, cy, R + 14, Math.PI, TAU); g.fill();
+  // 0° at left horizontal, 90° straight up, 180° at right: use 0..90 across the left half to top
+  const ang = (d) => Math.PI + clamp(d, -10, 120) / 180 * Math.PI;
+  g.lineWidth = 1.5; g.strokeStyle = T.muted;
+  for (let d = 0; d <= 120; d += 15) {
+    const A = ang(d); g.beginPath(); g.moveTo(cx + Math.cos(A) * (R - (d % 45 ? 6 : 12)), cy + Math.sin(A) * (R - (d % 45 ? 6 : 12))); g.lineTo(cx + Math.cos(A) * R, cy + Math.sin(A) * R); g.stroke();
+    if (d % 45 === 0) txt(g, `${d}`, cx + Math.cos(A) * (R - 24), cy + Math.sin(A) * (R - 24), 11, T.muted, { font: T.mono, weight: 500 });
+  }
+  if (target != null) { const A = ang(target); g.strokeStyle = T.accent; g.lineWidth = 3; g.beginPath(); g.moveTo(cx + Math.cos(A) * (R - 16), cy + Math.sin(A) * (R - 16)); g.lineTo(cx + Math.cos(A) * (R + 6), cy + Math.sin(A) * (R + 6)); g.stroke(); }
+  const A = ang(deg); g.strokeStyle = T.ink; g.lineWidth = 3; g.lineCap = "round";
+  g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(A) * (R - 10), cy + Math.sin(A) * (R - 10)); g.stroke();
+  g.beginPath(); g.arc(cx, cy, 5, 0, TAU); g.fillStyle = T.ink; g.fill();
+  txt(g, `${Math.round(deg)}°`, cx + 34, cy - 14, 18, T.ink, { font: T.mono, weight: 600 });
+  txt(g, label, cx + 34, cy - 34, 11, T.muted, { font: T.mono, weight: 500 });
+  g.restore();
+}
+
+// ---- 2. Pour the Tea: controlled supination/pronation --------------------------
+function PourTea(S) {
+  const amp = S.amp, G = base(S, S.reps);
+  const thr = amp * 0.55, vmax = { 1: 55, 2: 70, 3: 85 }[S.level];
+  let cup = 0, fill = 0, state = "pour", prevR = 0, vel = 0, spills = 0, overT = 0, drops = [], spillFlash = 0, pourTime = 0;
+  const dir = () => (cup % 2 === 0 ? 1 : -1);
+  G.update = function (dt, a) {
+    const r = a.roll;
+    vel += ((r - prevR) / Math.max(dt, 0.008) - vel) * (1 - Math.exp(-dt / 0.12)); prevR = r;
+    const tip = r * dir();
+    spillFlash = Math.max(0, spillFlash - dt);
+    if (state === "pour") {
+      if (tip > thr) {
+        if (Math.abs(vel) > vmax && tip < amp * 1.2) { spills++; state = "spilled"; spillFlash = 1; this.events.push("error"); return; }
+        const rate = clamp((tip - thr) / (amp * 0.5), 0.15, 1) * 0.32; fill += rate * dt; pourTime += dt;
+        if (!reduceMotion && Math.random() < 0.6) drops.push({ k: 0 });
+        if (fill >= 1) { fill = 1; state = "return"; overT = 0; this.events.push("success"); }
+      }
+    } else if (state === "return") {
+      if (tip > thr && vel * dir() > -3) { overT += dt; if (overT > 1.5) { spills++; overT = -99; spillFlash = 1; this.events.push("error"); } }
+      if (Math.abs(r) < amp * 0.25) { this._reps++; cup++; fill = 0; state = "pour"; if (this._reps >= S.reps) this.done = true; }
+    } else if (state === "spilled") {
+      if (Math.abs(r) < amp * 0.25) state = "pour";
+    }
+    drops.forEach((d) => (d.k += dt * 2.4)); drops = drops.filter((d) => d.k < 1);
+  };
+  G.status = function () {
+    const side = dir() > 0 ? "right" : "left";
+    if (state === "spilled") return { title: "Too fast, it spilled", text: "Bring the pot upright, then pour more slowly.", tone: "warn" };
+    if (state === "return") return { title: "Full. Return the pot upright.", text: `${this._reps + 1} of ${S.reps}`, tone: "good" };
+    return { title: `Turn your hand to the ${side} to pour`, text: "Slow and steady fills the cup." };
+  };
+  G.stats = () => [["Spills", String(spills)], ["Pour time", `${pourTime.toFixed(1)} s`]];
+  G.draw = function (g, W, H, a, t) {
+    g.fillStyle = T.stage; g.fillRect(0, 0, W, H);
+    const tableY = H * 0.8;
+    g.fillStyle = alpha(T.ink, 0.07); g.fillRect(0, tableY, W, H - tableY);
+    g.strokeStyle = T.line; g.lineWidth = 2; g.beginPath(); g.moveTo(0, tableY); g.lineTo(W, tableY); g.stroke();
+    const d = dir(), cupX = W / 2 + d * Math.min(W * 0.2, 210), cupW = 92, cupH = 104, cupTop = tableY - cupH;
+    // cup
+    g.fillStyle = T.surface; g.strokeStyle = T.ink; g.lineWidth = 3;
+    g.beginPath(); g.moveTo(cupX - cupW / 2, cupTop); g.lineTo(cupX - cupW / 2 + 8, tableY); g.lineTo(cupX + cupW / 2 - 8, tableY); g.lineTo(cupX + cupW / 2, cupTop); g.closePath(); g.fill(); g.stroke();
+    const lvl = cupTop + cupH * (1 - fill * 0.82);
+    g.save(); g.clip(); g.fillStyle = alpha(T.accent, 0.75); g.fillRect(cupX - cupW / 2, lvl, cupW, tableY - lvl); g.restore();
+    const lineY = cupTop + cupH * 0.18;
+    g.setLineDash([5, 5]); g.strokeStyle = T.go; g.lineWidth = 2; g.beginPath(); g.moveTo(cupX - cupW / 2 - 10, lineY); g.lineTo(cupX + cupW / 2 + 10, lineY); g.stroke(); g.setLineDash([]);
+    g.beginPath(); g.arc(cupX + d * (cupW / 2 + 4), cupTop + 42, 16, -Math.PI / 2, Math.PI / 2, d < 0); g.strokeStyle = T.ink; g.lineWidth = 3; g.stroke();
+    // done cups
+    for (let i = 0; i < S.reps; i++) { const x = 28 + i * 22, y = H - 28; g.beginPath(); g.arc(x, y, 7, 0, TAU); g.fillStyle = i < G._reps ? T.go : alpha(T.ink, 0.18); g.fill(); }
+    // pot
+    const px = W / 2, py = H * 0.36, rot = clamp(a.roll, -95, 95) * Math.PI / 180;
+    g.save(); g.translate(px, py); g.rotate(rot);
+    g.fillStyle = T.ink; g.strokeStyle = T.ink;
+    g.beginPath(); g.ellipse(0, 0, 70, 54, 0, 0, TAU); g.fill();
+    g.fillStyle = T.accent; g.beginPath(); g.ellipse(0, -2, 70, 10, 0, 0, TAU); g.fill();
+    g.fillStyle = T.ink; rr(g, -14, -70, 28, 18, 6); g.fill();
+    g.lineWidth = 12; g.lineCap = "round";
+    g.beginPath(); g.moveTo(d * 56, -8); g.quadraticCurveTo(d * 100, -18, d * 112, -50); g.stroke();
+    g.lineWidth = 9; g.beginPath(); g.arc(-d * 72, 0, 30, -Math.PI / 2, Math.PI / 2, d > 0); g.stroke();
+    g.restore();
+    // stream
+    const tip = a.roll * d;
+    if ((state === "pour" || state === "return") && tip > thr) {
+      const sx = px + Math.cos(rot) * (d * 112) - Math.sin(rot) * -50, sy = py + Math.sin(rot) * (d * 112) + Math.cos(rot) * -50;
+      g.strokeStyle = alpha(T.accent, 0.85); g.lineWidth = 4 + clamp((tip - thr) / amp, 0, 1) * 6; g.lineCap = "round";
+      g.beginPath(); g.moveTo(sx, sy); g.quadraticCurveTo(lerp(sx, cupX, 0.6), sy + 10, cupX + Math.sin(t * 12) * 3, Math.max(lvl, cupTop)); g.stroke(); g.lineCap = "butt";
+    }
+    if (spillFlash > 0) {
+      g.fillStyle = alpha(T.warn, 0.55 * spillFlash);
+      for (let i = 0; i < 7; i++) { g.beginPath(); g.ellipse(cupX + (i - 3) * 22, tableY + 8 + (i % 2) * 6, 14, 5, 0, 0, TAU); g.fill(); }
+    }
+    // speed gauge: how fast the forearm is turning
+    const gx = 28, gy = 130, gw = 18, gh = H * 0.4;
+    rr(g, gx, gy, gw, gh, 9); g.fillStyle = alpha(T.ink, 0.08); g.fill();
+    const frac = clamp(Math.abs(vel) / (vmax * 1.4), 0, 1);
+    rr(g, gx, gy + gh * (1 - frac), gw, gh * frac, 9); g.fillStyle = Math.abs(vel) > vmax ? T.warn : T.go; g.fill();
+    const ly = gy + gh * (1 - 1 / 1.4); g.strokeStyle = T.warn; g.lineWidth = 2; g.beginPath(); g.moveTo(gx - 4, ly); g.lineTo(gx + gw + 4, ly); g.stroke();
+    txt(g, "Speed", gx + gw / 2, gy + gh + 18, 11, T.muted, { font: T.mono, weight: 500 });
+  };
+  return G;
+}
+
+// ---- 3. Combination Lock: rotation + working memory ----------------------------
+function ComboLock(S) {
+  const amp = S.amp, G = base(S, S.reps);
+  const len = { 1: 2, 2: 3, 3: 4 }[S.level];
+  let code = [], entered = [], phase = "show", phaseT = 0, dwell = 0, lastD = -1, armed = true, correct = 0, wrong = 0, codesOpened = 0, rounds = 0;
+  function newCode() { code = []; while (code.length < len) { const d = Math.floor(Math.random() * 10); if (d !== code[code.length - 1]) code.push(d); } entered = []; phase = "show"; phaseT = 0; armed = false; lastD = -1; rounds++; }
+  newCode();
+  const dialVal = (r) => clamp(((r + amp) / (2 * amp)) * 9, 0, 9);
+  G.update = function (dt, a) {
+    phaseT += dt;
+    if (phase === "show") { if (phaseT > 2.2 + len * 0.7) { phase = "dial"; phaseT = 0; dwell = 0; armed = false; lastD = Math.round(dialVal(a.roll)); } return; }
+    if (phase === "reveal") { if (phaseT > 2.0) { if (this._reps >= S.reps) this.done = true; else newCode(); } return; }
+    const d = Math.round(dialVal(a.roll));
+    if (d !== lastD) { lastD = d; dwell = 0; armed = true; }
+    else if (armed) {
+      dwell += dt;
+      if (dwell >= 1.0) {
+        armed = false; dwell = 0; entered.push(d); this._reps++;
+        if (d === code[entered.length - 1]) { correct++; this.events.push("success"); } else { wrong++; this.events.push("error"); }
+        if (entered.length === len) { phase = "reveal"; phaseT = 0; if (entered.every((x, i) => x === code[i])) { codesOpened++; this.events.push("big"); } }
+      }
+    }
+  };
+  G.status = function () {
+    if (phase === "show") return { title: "Remember this code", text: "It will hide in a moment." };
+    if (phase === "reveal") { const ok = entered.every((x, i) => x === code[i]); return ok ? { title: "Unlocked", text: "Next code coming up.", tone: "good" } : { title: `The code was ${code.join(" ")}`, text: "Next code coming up.", tone: "warn" }; }
+    return { title: `Dial number ${entered.length + 1} of ${len}`, text: "Turn your wrist, then hold still on the number." };
+  };
+  G.stats = () => [["Codes opened", `${codesOpened} / ${rounds}`], ["Digits correct", `${correct} / ${correct + wrong}`]];
+  G.draw = function (g, W, H, a, t) {
+    g.fillStyle = T.stage; g.fillRect(0, 0, W, H);
+    const cx = W / 2, cy = H - 44, R = Math.max(110, Math.min(W * 0.36, cy - 236, 300));
+    const A = (v) => Math.PI + (v / 9) * Math.PI; // 0 at left, 9 at right, across the top
+    g.beginPath(); g.arc(cx, cy, R + 18, Math.PI, TAU); g.lineTo(cx + R + 18, cy + 10); g.lineTo(cx - R - 18, cy + 10); g.closePath(); g.fillStyle = T.surface; g.fill(); g.strokeStyle = T.line; g.lineWidth = 2; g.stroke();
+    const cur = dialVal(a.roll), curD = Math.round(cur);
+    for (let n = 0; n <= 9; n++) {
+      const an = A(n), x = cx + Math.cos(an) * (R - 30), y = cy + Math.sin(an) * (R - 30);
+      const on = phase === "dial" && n === curD;
+      if (on) { g.beginPath(); g.arc(x, y, 26, 0, TAU); g.fillStyle = alpha(T.accent, 0.3); g.fill(); if (armed) { g.strokeStyle = T.go; g.lineWidth = 5; g.beginPath(); g.arc(x, y, 26, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(dwell / 1.0, 0, 1)); g.stroke(); } }
+      txt(g, String(n), x, y + 1, 30, on ? T.ink : T.muted, { font: T.mono, weight: 600 });
+      g.strokeStyle = T.line; g.lineWidth = 2; g.beginPath(); g.moveTo(cx + Math.cos(an) * (R + 4), cy + Math.sin(an) * (R + 4)); g.lineTo(cx + Math.cos(an) * (R + 16), cy + Math.sin(an) * (R + 16)); g.stroke();
+    }
+    // pointer
+    const pa = A(cur); g.strokeStyle = T.ink; g.lineWidth = 6; g.lineCap = "round";
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(pa) * (R - 62), cy + Math.sin(pa) * (R - 62)); g.stroke(); g.lineCap = "butt";
+    g.beginPath(); g.arc(cx, cy, 34, 0, TAU); g.fillStyle = T.ink; g.fill();
+    g.beginPath(); g.arc(cx, cy, 12, 0, TAU); g.fillStyle = T.accent; g.fill();
+    // code / slots
+    const sw = 64, gap = 14, total = len * sw + (len - 1) * gap, sx = cx - total / 2, sy = 128;
+    if (phase === "show") txt(g, "Memorize", cx, sy - 14, 14, T.muted, { font: T.mono, weight: 500 });
+    for (let i = 0; i < len; i++) {
+      const x = sx + i * (sw + gap);
+      rr(g, x, sy, sw, 76, 12); g.fillStyle = T.surface; g.fill(); g.strokeStyle = i === entered.length && phase === "dial" ? T.accent : T.line; g.lineWidth = 3; g.stroke();
+      let s = "", col = T.ink;
+      if (phase === "show" || phase === "reveal") { s = String(code[i]); if (phase === "reveal") col = entered[i] === code[i] ? T.go : T.warn; }
+      else if (i < entered.length) { s = String(entered[i]); col = entered[i] === code[i] ? T.go : T.warn; }
+      if (s) txt(g, s, x + sw / 2, sy + 40, 44, col, { font: T.mono, weight: 600 });
+    }
+  };
+  return G;
+}
+
+// ---- 4. Tilt Maze: 2-axis wrist control --------------------------------------
+function TiltMaze(S) {
+  const amp = S.amp, G = base(S, Math.max(2, Math.min(4, Math.round(S.reps / 4))));
+  const dims = { 1: [5, 3], 2: [7, 4], 3: [9, 5] }[S.level];
+  let maze, ball, hits = 0, hitCool = 0, mazeT = 0, times = [], win = 0;
+  function build() {
+    const [C, R] = dims, cells = [];
+    for (let y = 0; y < R; y++) for (let x = 0; x < C; x++) cells.push({ x, y, n: 1, e: 1, s: 1, w: 1, v: 0 });
+    const at = (x, y) => cells[y * C + x], stack = [at(0, 0)]; at(0, 0).v = 1;
+    while (stack.length) {
+      const c = stack[stack.length - 1];
+      const nb = [[0, -1, "n", "s"], [1, 0, "e", "w"], [0, 1, "s", "n"], [-1, 0, "w", "e"]].filter(([dx, dy]) => { const X = c.x + dx, Y = c.y + dy; return X >= 0 && Y >= 0 && X < C && Y < R && !at(X, Y).v; });
+      if (!nb.length) { stack.pop(); continue; }
+      const [dx, dy, k, o] = nb[Math.floor(Math.random() * nb.length)], nx = at(c.x + dx, c.y + dy);
+      c[k] = 0; nx[o] = 0; nx.v = 1; stack.push(nx);
+    }
+    maze = { C, R, cells, at }; ball = { x: 0.5, y: 0.5, vx: 0, vy: 0 }; mazeT = 0;
+  }
+  build();
+  const RAD = 0.22; // ball radius in cell units
+  G.update = function (dt, a) {
+    mazeT += dt; hitCool = Math.max(0, hitCool - dt);
+    if (win > 0) { win -= dt; if (win <= 0) { if (this._reps >= this.goal()) this.done = true; else build(); } return; }
+    const dz = amp * 0.12;
+    const tx = Math.abs(a.roll) < dz ? 0 : clamp(a.roll / amp, -1.3, 1.3);
+    const py = a.demo ? -a.pitch : a.pitch; // real phone: tipping the top edge down rolls the ball up the screen
+    const ty = Math.abs(py) < dz ? 0 : clamp(py / amp, -1.3, 1.3);
+    const acc = 7;
+    ball.vx += tx * acc * dt; ball.vy += ty * acc * dt;
+    const fr = Math.exp(-dt * 1.6); ball.vx *= fr; ball.vy *= fr;
+    const vmax = 4.2, sp = Math.hypot(ball.vx, ball.vy); if (sp > vmax) { ball.vx *= vmax / sp; ball.vy *= vmax / sp; }
+    // move in substeps and collide with walls of the current and neighbouring cells
+    const steps = 4;
+    for (let s = 0; s < steps; s++) {
+      ball.x += ball.vx * dt / steps; ball.y += ball.vy * dt / steps;
+      collide();
+    }
+    const cx = Math.floor(ball.x), cy = Math.floor(ball.y);
+    if (cx === maze.C - 1 && cy === maze.R - 1 && Math.hypot(ball.x - (cx + 0.5), ball.y - (cy + 0.5)) < 0.3) {
+      this._reps++; times.push(mazeT); win = 1.4; this.events.push("big");
+    }
+  };
+  function collide() {
+    const { C, R, at } = maze;
+    ball.x = clamp(ball.x, RAD, C - RAD); ball.y = clamp(ball.y, RAD, R - RAD);
+    const cx = clamp(Math.floor(ball.x), 0, C - 1), cy = clamp(Math.floor(ball.y), 0, R - 1), c = at(cx, cy);
+    const hit = (v) => { if (Math.abs(v) > 1.2 && hitCool <= 0) { hits++; hitCool = 0.35; G.events.push("error"); } };
+    if (c.w && ball.x - cx < RAD) { ball.x = cx + RAD; hit(ball.vx); ball.vx = Math.abs(ball.vx) * 0.25; }
+    if (c.e && cx + 1 - ball.x < RAD) { ball.x = cx + 1 - RAD; hit(ball.vx); ball.vx = -Math.abs(ball.vx) * 0.25; }
+    if (c.n && ball.y - cy < RAD) { ball.y = cy + RAD; hit(ball.vy); ball.vy = Math.abs(ball.vy) * 0.25; }
+    if (c.s && cy + 1 - ball.y < RAD) { ball.y = cy + 1 - RAD; hit(ball.vy); ball.vy = -Math.abs(ball.vy) * 0.25; }
+    // corner posts: push away from the nearest cell corner
+    for (const [px, py] of [[cx, cy], [cx + 1, cy], [cx, cy + 1], [cx + 1, cy + 1]]) {
+      const dx = ball.x - px, dy = ball.y - py, d = Math.hypot(dx, dy);
+      if (d < RAD && d > 1e-4) { ball.x = px + dx / d * RAD; ball.y = py + dy / d * RAD; }
+    }
+  }
+  G.debug = () => ({ maze, ball });
+  G.status = function () {
+    if (win > 0) return { title: "You made it", text: this._reps < this.goal() ? "Next maze coming up." : "Last maze done.", tone: "good" };
+    return { title: "Roll the ball to the flag", text: `Maze ${this._reps + 1} of ${this.goal()} · gentle tilts work best` };
+  };
+  G.stats = () => [["Wall bumps", String(hits)], ["Average maze time", times.length ? `${(times.reduce((s, x) => s + x, 0) / times.length).toFixed(1)} s` : "–"]];
+  G.draw = function (g, W, H, a, t) {
+    g.fillStyle = T.stage; g.fillRect(0, 0, W, H);
+    const { C, R, cells } = maze, pad = 30, top = 118;
+    const cs = Math.min((W - pad * 2) / C, (H - top - pad) / R), ox = (W - cs * C) / 2, oy = top + (H - top - pad - cs * R) / 2;
+    rr(g, ox - 8, oy - 8, cs * C + 16, cs * R + 16, 14); g.fillStyle = T.surface; g.fill();
+    // goal
+    const gx = ox + (C - 0.5) * cs, gy = oy + (R - 0.5) * cs;
+    g.fillStyle = alpha(T.go, 0.18); g.fillRect(ox + (C - 1) * cs, oy + (R - 1) * cs, cs, cs);
+    g.strokeStyle = T.go; g.lineWidth = 3; g.beginPath(); g.moveTo(gx - cs * 0.12, gy + cs * 0.28); g.lineTo(gx - cs * 0.12, gy - cs * 0.28); g.stroke();
+    g.fillStyle = T.go; g.beginPath(); g.moveTo(gx - cs * 0.12, gy - cs * 0.28); g.lineTo(gx + cs * 0.22, gy - cs * 0.16); g.lineTo(gx - cs * 0.12, gy - cs * 0.04); g.fill();
+    // walls
+    g.strokeStyle = T.ink; g.lineWidth = Math.max(3, cs * 0.07); g.lineCap = "round"; g.beginPath();
+    for (const c of cells) {
+      const x = ox + c.x * cs, y = oy + c.y * cs;
+      if (c.n) { g.moveTo(x, y); g.lineTo(x + cs, y); }
+      if (c.w) { g.moveTo(x, y); g.lineTo(x, y + cs); }
+      if (c.y === R - 1 && c.s) { g.moveTo(x, y + cs); g.lineTo(x + cs, y + cs); }
+      if (c.x === C - 1 && c.e) { g.moveTo(x + cs, y); g.lineTo(x + cs, y + cs); }
+      if (c.e && c.x < C - 1) { g.moveTo(x + cs, y); g.lineTo(x + cs, y + cs); }
+      if (c.s && c.y < R - 1) { g.moveTo(x, y + cs); g.lineTo(x + cs, y + cs); }
+    }
+    g.stroke(); g.lineCap = "butt";
+    // ball
+    const bx = ox + ball.x * cs, by = oy + ball.y * cs;
+    g.beginPath(); g.arc(bx + 3, by + 4, RAD * cs, 0, TAU); g.fillStyle = alpha(T.ink, 0.15); g.fill();
+    g.beginPath(); g.arc(bx, by, RAD * cs, 0, TAU); g.fillStyle = T.accent; g.fill();
+    g.beginPath(); g.arc(bx - RAD * cs * 0.3, by - RAD * cs * 0.3, RAD * cs * 0.3, 0, TAU); g.fillStyle = alpha(T.surface, 0.6); g.fill();
+  };
+  return G;
+}
+
+// ---- 5. Sort It: rotation + semantic categories ------------------------------
+const WORDS = {
+  1: [["Food", ["apple", "bread", "carrot", "cheese", "banana", "soup", "rice", "egg", "grapes", "pasta"]], ["Clothing", ["shirt", "sock", "hat", "coat", "shoe", "scarf", "glove", "belt", "jacket", "skirt"]]],
+  2: [["Kitchen", ["spoon", "kettle", "plate", "whisk", "ladle", "toaster", "bowl", "frying pan", "cutting board", "oven mitt"]], ["Garden", ["rake", "hose", "shovel", "seeds", "trowel", "wheelbarrow", "sprinkler", "flower pot", "watering can", "compost"]]],
+  3: [["Swims", ["salmon", "dolphin", "shark", "otter", "seal", "trout", "whale", "eel", "octopus", "penguin"]], ["Flies", ["eagle", "sparrow", "bat", "owl", "moth", "pelican", "hawk", "bee", "dragonfly", "crow"]]],
+};
+function SortIt(S) {
+  const amp = S.amp, G = base(S, S.reps);
+  const cats = WORDS[S.level].slice(); if (Math.random() < 0.5) cats.reverse();
+  const [L, Rt] = cats;
+  const deck = []; for (const w of L[1]) deck.push({ w, side: -1 }); for (const w of Rt[1]) deck.push({ w, side: 1 });
+  for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
+  let i = 0, phase = "center", ct = 0, dwell = 0, dwellSide = 0, rt = [], ok = 0, bad = 0, fb = null, fbT = 0, cardT = 0, flyX = 0;
+  G.update = function (dt, a) {
+    const r = a.roll;
+    if (phase === "center") { if (Math.abs(r) < amp * 0.3) { ct += dt; if (ct > 0.35) { phase = "card"; cardT = 0; dwell = 0; } } else ct = 0; return; }
+    if (phase === "feedback") { fbT -= dt; flyX += fb.side * dt * 900; if (fbT <= 0) { if (this._reps >= S.reps) this.done = true; else { i = (i + 1) % deck.length; phase = "center"; ct = 0; } } return; }
+    cardT += dt;
+    const side = r > amp * 0.7 ? 1 : r < -amp * 0.7 ? -1 : 0;
+    if (side && side === dwellSide) { dwell += dt; if (dwell > 0.5) {
+      const right = side === deck[i].side; this._reps++; rt.push(cardT);
+      if (right) { ok++; this.events.push("success"); } else { bad++; this.events.push("error"); }
+      fb = { side, right }; fbT = 0.9; flyX = 0; phase = "feedback";
+    } } else { dwellSide = side; dwell = 0; }
+  };
+  G.status = function () {
+    if (phase === "center") return { title: "Bring your hand level", text: "The next word appears when you are centered." };
+    if (phase === "feedback") return fb.right ? { title: "Correct", text: `${deck[i].w} goes with ${(deck[i].side < 0 ? L : Rt)[0].toLowerCase()}`, tone: "good" } : { title: "Not quite", text: `${deck[i].w} goes with ${(deck[i].side < 0 ? L : Rt)[0].toLowerCase()}`, tone: "warn" };
+    return { title: `Where does "${deck[i].w}" go?`, text: `Turn left for ${L[0].toLowerCase()}, right for ${Rt[0].toLowerCase()}` };
+  };
+  G.stats = () => [["Sorted correctly", `${ok} / ${ok + bad}`], ["Average decision time", rt.length ? `${(rt.reduce((s, x) => s + x, 0) / rt.length).toFixed(1)} s` : "–"]];
+  G.draw = function (g, W, H, a, t) {
+    g.fillStyle = T.stage; g.fillRect(0, 0, W, H);
+    const bw = Math.min(W * 0.26, 260), bh = H * 0.5, by = H * 0.32;
+    for (const [s, cat] of [[-1, L], [1, Rt]]) {
+      const x = s < 0 ? 24 : W - 24 - bw;
+      const lit = phase === "card" && dwellSide === s;
+      rr(g, x, by, bw, bh, 18); g.fillStyle = lit ? alpha(T.accent, 0.22) : T.surface; g.fill(); g.strokeStyle = lit ? T.accent : T.line; g.lineWidth = 3; g.stroke();
+      txt(g, cat[0], x + bw / 2, by + 44, Math.min(34, bw / 6), T.ink);
+      txt(g, s < 0 ? "Turn left" : "Turn right", x + bw / 2, by + bh - 28, 13, T.muted, { font: T.mono, weight: 500 });
+      if (lit) { g.strokeStyle = T.go; g.lineWidth = 6; g.beginPath(); g.moveTo(x + 20, by + bh - 52); g.lineTo(x + 20 + (bw - 40) * clamp(dwell / 0.5, 0, 1), by + bh - 52); g.stroke(); }
+    }
+    if (phase !== "center") {
+      const off = phase === "card" ? clamp(a.roll / amp, -1, 1) * W * 0.08 : flyX;
+      const cw = Math.min(W * 0.34, 340), ch = 130, cx = W / 2 - cw / 2 + off, cy = H * 0.42;
+      g.save(); g.translate(cx + cw / 2, cy + ch / 2); g.rotate(clamp(a.roll, -30, 30) * 0.004);
+      rr(g, -cw / 2, -ch / 2, cw, ch, 16); g.fillStyle = T.surface; g.fill();
+      g.strokeStyle = phase === "feedback" ? (fb.right ? T.go : T.warn) : T.ink; g.lineWidth = 3; g.stroke();
+      const w = deck[i].w; txt(g, w, 0, 2, Math.min(48, (cw - 30) / Math.max(4, w.length) * 1.8), T.ink);
+      g.restore();
+    } else {
+      txt(g, "Hand level to continue", W / 2, H * 0.5, 20, T.muted, { font: T.body, weight: 400 });
+    }
+  };
+  return G;
+}
+
+// ---- 6. Memory Moves: sequence memory with four tilt directions ---------------
+function MemoryMoves(S) {
+  const amp = S.amp, G = base(S, S.reps);
+  const DIRS = ["up", "right", "down", "left"];
+  let len = { 1: 2, 2: 3, 3: 3 }[S.level], seq = [], step = 0, phase = "watch", pt = 0, lit = -1, needCenter = false, longest = 0, rounds = 0, wins = 0, mistakes = 0, flashDir = -1, flashOk = true, flashT = 0;
+  function newRound() { seq = Array.from({ length: len }, () => Math.floor(Math.random() * 4)); step = 0; phase = "watch"; pt = -0.6; rounds++; }
+  newRound();
+  G.update = function (dt, a) {
+    pt += dt; flashT = Math.max(0, flashT - dt);
+    if (phase === "watch") {
+      const k = Math.floor(pt / 1.0); lit = pt >= 0 && k < seq.length && (pt % 1.0) < 0.72 ? seq[k] : -1;
+      if (pt >= 0 && k >= seq.length) { phase = "repeat"; pt = 0; needCenter = true; lit = -1; }
+      return;
+    }
+    if (phase === "result") { if (pt > 1.4) { if (this._reps >= S.reps) this.done = true; else newRound(); } return; }
+    const mag = Math.max(Math.abs(a.pitch), Math.abs(a.roll));
+    if (needCenter) { if (mag < amp * 0.3) needCenter = false; return; }
+    if (mag > amp * 0.65) {
+      const d = Math.abs(a.pitch) > Math.abs(a.roll) ? (a.pitch > 0 ? 0 : 2) : (a.roll > 0 ? 1 : 3);
+      needCenter = true; flashDir = d; flashT = 0.5;
+      if (d === seq[step]) {
+        step++; this._reps++; flashOk = true; this.events.push("success");
+        if (step === seq.length) { wins++; longest = Math.max(longest, len); len = Math.min(len + 1, 8); phase = "result"; pt = 0; this.events.push("big"); }
+        else if (this._reps >= S.reps) { phase = "result"; pt = 0; }
+      } else {
+        mistakes++; flashOk = false; this.events.push("error"); len = Math.max(2, len - 1); phase = "result"; pt = 0;
+      }
+    }
+  };
+  G.status = function () {
+    if (phase === "watch") return { title: "Watch the pattern", text: `${seq.length} moves` };
+    if (phase === "result") return flashOk ? { title: "Pattern complete", text: "Next one is a step longer.", tone: "good" } : { title: "Different move", text: "Try a shorter pattern next.", tone: "warn" };
+    if (needCenter) return { title: "Back to level", text: `Move ${step + 1} of ${seq.length} next` };
+    return { title: `Move ${step + 1} of ${seq.length}`, text: "Tilt toward the next arrow." };
+  };
+  G.debug = () => ({ seq, step });
+  G.stats = () => [["Longest pattern", String(longest || "–")], ["Patterns completed", `${wins} / ${rounds}`], ["Wrong moves", String(mistakes)]];
+  G.draw = function (g, W, H, a, t) {
+    g.fillStyle = T.stage; g.fillRect(0, 0, W, H);
+    const s = Math.min(W * 0.16, (H - 170) / 3.9), off = s * 1.25, cx = W / 2, cy = 150 + off + s / 2 + (H - 150 - (off * 2 + s)) / 2 - 10;
+    const pos = [[0, -off], [off, 0], [0, off], [-off, 0]];
+    pos.forEach(([dx, dy], i) => {
+      const x = cx + dx, y = cy + dy;
+      const on = lit === i || (flashT > 0 && flashDir === i);
+      const col = flashT > 0 && flashDir === i ? (flashOk ? T.go : T.warn) : T.accent;
+      rr(g, x - s / 2, y - s / 2, s, s, 18); g.fillStyle = on ? col : T.surface; g.fill(); g.strokeStyle = on ? col : T.line; g.lineWidth = 3; g.stroke();
+      g.save(); g.translate(x, y); g.rotate(i * Math.PI / 2);
+      g.fillStyle = on ? T.surface : T.ink; g.beginPath(); g.moveTo(0, -s * 0.26); g.lineTo(s * 0.22, s * 0.06); g.lineTo(s * 0.08, s * 0.06); g.lineTo(s * 0.08, s * 0.24); g.lineTo(-s * 0.08, s * 0.24); g.lineTo(-s * 0.08, s * 0.06); g.lineTo(-s * 0.22, s * 0.06); g.closePath(); g.fill();
+      g.restore();
+    });
+    // center: live tilt cursor
+    g.beginPath(); g.arc(cx, cy, s * 0.42, 0, TAU); g.fillStyle = T.surface; g.fill(); g.strokeStyle = T.line; g.lineWidth = 2; g.stroke();
+    const dx = clamp(a.roll / amp, -1.4, 1.4) * s * 0.32, dy = -clamp(a.pitch / amp, -1.4, 1.4) * s * 0.32;
+    g.beginPath(); g.arc(cx + dx, cy + dy, s * 0.11, 0, TAU); g.fillStyle = T.ink; g.fill();
+    // progress dots
+    const n = seq.length, gap = 26, x0 = cx - (n - 1) * gap / 2;
+    for (let k = 0; k < n; k++) { g.beginPath(); g.arc(x0 + k * gap, 124, 8, 0, TAU); g.fillStyle = phase === "watch" ? (lit >= 0 && k === Math.floor(pt / 1.0) ? T.accent : T.line) : k < step ? T.go : T.line; g.fill(); }
+  };
+  return G;
+}
+
+// ---------------------------------------------------------------- views
+function show(id) {
+  for (const v of ["vHome", "vPlay", "vEvidence", "vLog"]) $(v).hidden = v !== id;
+  document.querySelectorAll("nav.tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.view === id || (id === "vPlay" && b.dataset.view === "vHome"))));
+  if (id === "vLog") renderLog();
+  window.scrollTo({ top: 0 });
+}
+function goHome() { Game.state = "idle"; Game.current = null; Game.inst = null; show("vHome"); pushStatus(true); }
+document.querySelectorAll("nav.tabs button").forEach((b) => b.addEventListener("click", () => { if (b.dataset.view === "vHome") goHome(); else { Game.state = "idle"; Game.current = null; Game.inst = null; show(b.dataset.view); pushStatus(true); } }));
+$("btnBack").addEventListener("click", goHome);
+$("toLog").addEventListener("click", () => show("vLog"));
+$("btnSound").addEventListener("click", () => { settings.sound = !settings.sound; saveSettings(); renderSound(); });
+function renderSound() { $("btnSound").textContent = settings.sound ? "Sound on" : "Sound off"; $("btnSound").setAttribute("aria-pressed", String(settings.sound)); }
+
+function bindSeg(id, key, cast) {
+  const el = $(id);
+  const paint = () => el.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(cast(b.dataset.v) === settings[key])));
+  el.addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; settings[key] = cast(b.dataset.v); saveSettings(); paint(); });
+  paint();
+}
+bindSeg("segSide", "side", String); bindSeg("segLevel", "level", Number); bindSeg("segReps", "reps", Number);
+
+// activity cards with small canvas previews
+function renderCards() {
+  $("cards").innerHTML = ACTIVITIES.map((d) => `
+    <button class="card" data-id="${d.id}">
+      <div class="glyph"><canvas data-glyph="${d.id}"></canvas></div>
+      <h3>${d.name}</h3>
+      <div class="meta"><span class="chip">${d.axes}</span><span class="chip">${d.movement.split(" · ")[0]}</span>${d.brain ? '<span class="chip brain">+ thinking</span>' : ""}</div>
+      <p>${d.desc}</p>
+      <span class="src">Based on ${d.source}</span>
+    </button>`).join("");
+  $("cards").querySelectorAll(".card").forEach((c) => c.addEventListener("click", () => openActivity(ACTIVITIES.find((d) => d.id === c.dataset.id))));
+  drawGlyphs();
+}
+function drawGlyphs() {
+  document.querySelectorAll("canvas[data-glyph]").forEach((cv) => {
+    const r = cv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1), w = Math.max(200, r.width || 250), h = 92;
+    cv.width = w * dpr; cv.height = h * dpr; const c = cv.getContext("2d"); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.fillStyle = T.stage; c.fillRect(0, 0, w, h);
+    const id = cv.dataset.glyph, mx = w / 2, my = h / 2;
+    c.lineWidth = 3; c.strokeStyle = T.ink; c.fillStyle = T.accent;
+    if (id === "lift") { c.setLineDash([6, 5]); c.strokeStyle = T.accent; c.beginPath(); c.moveTo(20, 26); c.lineTo(w - 20, 26); c.stroke(); c.setLineDash([]); rr(c, mx - 12, 34, 24, 34, 8); c.fill(); c.strokeStyle = alpha(T.ink, .4); c.beginPath(); c.moveTo(mx, 68); c.lineTo(mx, h); c.stroke(); }
+    if (id === "pour") { c.save(); c.translate(mx - 30, 40); c.rotate(0.5); c.fillStyle = T.ink; c.beginPath(); c.ellipse(0, 0, 26, 20, 0, 0, TAU); c.fill(); c.lineWidth = 6; c.lineCap = "round"; c.beginPath(); c.moveTo(20, -4); c.lineTo(40, -18); c.stroke(); c.restore(); c.fillStyle = T.surface; c.strokeStyle = T.ink; c.lineWidth = 2; c.fillRect(mx + 20, 50, 34, 34); c.strokeRect(mx + 20, 50, 34, 34); c.fillStyle = T.accent; c.fillRect(mx + 21, 62, 32, 21); }
+    if (id === "lock") { for (let n = 0; n <= 9; n++) { const an = Math.PI + n / 9 * Math.PI; c.fillStyle = n === 6 ? T.accent : T.muted; c.font = `600 13px ${T.mono}`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(String(n), mx + Math.cos(an) * 56, 82 + Math.sin(an) * 56); } c.lineCap = "round"; c.beginPath(); c.moveTo(mx, 82); c.lineTo(mx + Math.cos(Math.PI * 1.66) * 38, 82 + Math.sin(Math.PI * 1.66) * 38); c.stroke(); c.lineCap = "butt"; }
+    if (id === "maze") { const s = 18, ox = mx - 54, oy = 14; c.lineWidth = 3; c.strokeRect(ox, oy, s * 6, s * 4); c.beginPath(); c.moveTo(ox + s * 2, oy); c.lineTo(ox + s * 2, oy + s * 3); c.moveTo(ox + s * 4, oy + s); c.lineTo(ox + s * 4, oy + s * 4); c.moveTo(ox + s * 2, oy + s * 2); c.lineTo(ox + s * 3, oy + s * 2); c.stroke(); c.beginPath(); c.arc(ox + s * 0.6, oy + s * 0.6, 6, 0, TAU); c.fill(); c.fillStyle = T.go; c.fillRect(ox + s * 5, oy + s * 3, s, s); }
+    if (id === "sort") { c.strokeStyle = T.line; c.lineWidth = 2; rr(c, 14, 22, 54, 56, 8); c.stroke(); rr(c, w - 68, 22, 54, 56, 8); c.stroke(); c.fillStyle = T.surface; rr(c, mx - 40, 30, 80, 36, 8); c.fill(); c.strokeStyle = T.ink; c.stroke(); c.fillStyle = T.ink; c.font = `700 15px ${T.display}`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("kettle", mx, 49); }
+    if (id === "simon") { const s = 22; [[0, -1], [1, 0], [0, 1], [-1, 0]].forEach(([dx, dy], i) => { c.fillStyle = i === 1 ? T.accent : T.surface; rr(c, mx + dx * 26 - s / 2, my + dy * 26 - s / 2, s, s, 6); c.fill(); c.strokeStyle = T.line; c.stroke(); }); }
+  });
+}
+
+function renderWeek() {
+  const log = store.get("mend.log", []), since = Date.now() - 7 * 864e5;
+  const wk = log.filter((e) => new Date(e.at).getTime() >= since);
+  const reps = wk.reduce((s, e) => s + (e.reps || 0), 0), mins = wk.reduce((s, e) => s + (e.seconds || 0), 0) / 60;
+  $("week").innerHTML = `<div><b>${wk.length}</b><span>sessions</span></div><div><b>${reps}</b><span>repetitions</span></div><div><b>${Math.round(mins)}</b><span>minutes</span></div>`;
+}
+
+// ---------------------------------------------------------------- session log
+function renderLog() {
+  const log = store.get("mend.log", []).slice().reverse();
+  if (!log.length) {
+    $("logBody").innerHTML = `<div class="empty"><b>No sessions yet</b><span>Finish any activity and it appears here with repetitions, range of motion and smoothness.</span><button class="btn amber" id="logStart">Choose an activity</button></div>`;
+    $("logStart").onclick = goHome; return;
+  }
+  const fr = (r) => r ? `${r[0]}° to ${r[1]}°` : "–";
+  $("logBody").innerHTML = `<div class="tablewrap"><table><thead><tr><th>Date</th><th>Activity</th><th>Side</th><th>Reps</th><th>Time</th><th>Pitch range</th><th>Roll range</th><th>Smoothness</th><th>Details</th></tr></thead><tbody>${
+    log.map((e) => `<tr><td class="num">${new Date(e.at).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</td><td><b>${esc(e.name)}</b>${e.input === "mouse" ? ' <span class="chip">mouse</span>' : ""}</td><td>${esc(e.side)}</td><td class="num">${e.reps} / ${e.goal}</td><td class="num">${fmtTime(e.seconds)}</td><td class="num">${fr(e.pitch)}</td><td class="num">${fr(e.roll)}</td><td class="num">${e.peaksPerRep == null ? "–" : e.peaksPerRep + " pk/rep"}</td><td>${(e.extra || []).map(([k, v]) => `${esc(k)}: ${esc(v)}`).join("<br>")}</td></tr>`).join("")
+  }</tbody></table></div>`;
+}
+function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+$("btnCopy").addEventListener("click", () => {
+  const log = store.get("mend.log", []);
+  const lines = ["Mend home rehab summary", `Generated ${new Date().toLocaleString()}`, ""];
+  if (!log.length) lines.push("No sessions recorded yet.");
+  for (const e of log.slice(-30)) {
+    lines.push(`${new Date(e.at).toLocaleDateString()} · ${e.name} (${e.movement}) · ${e.side} side · ${e.reps}/${e.goal} reps in ${fmtTime(e.seconds)}` +
+      ` · pitch ${e.pitch ? e.pitch.join("° to ") + "°" : "–"} · roll ${e.roll ? e.roll.join("° to ") + "°" : "–"}` +
+      (e.peaksPerRep != null ? ` · ${e.peaksPerRep} speed peaks/rep` : "") + (e.input === "mouse" ? " · MOUSE MODE (not patient data)" : "") +
+      ((e.extra || []).length ? ` · ${(e.extra || []).map(([k, v]) => `${k} ${v}`).join(", ")}` : ""));
+  }
+  const text = lines.join("\n");
+  const fallback = () => { const ta = $("copyFallback"); ta.hidden = false; ta.value = text; ta.focus(); ta.select(); $("copyMsg").textContent = "Copying is blocked here. The summary is selected below; press Ctrl+C or Cmd+C."; };
+  try { navigator.clipboard.writeText(text).then(() => { $("copyMsg").textContent = "Summary copied. Paste it into an email or patient portal message."; }, fallback); } catch (_) { fallback(); }
+});
+let clearArmed = false;
+$("btnClear").addEventListener("click", () => {
+  if (!clearArmed) { clearArmed = true; $("btnClear").textContent = "Tap again to delete all sessions"; setTimeout(() => { clearArmed = false; $("btnClear").textContent = "Clear log"; }, 3000); return; }
+  store.set("mend.log", []); clearArmed = false; $("btnClear").textContent = "Clear log"; renderLog(); renderWeek();
+});
+
+// ---------------------------------------------------------------- evidence library
+const EVIDENCE = [
+  { sys: "mRehab", kind: "Smartphone + 3D-printed objects · University at Buffalo", ev: "18 people with chronic stroke used it at home for 6 weeks and improved upper-limb mobility. The phone measured repetitions, duration and movement smoothness.", full: true,
+    rows: [["Vertical bowl", "Two-handed lift onto a box and back", "lift"], ["Horizontal bowl", "Two-handed slide across a panel", ""], ["Vertical mug", "Lift a mug onto a box and back", "lift"], ["Horizontal mug", "Move a mug side to side", ""], ["Sip from mug", "Bring mug to mouth and hold", "lift"], ["Quick twist mug", "Fast forearm rotation and return", "pour"], ["Slow pour", "Slow controlled pour; warns if too fast", "pour"], ["Walk with mug", "Walk 10 s keeping the mug level", ""], ["Unlock with key", "Rotate key clockwise and back", "lock"], ["Turn doorknob", "Rotate knob clockwise and back", "lock"], ["Phone number", "Type a number quickly and accurately", ""], ["Quick tap", "Tap circles fast with several fingers", ""]] },
+  { sys: "FitMi", kind: "Two motion-sensing pucks + computer game · Flint Rehab", ev: "In a randomized trial in subacute stroke, FitMi reduced arm impairment more than a paper home-exercise book. It has 40 exercises across hands, arms, trunk and legs with 10 difficulty levels.", full: false,
+    note: "Flint names about 20 of the 40 exercises publicly; the full list is in the trial's supplement.",
+    rows: [["Diagonal reach", "Arm and shoulder", "lift"], ["Object rotation", "Forearm", "sort"], ["Wrist flexion", "Wrist", "maze"], ["Gross grasp", "Hand", ""], ["Seated twists", "Trunk", ""], ["Oblique crunches", "Trunk", ""], ["Seated marching", "Hip", ""], ["Ankle dorsiflexion", "Ankle", ""], ["Straight push", "Arm", ""], ["Pushing movement", "Arm", ""], ["Weighted bicep curl", "Elbow", ""], ["Open arm movement", "Shoulder", "lift"], ["Side arm raise", "Shoulder", "lift"], ["Palm up and down", "Forearm rotation", "pour"], ["Wrist bend", "Wrist", "maze"], ["Grip and release", "Hand", ""], ["Pen spin", "Fingers", ""], ["Finger curl", "Fingers", ""], ["Toe taps", "Core", ""], ["Forward punches", "Core and arm", ""], ["Knee to chest", "Core and hip", ""], ["Trunk rotation", "Core", ""], ["Knee extension", "Knee", ""], ["Hip adductions", "Hip", ""]] },
+  { sys: "RAPAEL Smart Glove", kind: "Sensor glove + games · Neofect", ev: "Tested in a Stanford phase 2 randomized trial (vREHAB) and a 20-patient unsupervised home study. Games are built on daily activities and adapt their difficulty.", full: false,
+    rows: [["Forearm supination and pronation", "Turning the palm up and down", "pour"], ["Wrist flexion and extension", "Bending the wrist forward and back", "maze"], ["Wrist radial and ulnar deviation", "Tilting the wrist side to side", "maze"], ["Finger flexion and extension", "Opening and closing the hand", ""], ["Pouring", "Daily-activity game", "pour"], ["Cutting vegetables", "Daily-activity game", ""], ["Turning book pages", "Daily-activity game", ""], ["Darts, tennis, house painting", "Arcade-style games", ""]] },
+  { sys: "MusicGlove", kind: "Sensor glove + rhythm game · Flint Rehab", ev: "In a 12-person trial, people improved their ability to grasp small objects more than with conventional hand therapy, and found it more motivating. Sessions reach about 2,000 movements in 45 minutes.", full: true,
+    rows: [["Pincer grip", "Thumb to index fingertip", ""], ["Key-pinch grip", "Thumb to side of index finger", ""], ["Finger–thumb opposition", "Thumb to each fingertip", ""]] },
+  { sys: "REAL System", kind: "Clinic virtual reality · Penumbra", ev: "FDA-listed VR system used in hospitals with therapist supervision. It records range of motion each session. Individual activity names are proprietary.", full: false,
+    rows: [["Shoulder range of motion and flexion", "Proximal arm activities", "lift"], ["Wrist and forearm range of motion", "Distal arm activities", "pour"], ["Core and balance", "Full-body sensor version", ""], ["Daily-living practice (grocery shopping, self-care)", "Functional activities", ""], ["Cognitive stimulation", "Thinking tasks", "simon"]] },
+  { sys: "Constant Therapy", kind: "Speech, language and cognitive app · Boston University spinout", ev: "In 3,686 people with post-stroke aphasia, home users mastered tasks in a median of 6 days versus 12 for clinic users. Therapists assign tasks and see results remotely.", full: false,
+    note: "The app has 80+ task types inside these 17 categories, each with levels 1–10.",
+    rows: [["Attention", "Cognitive", "simon"], ["Auditory memory", "Cognitive", ""], ["Visual memory", "Cognitive", "lock"], ["Analytical reasoning", "Cognitive", "sort"], ["Quantitative reasoning", "Cognitive", ""], ["Arithmetic", "Cognitive", ""], ["Visuospatial processing", "Cognitive", "maze"], ["Auditory comprehension", "Language", ""], ["Word retrieval", "Language", ""], ["Naming", "Language", ""], ["Repetition", "Language", ""], ["Oral reading", "Language", ""], ["Sentence production", "Language", ""], ["Talking about everyday things", "Language", ""], ["Reading comprehension", "Language", "sort"], ["Spelling", "Language", ""], ["Phonological processing", "Language", ""]] },
+  { sys: "Reha@Stroke", kind: "Smartphone-only serious game · TU Wien", ev: "Designed with a therapist and 13 stroke patients. It uses only the phone's built-in sensors, with levels for movement, gesture and touch exercises.", full: true,
+    rows: [["Movement exercises", "Arm moves while holding the phone", "lift"], ["Gesture exercises", "Wrist and forearm gestures", "simon"], ["Touch exercises", "Finger taps and swipes", ""]] },
+];
+function renderEvidence() {
+  const nameOf = (id) => (ACTIVITIES.find((a) => a.id === id) || {}).name;
+  $("evgrid").innerHTML = EVIDENCE.map((s) => `
+    <article class="sys">
+      <header><h2>${s.sys}</h2><span class="kind">${s.kind}</span></header>
+      <p class="evidence">${s.ev}</p>
+      ${s.note ? `<p class="note">${s.note}</p>` : ""}
+      <div class="tablewrap"><table><thead><tr><th>Exercise</th><th>Movement or type</th><th>In Mend</th></tr></thead><tbody>
+      ${s.rows.map(([n, m, id]) => `<tr><td>${n}</td><td class="muted">${m}</td><td class="inmend">${id ? `<span class="tag">${nameOf(id)}</span>` : '<span class="muted">–</span>'}</td></tr>`).join("")}
+      </tbody></table></div>
+    </article>`).join("");
+}
+
+// ---------------------------------------------------------------- boot
+renderCards(); renderEvidence(); renderWeek(); renderSound();
+Input.mode = "mouse";
+Link.hosted = typeof window.Peer === "function" && /^https?:$/.test(location.protocol);
+$("pHosted").hidden = !Link.hosted; $("pArtifact").hidden = Link.hosted;
+if (Link.hosted) startPeer();
+renderConn();
+window.addEventListener("resize", () => drawGlyphs());
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { readTheme(); drawGlyphs(); });
+window.__mend = { Game, Input }; // read by the automated tests
+requestAnimationFrame(frame);
+})();
+</script>
+
+</body>
+</html>

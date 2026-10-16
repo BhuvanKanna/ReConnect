@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0f1a29">
+<title>Mend Controller</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+/* Layout: one column, one task per screen, thumb-sized controls. Dark so it reads well strapped to an arm. */
+:root {
+  --bg: #0f1a29; --surface: #182638; --line: #2b3c52; --ink: #edf2f7; --muted: #9db0c4;
+  --accent: #f2b04e; --go: #3cc39b; --warn: #ff6b5f;
+  --display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", sans-serif;
+  --body: "Atkinson Hyperlegible", "Verdana", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink); font: 18px/1.45 var(--body);
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  -webkit-tap-highlight-color: transparent; overscroll-behavior: none; touch-action: manipulation;
+}
+[hidden] { display: none !important; }
+.wrap { max-width: 460px; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { font: 800 22px/1 var(--display); letter-spacing: -0.01em; }
+.brand span { color: var(--accent); }
+.pill { font: 500 13px/1 var(--mono); padding: 8px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--muted); display: inline-flex; gap: 8px; align-items: center; }
+.pill i { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); display: block; }
+.pill.on { color: var(--go); border-color: color-mix(in srgb, var(--go) 50%, var(--line)); }
+.pill.on i { background: var(--go); box-shadow: 0 0 0 4px color-mix(in srgb, var(--go) 25%, transparent); }
+.pill.bad { color: var(--warn); } .pill.bad i { background: var(--warn); }
+h1 { font: 700 30px/1.1 var(--display); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+p { margin: 0; color: var(--muted); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 20px; display: flex; flex-direction: column; gap: 12px; }
+button { font: 700 20px/1 var(--body); border: 0; border-radius: 16px; padding: 20px; min-height: 64px; cursor: pointer; width: 100%; }
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+.primary { background: var(--accent); color: #1c1203; }
+.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.code-display { font: 600 44px/1 var(--mono); letter-spacing: 0.18em; text-align: center; padding: 8px 0; color: var(--ink); min-height: 52px; }
+.keys { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.keys button { font: 600 26px/1 var(--mono); background: var(--surface); color: var(--ink); border: 1px solid var(--line); min-height: 64px; padding: 0; }
+.err { color: var(--warn); font-weight: 700; }
+.level { position: relative; aspect-ratio: 1; width: min(78vw, 340px); margin: 0 auto; border-radius: 50%; border: 2px solid var(--line);
+  background: radial-gradient(circle, color-mix(in srgb, var(--surface) 60%, var(--bg)) 0 60%, var(--surface) 61% 100%); }
+.level::before, .level::after { content: ""; position: absolute; background: var(--line); }
+.level::before { left: 50%; top: 8%; bottom: 8%; width: 1px; }
+.level::after { top: 50%; left: 8%; right: 8%; height: 1px; }
+.ring { position: absolute; inset: 35%; border-radius: 50%; border: 2px dashed color-mix(in srgb, var(--accent) 60%, transparent); }
+.bubble { position: absolute; width: 22%; aspect-ratio: 1; left: 39%; top: 39%; border-radius: 50%; background: var(--accent);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 60%, transparent); will-change: transform; }
+.readout { display: flex; justify-content: center; gap: 22px; font: 500 16px/1 var(--mono); color: var(--muted); }
+.readout b { color: var(--ink); font-weight: 500; }
+.status h2 { font: 700 24px/1.15 var(--display); margin: 0; text-wrap: balance; }
+.status .task { font: 500 13px/1 var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--accent); }
+.status.good { border-color: color-mix(in srgb, var(--go) 60%, var(--line)); }
+.status.warn { border-color: color-mix(in srgb, var(--warn) 60%, var(--line)); }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.row button { font-size: 17px; min-height: 56px; padding: 14px; }
+.tip { font-size: 15px; }
+ol.tip { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap: 6px; }
+@media (prefers-reduced-motion: reduce) { .bubble { transition: none; } }
+</style>
+<script src="vendor/peerjs.min.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand">Mend<span>.</span></div>
+    <div id="pill" class="pill"><i></i><span id="pillText">Not paired</span></div>
+  </header>
+
+  <!-- Step 1: enter the code (skipped when the QR code carried it) -->
+  <section id="vCode" hidden>
+    <div class="card">
+      <h1>Enter the code on your computer screen</h1>
+      <div id="codeDisplay" class="code-display" aria-live="polite">······</div>
+      <p id="codeErr" class="err" hidden></p>
+      <div class="keys" id="keys"></div>
+    </div>
+  </section>
+
+  <!-- Step 2: allow motion -->
+  <section id="vMotion" hidden>
+    <div class="card">
+      <h1>Let Mend read your phone's tilt</h1>
+      <p>Your phone becomes the controller. Mend only reads which way the phone is tilted. Nothing is recorded on the phone.</p>
+      <ol class="tip">
+        <li>Sit in a sturdy chair with your forearm resting on a table.</li>
+        <li>Hold the phone flat in your affected hand, screen up, or strap it to your forearm.</li>
+      </ol>
+      <p id="motionErr" class="err" hidden></p>
+      <button id="btnMotion" class="primary">Start motion</button>
+    </div>
+  </section>
+
+  <!-- Step 3: live controller -->
+  <section id="vLive" hidden style="display:flex;flex-direction:column;gap:18px">
+    <div id="statusCard" class="card status" aria-live="polite">
+      <div class="task" id="stTask">Paired</div>
+      <h2 id="stTitle">Choose an activity on your computer</h2>
+      <p id="stText">Keep this screen open. It stays awake while you play.</p>
+    </div>
+    <div class="level" aria-hidden="true"><div class="ring"></div><div class="bubble" id="bubble"></div></div>
+    <div class="readout"><span>Pitch <b id="rdP">0°</b></span><span>Roll <b id="rdR">0°</b></span></div>
+    <div class="row">
+      <button id="btnRecenter" class="ghost">Set this as center</button>
+      <button id="btnLeave" class="ghost">Disconnect</button>
+    </div>
+    <p id="noData" class="err" hidden>No motion data is arriving. Check that motion access is allowed for this site, then reload.</p>
+  </section>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const show = (id) => ["vCode", "vMotion", "vLive"].forEach((v) => ($(v).hidden = v !== id));
+
+  let code = (new URLSearchParams(location.search).get("c") || location.hash.replace("#", "") || "").replace(/\D/g, "").slice(0, 6);
+  let peer = null, conn = null, paired = false, joinTimer = null, motionOn = false, lastSample = 0, wakeLock = null, reconnectTimer = null;
+  const ori = { b: 0, g: 0, a: 0, mag: 0, t: 0 };
+  let center = { b: 0, g: 0 };
+
+  function setPill(state, text) {
+    $("pill").className = "pill " + (state || "");
+    $("pillText").textContent = text;
+  }
+
+  // ---------- code entry ----------
+  function renderCode() {
+    $("codeDisplay").textContent = (code + "······").slice(0, 6);
+  }
+  const keys = ["1","2","3","4","5","6","7","8","9","Clear","0","Back"];
+  for (const k of keys) {
+    const b = document.createElement("button");
+    b.textContent = k;
+    if (k.length > 1) b.style.fontSize = "17px";
+    b.addEventListener("click", () => {
+      $("codeErr").hidden = true;
+      if (k === "Clear") code = "";
+      else if (k === "Back") code = code.slice(0, -1);
+      else if (code.length < 6) code += k;
+      renderCode();
+      if (code.length === 6) connect();
+    });
+    $("keys").appendChild(b);
+  }
+
+  // ---------- connection ----------
+  // The computer registered "mend-rehab-<code>" with the free PeerJS broker; connect to it
+  // peer-to-peer over WebRTC (PeerJS falls back to a TURN relay when networks block direct links).
+  const PEER_PREFIX = "mend-rehab-";
+  const send = (obj) => { if (conn && conn.open) { try { conn.send(obj); } catch (_) {} } };
+
+  function onMessage(m) {
+    if (!m || typeof m !== "object") return;
+    if (m.type === "status") setStatus(m);
+    else if (m.type === "calibrated") center = { b: ori.b, g: ori.g };
+    else if (m.type === "haptic") { try { navigator.vibrate && navigator.vibrate(m.pattern || 60); } catch (_) {} }
+    else if (m.type === "replaced") {
+      paired = false; clearTimeout(reconnectTimer);
+      setPill("bad", "Another phone took over");
+      setStatus({ task: "Disconnected", title: "Another phone paired with this screen", text: "Scan the QR code again to switch back.", tone: "warn" });
+    }
+  }
+
+  function badCode(msg) {
+    paired = false; clearTimeout(joinTimer); clearTimeout(reconnectTimer);
+    setPill("bad", "Not paired");
+    show("vCode");
+    $("codeErr").textContent = msg; $("codeErr").hidden = false;
+    code = ""; renderCode();
+    history.replaceState(null, "", location.pathname);
+  }
+
+  function dial() {
+    if (!peer || peer.destroyed || !peer.open) return;
+    if (conn) { try { conn.close(); } catch (_) {} }
+    const c = peer.connect(PEER_PREFIX + code, { serialization: "json", reliable: true });
+    conn = c;
+    clearTimeout(joinTimer);
+    joinTimer = setTimeout(() => { if (conn === c && !c.open) { if (paired) retry(); else badCode("Couldn't reach the computer. Check that Mend is open on it and both devices are online."); } }, 15000);
+    c.on("open", () => {
+      clearTimeout(joinTimer);
+      paired = true;
+      setPill("on", "Paired · " + code);
+      history.replaceState(null, "", location.pathname + "?c=" + code);
+      if (!motionOn) show("vMotion"); else show("vLive");
+    });
+    c.on("data", onMessage);
+    const lost = () => {
+      if (conn !== c || !paired) return;
+      setPill("bad", "Reconnecting…");
+      setStatus({ task: "Waiting", title: "Lost the computer", text: "Keep Mend open on the computer. This phone reconnects by itself.", tone: "warn" });
+      retry();
+    };
+    c.on("close", lost); c.on("error", lost);
+  }
+  function retry() { clearTimeout(reconnectTimer); reconnectTimer = setTimeout(() => { if (peer && peer.open) dial(); else connect(); }, 2500); }
+
+  function connect() {
+    clearTimeout(reconnectTimer);
+    setPill("", "Connecting…");
+    if (typeof window.Peer !== "function") { badCode("The pairing library didn't load. Check the internet connection and reload."); return; }
+    if (peer && !peer.destroyed && peer.open) { dial(); return; }
+    if (peer) { try { peer.destroy(); } catch (_) {} }
+    peer = new window.Peer(Object.assign({ debug: 0 }, window.MEND_PEER_OPTS || {}));
+    peer.on("open", dial);
+    peer.on("disconnected", () => { try { peer.reconnect(); } catch (_) {} });
+    peer.on("error", (e) => {
+      if (e.type === "peer-unavailable") { if (paired) retry(); else badCode("No computer is showing code " + code + ". Check the number on the screen."); }
+      else if (["network", "server-error", "socket-error", "socket-closed"].includes(e.type)) { setPill("bad", "Offline"); retry(); }
+    });
+  }
+
+  function setStatus(m) {
+    $("stTask").textContent = m.task || "";
+    $("stTitle").textContent = m.title || "";
+    $("stText").textContent = m.text || "";
+    $("statusCard").className = "card status " + (m.tone || "");
+  }
+
+  // ---------- motion ----------
+  function onOrientation(e) {
+    if (e.beta == null || e.gamma == null) return;
+    ori.b = e.beta; ori.g = e.gamma; ori.a = e.alpha || 0; ori.t = performance.now();
+  }
+  function onMotion(e) {
+    const a = e.acceleration || e.accelerationIncludingGravity;
+    if (!a || a.x == null) return;
+    ori.mag = Math.hypot(a.x, a.y, a.z || 0);
+  }
+
+  async function startMotion() {
+    $("motionErr").hidden = true;
+    if (!window.isSecureContext) {
+      $("motionErr").textContent = "Phones only share motion over https. Open the https:// address from the QR code instead.";
+      $("motionErr").hidden = false;
+      return;
+    }
+    try {
+      if (typeof DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission === "function") {
+        const r = await DeviceOrientationEvent.requestPermission();
+        if (r !== "granted") throw new Error("denied");
+      }
+      if (typeof DeviceMotionEvent !== "undefined" && typeof DeviceMotionEvent.requestPermission === "function") {
+        try { await DeviceMotionEvent.requestPermission(); } catch (_) {}
+      }
+    } catch (_) {
+      $("motionErr").textContent = "Motion access was turned down. On iPhone: close this tab, reopen the link, and tap Allow.";
+      $("motionErr").hidden = false;
+      return;
+    }
+    window.addEventListener("deviceorientation", onOrientation);
+    window.addEventListener("devicemotion", onMotion);
+    motionOn = true;
+    requestWake();
+    show("vLive");
+    setTimeout(() => { $("noData").hidden = ori.t !== 0; }, 2500);
+  }
+
+  async function requestWake() {
+    try { if ("wakeLock" in navigator) wakeLock = await navigator.wakeLock.request("screen"); } catch (_) {}
+  }
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && motionOn) requestWake(); });
+
+  // Stream ~25 samples a second; the console smooths them.
+  setInterval(() => {
+    if (!motionOn || !paired || !conn || !conn.open || ori.t === 0 || ori.t === lastSample) return;
+    lastSample = ori.t;
+    $("noData").hidden = true;
+    send({ type: "m", b: +ori.b.toFixed(2), g: +ori.g.toFixed(2), a: +ori.a.toFixed(1), mag: +ori.mag.toFixed(2) });
+  }, 40);
+
+  // Bubble level (pure display, relative to the phone's own center).
+  function draw() {
+    if (motionOn && ori.t) {
+      const p = ori.b - center.b, r = ori.g - center.g;
+      const clamp = (v) => Math.max(-45, Math.min(45, v));
+      const x = clamp(r) / 45 * 150, y = -clamp(p) / 45 * 150; // percent of bubble size
+      $("bubble").style.transform = `translate(${x}%, ${y}%)`;
+      $("rdP").textContent = (p >= 0 ? "+" : "") + Math.round(p) + "°";
+      $("rdR").textContent = (r >= 0 ? "+" : "") + Math.round(r) + "°";
+    }
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+
+  $("btnMotion").addEventListener("click", startMotion);
+  $("btnRecenter").addEventListener("click", () => {
+    center = { b: ori.b, g: ori.g };
+    send({ type: "recenter" });
+  });
+  $("btnLeave").addEventListener("click", () => {
+    paired = false;
+    clearTimeout(reconnectTimer); try { conn && conn.close(); } catch (_) {}
+    code = ""; renderCode();
+    history.replaceState(null, "", location.pathname);
+    setPill("", "Not paired");
+    show("vCode");
+  });
+
+  renderCode();
+  if (code.length === 6) { show("vMotion"); connect(); } else show("vCode");
+})();
+</script>
+</body>
+</html>
