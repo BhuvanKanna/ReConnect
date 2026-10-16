@@ -4,7 +4,7 @@ Phone-controlled stroke rehab activities. Open Mend on a computer, scan the QR c
 and play six short activities by tilting the phone. Each session records repetitions, range of motion
 and movement smoothness, and saves it to a log you can share with a therapist.
 
-**Live site:** _not deployed yet_
+**Live site:** https://bhuvankanna.github.io/ReConnect/
 
 Built as a prototype for the Sling Health neuroscience team at UT Austin. Not a medical device.
 
