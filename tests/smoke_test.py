@@ -64,7 +64,8 @@ with sync_playwright() as p:
     con.click("#segLevel button[data-v='2']")
 
     # ---- simulated phone
-    mob = desk.browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
+    mob = desk.browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True,
+                                   permissions=["accelerometer", "gyroscope", "magnetometer"])
     if init:
         mob.add_init_script(init)
     ph = mob.new_page()
