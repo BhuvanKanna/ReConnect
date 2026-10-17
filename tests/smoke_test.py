@@ -379,6 +379,13 @@ with sync_playwright() as p:
             time.sleep(0.12)
         family("scanning", ["cancel", "lookleft", "bisect"], "cancel", cancel_step, 90)
 
+        def quick_step():
+            d = dbg()
+            if d["shown"]:
+                stage_click(*center(d["rect"]))
+            time.sleep(0.08)
+        family("attention", ["quick", "gonogo", "watch", "twoatonce", "trail"], "quick", quick_step, 90)
+
         if not ONLY:
             con.click("#toLog")
             check(con.locator("#logBody tbody tr").count() >= 6, "session log lists the sessions")
