@@ -6,7 +6,6 @@ const { Input, angles, smoothInput, Link, sendPhone, pushStatus, renderConn, LEV
 const stageWrap = $("stageWrap");
 const show = (...a) => RC.show(...a);
 const goHome = (...a) => RC.goHome(...a);
-const renderWeek = (...a) => RC.renderWeek(...a);
 const canvas = $("stage"), g = canvas.getContext("2d");
 let W = 800, H = 500, DPR = 1;
 function resize() {
@@ -22,16 +21,37 @@ function fx(kind) {
   sendPhone({ type: "haptic", pattern: kind === "error" ? [120, 60, 120] : kind === "big" ? [60, 40, 60, 40, 120] : [50] });
 }
 
-function openActivity(def) {
-  Game.current = { def }; Game.inst = null; Game.state = "setup";
+// Settings come from the provider's plan item when there is one, otherwise from what this
+// patient last used for the exercise, otherwise from the exercise's defaults.
+function openActivity(def, opts = {}) {
+  const per = (settings.per = settings.per || {});
+  const base = Object.assign({}, def.defaults, per[def.id] || {});
+  const item = opts.item || null;
+  const pick = (k) => (item && item[k] != null ? item[k] : base[k]);
+  Game.current = { def, item, cfg: { reps: pick("reps"), level: pick("level"), durationS: pick("durationS") } };
+  Game.inst = null; Game.state = "setup";
   $("pTitle").textContent = def.name; $("pMove").textContent = def.movement;
   show("vPlay"); resize(); renderSetup(); pushStatus(true);
 }
 
-function settingsObj() { return { amp: LEVEL_AMP[settings.level], level: settings.level, reps: settings.reps, side: settings.side }; }
+function patientSide() {
+  const db = RC.db, pt = db && db.patients().find((p) => p.id === db.activePatientId());
+  return pt ? pt.side : settings.side;
+}
+function settingsObj() {
+  const c = Game.current.cfg;
+  return { amp: LEVEL_AMP[c.level], level: c.level, reps: c.reps, durationS: c.durationS, side: patientSide() };
+}
+function setupControls() {
+  const d = Game.current.def, c = Game.current.cfg, locked = !!Game.current.item, p = d.params || {};
+  const lvl = (v) => (d.control === "tilt" ? `${LEVEL_AMP[v]}°` : ["Easy", "Medium", "Hard"][v - 1] || v);
+  const seg = (id, key, vals, label, fmt) => (vals ? `<div class="field"><label>${label}</label><div class="seg" id="${id}" data-key="${key}">${vals.map((v) => `<button data-v="${v}" aria-pressed="${v === c[key]}"${locked ? " disabled" : ""}>${fmt(v)}</button>`).join("")}</div></div>` : "");
+  return `<div class="setctl">${seg("setLevel", "level", p.level, d.control === "tilt" ? "Range target" : "Level", lvl)}${seg("setReps", "reps", p.reps, "Repetitions", String)}${seg("setDur", "durationS", p.durationS, "Time", fmtTime)}</div>
+    ${locked ? '<p class="note assigned">Set by your therapist for today.</p>' : ""}`;
+}
 
 function renderSetup() {
-  const d = Game.current.def; const sideTxt = settings.side === "left" ? "left" : "right";
+  const d = Game.current.def; const sideTxt = patientSide() === "left" ? "left" : "right";
   const phoneReady = Input.phone && !settings.mouse;
   $("overlay").hidden = false; $("banner").hidden = true;
   $("sheet").innerHTML = `
@@ -40,7 +60,8 @@ function renderSetup() {
     <p>${d.desc}</p>
     <p class="muted"><b>Phone:</b> ${d.mount.replace("affected", sideTxt + " (affected)")}</p>
     <ol class="howto">${d.how.map((h) => `<li>${h}</li>`).join("")}</ol>
-    <p class="note">Target ${LEVEL_AMP[settings.level]}° of movement · ${settings.reps} repetitions · Sit in a sturdy chair. Stop if anything hurts.</p>
+    ${setupControls()}
+    <p class="note">Sit in a sturdy chair. Stop if anything hurts.</p>
     <div class="actions">
       <button class="btn amber" id="goPhone" ${phoneReady ? "" : "disabled"}>Start with phone</button>
       <button class="btn alt" id="goMouse">${phoneReady ? "Use mouse instead" : "Start in mouse mode"}</button>
@@ -48,6 +69,12 @@ function renderSetup() {
     ${phoneReady ? "" : `<p class="note">${Link.hosted ? "Tap the phone button at the top right and scan the QR code to connect your phone." : "Mouse mode: move the pointer over the stage (or use the arrow keys). Up means raise or tip the top edge up."}</p>`}`;
   $("goPhone").onclick = () => { Input.mode = "phone"; startCalibration(); };
   $("goMouse").onclick = () => { Input.mode = "mouse"; renderConn(); begin(); };
+  $("sheet").querySelectorAll(".setctl .seg").forEach((el) => el.addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-v]"); if (!b || b.disabled) return;
+    Game.current.cfg[el.dataset.key] = Number(b.dataset.v);
+    settings.per[d.id] = Object.assign({}, Game.current.cfg); saveSettings();
+    renderSetup();
+  }));
 }
 
 function startCalibration() {
@@ -88,19 +115,32 @@ function resume() { Game.state = "play"; $("overlay").hidden = true; pushStatus(
 let flashT = 0;
 function flash(title, text, tone) { Game.banner = { title, text, tone }; flashT = performance.now() + 1600; }
 
-function finish() {
-  Game.state = "results";
+// Build and save the session; `assigned` says whether it filled one of today's plan items.
+function record(completed) {
   const def = Game.current.def, inst = Game.inst, S = inst.S;
   const a = analyze(Game.rec, inst.reps());
   const own = inst.stats();
-  const durationS = (performance.now() - Game.t0) / 1000;
   const entry = {
     at: new Date().toISOString(), id: def.id, name: def.name, movement: def.movement, side: S.side, targetDeg: S.amp,
-    reps: inst.reps(), goal: inst.goal(), seconds: Math.round(durationS), input: Input.mode,
+    reps: inst.reps(), goal: inst.goal(), level: S.level, targetReps: S.reps, durationS: S.durationS,
+    seconds: Math.round((performance.now() - Game.t0) / 1000), input: Input.mode,
     pitch: a.pitch, roll: a.roll, peaksPerRep: a.peaksPerRep, activeS: Math.round(a.activeS),
     extra: own.map(([k, v]) => [k, String(v)]),
   };
-  const log = store.get("mend.log", []); log.push(entry); store.set("mend.log", log.slice(-500));
+  const db = RC.db, P = RC.plan, pid = db.activePatientId(), key = P.dateKey(new Date());
+  const todays = db.sessions(pid).filter((s) => P.sessionDay(s) === key);
+  Object.assign(entry, { patientId: pid, completed });
+  entry.assigned = completed && P.matchDay(P.itemsFor(db.plan(pid), key), todays.concat(entry)).assignedAt.has(entry.at);
+  db.addSession(entry);
+  return { entry, a, own };
+}
+// Test hook: end the running exercise now (recorded as not completed) and return to the library.
+Game.finishNow = function () { if (Game.inst && Game.state === "play") record(false); goHome(); };
+
+function finish() {
+  Game.state = "results";
+  const def = Game.current.def;
+  const { entry, a, own } = record(true);
   fx("big");
   $("overlay").hidden = false; $("banner").hidden = true;
   const fmtR = (r) => r ? `${r[0] > 0 ? "+" : ""}${r[0]}° to ${r[1] > 0 ? "+" : ""}${r[1]}°` : "–";
@@ -116,12 +156,12 @@ function finish() {
     <span class="eyebrow">Session complete · ${entry.input === "mouse" ? "mouse mode" : "phone"}</span>
     <h2>${def.name}: ${entry.reps} repetitions in ${fmtTime(entry.seconds)}</h2>
     <div class="stats">${stats.map(([k, v]) => `<div class="stat"><b>${v}</b><span>${k}</span></div>`).join("")}</div>
-    <p class="note">Smoothness counts speed peaks per repetition, as mRehab does with its jerk score. Fewer peaks means a smoother, more controlled movement. Saved to the session log.</p>
-    <div class="actions"><button class="btn amber" id="again">Play again</button><button class="btn alt" id="home">Back to activities</button></div>`;
+    <p class="note">${entry.assigned ? "This counts toward today's plan." : "Saved as bonus practice."} Smoothness counts speed peaks per repetition, as mRehab does with its jerk score; fewer peaks means a smoother movement.</p>
+    <div class="actions"><button class="btn" id="home">Back to today</button><button class="btn alt" id="again">Play again</button></div>`;
   $("again").onclick = () => renderSetupAgain();
   $("home").onclick = () => goHome();
   pushStatus(true);
-  renderWeek();
+  if (RC.patient) RC.patient.render();
 }
 function renderSetupAgain() { Game.state = "setup"; renderSetup(); pushStatus(true); }
 

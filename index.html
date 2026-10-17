@@ -21,7 +21,6 @@
     <div class="brand"><b>ReConnect<span>.</span></b></div>
     <nav class="tabs" role="tablist" aria-label="Sections" id="navPatient">
       <button role="tab" id="tabHome" aria-selected="true" data-view="vPatient">Today</button>
-      <button role="tab" id="tabLog" aria-selected="false" data-view="vLog">Session log</button>
       <button role="tab" id="tabAbout" aria-selected="false" data-view="vAbout">About these exercises</button>
     </nav>
     <div class="topright">
@@ -59,29 +58,12 @@
 
   <main id="main">
   <!-- ===== Patient home ===== -->
-  <section id="vPatient" class="home">
-    <div class="lib">
-      <div class="intro">
-        <h1>Your exercises</h1>
-        <p class="muted">Each one trains a movement used in published home-rehab programs and adds the session to a log your therapist can read.</p>
-      </div>
-      <div class="settings" role="group" aria-label="Session settings">
-        <div class="field"><label>Affected side</label>
-          <div class="seg" id="segSide"><button data-v="left">Left</button><button data-v="right">Right</button></div></div>
-        <div class="field"><label>Range target</label>
-          <div class="seg" id="segLevel"><button data-v="1">15°</button><button data-v="2">30°</button><button data-v="3">45°</button></div></div>
-        <div class="field"><label>Repetitions</label>
-          <div class="seg" id="segReps"><button data-v="6">6</button><button data-v="10">10</button><button data-v="15">15</button></div></div>
-      </div>
-      <div class="cards" id="cards"></div>
+  <section id="vPatient">
+    <div id="todayWrap"></div>
+    <div class="phome">
+      <div class="library" id="library"></div>
+      <aside class="side"><div class="panel" id="myProgress"></div></aside>
     </div>
-    <aside class="side">
-      <div class="panel">
-        <h3>This week</h3>
-        <div class="week" id="week"></div>
-        <button class="btn alt" id="toLog">Open session log</button>
-      </div>
-    </aside>
   </section>
 
   <!-- ===== Provider ===== -->
@@ -150,6 +132,7 @@
 <script src="js/plan.js"></script>
 <script src="js/data.js"></script>
 <script src="js/engine.js"></script>
+<script src="js/patient.js"></script>
 <script src="js/about.js"></script>
 <script src="js/app.js"></script>
 </body>

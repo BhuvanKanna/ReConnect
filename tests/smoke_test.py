@@ -2,23 +2,25 @@
 
 Opens the computer page and a simulated phone in headless Chromium, pairs them through
 PeerJS, plays one full Lantern Lift session with simulated phone tilt, then plays every
-activity to completion in mouse mode.
+activity to completion in mouse mode, then walks the patient Today flow.
 
 Usage:
     pip install playwright && python -m playwright install chromium
     python tests/smoke_test.py                                   # serves this folder locally, public PeerJS broker
     python tests/smoke_test.py --site https://USER.github.io/REPO/   # test the deployed site
     python tests/smoke_test.py --broker localhost:9000           # use a local broker (npx peerjs --port 9000)
+    python tests/smoke_test.py --no-phone                        # skip pairing (offline runs)
 
 Exit code 0 means every check passed.
 """
-import argparse, collections, functools, http.server, json, math, os, socketserver, sys, threading, time
+import argparse, collections, datetime, functools, http.server, json, math, os, socketserver, sys, threading, time
 from playwright.sync_api import sync_playwright
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--site", help="Base URL of a deployed site. Default: serve this repo on localhost.")
 ap.add_argument("--broker", help="host:port of a local PeerJS server instead of the public one.")
 ap.add_argument("--skip-games", action="store_true", help="Only test phone pairing.")
+ap.add_argument("--no-phone", action="store_true", help="Skip the phone pairing section.")
 args = ap.parse_args()
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -26,17 +28,23 @@ failures = []
 
 
 def check(cond, msg):
-    print(("PASS " if cond else "FAIL ") + msg)
+    print(("PASS " if cond else "FAIL ") + msg, flush=True)
     if not cond:
         failures.append(msg)
+
+
+class Quiet(http.server.SimpleHTTPRequestHandler):
+    def log_message(self, *a):
+        pass
 
 
 if args.site:
     base = args.site.rstrip("/") + "/"
 else:
-    handler = functools.partial(http.server.SimpleHTTPRequestHandler, directory=ROOT)
-    handler.log_message = lambda *a: None
-    srv = socketserver.TCPServer(("127.0.0.1", 0), handler)
+    # Threaded: the page loads ~17 scripts in parallel, which a single-threaded server refuses.
+    socketserver.ThreadingTCPServer.daemon_threads = True
+    socketserver.ThreadingTCPServer.request_queue_size = 64
+    srv = socketserver.ThreadingTCPServer(("127.0.0.1", 0), functools.partial(Quiet, directory=ROOT))
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     base = f"http://localhost:{srv.server_address[1]}/"
 
@@ -56,60 +64,69 @@ with sync_playwright() as p:
     con = desk.new_page()
     con.on("pageerror", lambda e: errors.append("computer: " + str(e)))
     con.goto(base)
-    con.wait_for_function("/^\\d{6}$/.test(document.getElementById('pCode').textContent.trim())", timeout=20000)
-    code = con.inner_text("#pCode").strip()
-    check(True, f"computer registered pairing code {code}")
-    check(con.locator("#qrBox svg").count() == 1, "QR code rendered")
-    con.click("#segReps button[data-v='6']")
-    con.click("#segLevel button[data-v='2']")
+    con.evaluate("window.__mend.data.resetDemo(); window.__mend.data.setRole('patient'); window.__mend.data.setActivePatient('p_mei')")  # no plan: free play keeps its own settings
+    con.reload()
+
+    def set_reps(n):
+        btn = con.locator(f"#setReps button[data-v='{n}']")
+        if btn.count() and btn.is_enabled():
+            btn.click()
 
     # ---- simulated phone
-    mob = desk.browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True,
-                                   permissions=["accelerometer", "gyroscope", "magnetometer"])
-    if init:
-        mob.add_init_script(init)
-    ph = mob.new_page()
-    ph.on("pageerror", lambda e: errors.append("phone: " + str(e)))
-    ph.goto(base + f"phone.html?c={code}")
-    ph.wait_for_selector("#vMotion:not([hidden])", timeout=10000)
-    ph.wait_for_function("document.getElementById('pillText').textContent.startsWith('Paired')", timeout=20000)
-    check(True, "phone paired with computer")
-    ph.click("#btnMotion")
-    ph.wait_for_selector("#vLive:not([hidden])", timeout=5000)
+    if not args.no_phone:
+        con.wait_for_function("/^\\d{6}$/.test(document.getElementById('pCode').textContent.trim())", timeout=20000)
+        code = con.inner_text("#pCode").strip()
+        check(True, f"computer registered pairing code {code}")
+        check(con.locator("#qrBox svg").count() == 1, "QR code rendered")
+        mob = desk.browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True,
+                                       permissions=["accelerometer", "gyroscope", "magnetometer"])
+        if init:
+            mob.add_init_script(init)
+        ph = mob.new_page()
+        ph.on("pageerror", lambda e: errors.append("phone: " + str(e)))
+        ph.goto(base + f"phone.html?c={code}")
+        ph.wait_for_selector("#vMotion:not([hidden])", timeout=10000)
+        ph.wait_for_function("document.getElementById('pillText').textContent.startsWith('Paired')", timeout=20000)
+        check(True, "phone paired with computer")
+        ph.click("#btnMotion")
+        ph.wait_for_selector("#vLive:not([hidden])", timeout=5000)
 
-    def orient(beta, gamma):
-        ph.evaluate(f"window.dispatchEvent(new DeviceOrientationEvent('deviceorientation',{{alpha:0,beta:{beta},gamma:{gamma}}}))")
+        def orient(beta, gamma):
+            ph.evaluate(f"window.dispatchEvent(new DeviceOrientationEvent('deviceorientation',{{alpha:0,beta:{beta},gamma:{gamma}}}))")
 
-    orient(5, 0)
-    con.wait_for_function("document.getElementById('connText').textContent === 'Phone connected'", timeout=8000)
-    check(True, "computer receives phone motion")
+        orient(5, 0)
+        con.wait_for_function("document.getElementById('connText').textContent === 'Phone connected'", timeout=8000)
+        check(True, "computer receives phone motion")
 
-    con.click(".card[data-id='lift']")
-    con.wait_for_selector("#goPhone:not([disabled])", timeout=5000)
-    con.click("#goPhone")
-    t_end = time.time() + 3.6
-    while time.time() < t_end:
-        orient(10, 0); time.sleep(0.05)
+        con.click(".tile[data-id='lift']")
+        set_reps(6)
+        con.wait_for_selector("#goPhone:not([disabled])", timeout=5000)
+        con.click("#goPhone")
+        t_end = time.time() + 3.6
+        while time.time() < t_end:
+            orient(10, 0); time.sleep(0.05)
 
-    def ramp(a, b_, dur):
-        n = int(dur / 0.04)
-        for i in range(n + 1):
-            orient(a + (b_ - a) * (0.5 - 0.5 * math.cos(math.pi * i / n)), 0); time.sleep(0.04)
+        def ramp(a, b_, dur):
+            n = int(dur / 0.04)
+            for i in range(n + 1):
+                orient(a + (b_ - a) * (0.5 - 0.5 * math.cos(math.pi * i / n)), 0); time.sleep(0.04)
 
-    for _ in range(9):  # 6 reps needed; spare cycles absorb relay lag
-        ramp(10, 10, 0.7); ramp(10, 48, 1.2); ramp(48, 48, 1.8); ramp(48, 8, 1.2)
-        if con.is_visible("#again"):
-            break
-    ramp(8, 8, 1.0)
-    done = con.is_visible("#again") or con.wait_for_selector("#again", timeout=6000)
-    check(bool(done), "phone-controlled Lantern Lift session completed")
-    check("Session complete" in ph.inner_text("#stTitle"), "phone shows the session result")
-
-    # ---- every activity in mouse mode
-    if not args.skip_games:
+        for _ in range(9):  # 6 reps needed; spare cycles absorb relay lag
+            ramp(10, 10, 0.7); ramp(10, 48, 1.2); ramp(48, 48, 1.8); ramp(48, 8, 1.2)
+            if con.is_visible("#again"):
+                break
+        ramp(8, 8, 1.0)
+        done = con.is_visible("#again") or con.wait_for_selector("#again", timeout=6000)
+        check(bool(done), "phone-controlled Lantern Lift session completed")
+        check("Session complete" in ph.inner_text("#stTitle"), "phone shows the session result")
         con.click("#home")
+
+    if not args.skip_games:
+        # ---- helpers for mouse-mode play
         con.click("#conn")  # pairing drawer holds the mouse toggle
-        con.click("#useMouse")
+        if con.is_enabled("#useMouse") and not con.is_checked("#useMouse"):
+            con.click("#useMouse")
+        con.keyboard.press("Escape")
         BX = {}
 
         def setang(pitch, roll):
@@ -125,18 +142,24 @@ with sync_playwright() as p:
         title = lambda: con.evaluate("(() => { const i = window.__mend.Game.inst; return i ? i.status().title : '' })()")
         state = lambda: con.evaluate("window.__mend.Game.state")
 
-        def play(gid, step, limit):
-            if con.is_visible("#btnBack"):
-                con.click("#btnBack")
-            con.click(f".card[data-id='{gid}']")
+        def run(gid, step, limit, label=None):
+            """The setup sheet is open: start in mouse mode and play until results."""
+            set_reps(6)
             con.click("#goMouse")
             setang(0, 0); time.sleep(0.3)
             t0 = time.time()
             while state() != "results" and time.time() - t0 < limit:
                 step()
-            check(state() == "results", f"{gid} completes in mouse mode")
+            check(state() == "results", label or f"{gid} completes in mouse mode")
 
-        play("lift", lambda: (mramp(0, 0, 0, 0, 0.6), mramp(0, 0, 34, 0, 1.0), mramp(34, 0, 34, 0, 1.5), mramp(34, 0, 0, 0, 1.0)), 60)
+        def play(gid, step, limit):
+            if con.is_visible("#btnBack"):
+                con.click("#btnBack")
+            con.click(f".tile[data-id='{gid}']")
+            run(gid, step, limit)
+
+        lift_step = lambda: (mramp(0, 0, 0, 0, 0.6), mramp(0, 0, 34, 0, 1.0), mramp(34, 0, 34, 0, 1.5), mramp(34, 0, 0, 0, 1.0))
+        play("lift", lift_step, 60)
 
         cup = [0]
         def pour_step():
@@ -188,9 +211,54 @@ with sync_playwright() as p:
                 mramp(0, 0, pr[0], pr[1], 0.35); time.sleep(0.25); mramp(pr[0], pr[1], 0, 0, 0.35); time.sleep(0.25)
             else: time.sleep(0.15)
         play("simon", simon_step, 120)
+        con.click("#home")
 
-        con.click("#btnBack"); con.click("#tabLog")
+        # ---- patient Today flow
+        items = [{"exerciseId": g, "reps": 6, "level": 2, "durationS": None} for g in ("lift", "pour", "sort")]
+        con.evaluate(f"window.__mend.data.resetDemo({{ todayItems: {json.dumps(items)} }}); window.__mend.data.setActivePatient('p_ruth'); RC.patient.render()")
+        check(con.get_attribute("#todayBar", "data-state") == "progress", "Today bar shows goals in progress")
+        steps = {"lift": lift_step, "pour": pour_step, "sort": sort_step}
+        for n, gid in enumerate(("lift", "pour", "sort")):
+            con.click("#todayStart")
+            if n == 0:
+                check("Set by your therapist" in con.inner_text("#sheet"), "assigned settings are shown as set by the therapist")
+            check(con.inner_text("#pTitle") == con.evaluate(f"RC.exercise('{gid}').name"), f"Start opens the next assigned exercise ({gid})")
+            run(gid, steps[gid], 90, f"assigned {gid} completes")
+            con.click("#home")
+            check(con.get_attribute(f"#todaySteps li:nth-child({n + 1})", "data-done") == "true", f"Today step {n + 1} ticks off")
+        check(con.get_attribute("#todayBar", "data-state") == "done", "Today bar shows all done")
+        check("That's today's plan, done." in con.inner_text("#todayBar"), "all-done message is shown")
+        check("3" in con.inner_text("#myProgress"), "My progress shows today's sessions")
+        play("sort", sort_step, 60)
+        con.click("#home")
+        check(con.evaluate("window.__mend.data.sessions('p_ruth').at(-1).assigned") is False, "extra session after goals is recorded as extra")
+
+        # ---- no plan, locked tiles
+        con.select_option("#patientSel", "p_mei")
+        check(con.get_attribute("#todayBar", "data-state") == "none" and "No plan for today" in con.inner_text("#todayBar"), "patient without a plan sees 'No plan for today'")
+        con.click(".tile[data-id='sort']")
+        check(con.is_visible("#vPlay"), "library still opens exercises without a plan")
+        con.click("#btnBack")
+        con.evaluate("""RC.register({ id: "__locked", name: "Locked test", section: "trunk", safety: "standing", control: "guided",
+            movement: "test", desc: "test", mount: "", source: "test", how: ["a", "b", "c"], make: () => null }); RC.patient.render()""")
+        check(con.get_attribute(".tile[data-id='__locked']", "aria-disabled") == "true", "safety-locked tile is disabled")
+        con.click(".tile[data-id='__locked']", force=True)
+        check(not con.is_visible("#vPlay"), "locked tile does not open")
+
+        con.click("#toLog")
         check(con.locator("#logBody tbody tr").count() >= 6, "session log lists the sessions")
+
+    # ---- midnight rollover (Review Focus 1)
+    night = b.new_context(viewport={"width": 1366, "height": 900})
+    pg = night.new_page()
+    pg.on("pageerror", lambda e: errors.append("night: " + str(e)))
+    pg.clock.install(time=datetime.datetime(2026, 10, 20, 23, 59, 30))
+    pg.goto(base)
+    pg.evaluate("window.__mend.data.resetDemo(); window.__mend.data.setActivePatient('p_ruth'); RC.patient.render()")
+    before = pg.inner_text("#todayDay")
+    pg.clock.run_for(61000)
+    pg.wait_for_timeout(100)
+    check(pg.inner_text("#todayDay") != before, f"Today bar rolls over at midnight without reload ({before} -> {pg.inner_text('#todayDay')})")
 
     b.close()
 

@@ -14,34 +14,17 @@ function show(id) {
   if (id === "vLog") renderLog();
   window.scrollTo({ top: 0 });
 }
-function goHome() { Game.state = "idle"; Game.current = null; Game.inst = null; show(db.role() === "provider" ? "vProvider" : "vPatient"); pushStatus(true); }
+function goHome() {
+  Game.state = "idle"; Game.current = null; Game.inst = null;
+  const provider = db.role() === "provider";
+  if (!provider) RC.patient.render();
+  show(provider ? "vProvider" : "vPatient"); pushStatus(true);
+}
 document.querySelectorAll("nav.tabs button").forEach((b) => b.addEventListener("click", () => { if (b.dataset.view === "vPatient") goHome(); else { Game.state = "idle"; Game.current = null; Game.inst = null; show(b.dataset.view); pushStatus(true); } }));
 $("btnBack").addEventListener("click", goHome);
-$("toLog").addEventListener("click", () => show("vLog"));
 $("btnSound").addEventListener("click", () => { settings.sound = !settings.sound; saveSettings(); renderSound(); });
 function renderSound() { $("btnSound").textContent = settings.sound ? "Sound on" : "Sound off"; $("btnSound").setAttribute("aria-pressed", String(settings.sound)); }
 
-function bindSeg(id, key, cast) {
-  const el = $(id);
-  const paint = () => el.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(cast(b.dataset.v) === settings[key])));
-  el.addEventListener("click", (e) => { const b = e.target.closest("button"); if (!b) return; settings[key] = cast(b.dataset.v); saveSettings(); paint(); });
-  paint();
-}
-bindSeg("segSide", "side", String); bindSeg("segLevel", "level", Number); bindSeg("segReps", "reps", Number);
-
-// activity cards with small canvas previews
-function renderCards() {
-  $("cards").innerHTML = ACTIVITIES.map((d) => `
-    <button class="card" data-id="${d.id}">
-      <div class="glyph"><canvas data-glyph="${d.id}"></canvas></div>
-      <h3>${d.name}</h3>
-      <div class="meta"><span class="chip">${d.axes}</span><span class="chip">${d.movement.split(" · ")[0]}</span>${d.brain ? '<span class="chip brain">+ thinking</span>' : ""}</div>
-      <p>${d.desc}</p>
-      <span class="src">Based on ${d.source}</span>
-    </button>`).join("");
-  $("cards").querySelectorAll(".card").forEach((c) => c.addEventListener("click", () => openActivity(ACTIVITIES.find((d) => d.id === c.dataset.id))));
-  drawGlyphs();
-}
 function drawGlyphs() {
   document.querySelectorAll("canvas[data-glyph]").forEach((cv) => {
     const r = cv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1), w = Math.max(200, r.width || 250), h = 92;
@@ -56,13 +39,6 @@ function drawGlyphs() {
     if (id === "sort") { c.strokeStyle = T.line; c.lineWidth = 2; rr(c, 14, 22, 54, 56, 8); c.stroke(); rr(c, w - 68, 22, 54, 56, 8); c.stroke(); c.fillStyle = T.surface; rr(c, mx - 40, 30, 80, 36, 8); c.fill(); c.strokeStyle = T.ink; c.stroke(); c.fillStyle = T.ink; c.font = `700 15px ${T.display}`; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("kettle", mx, 49); }
     if (id === "simon") { const s = 22; [[0, -1], [1, 0], [0, 1], [-1, 0]].forEach(([dx, dy], i) => { c.fillStyle = i === 1 ? T.accent : T.surface; rr(c, mx + dx * 26 - s / 2, my + dy * 26 - s / 2, s, s, 6); c.fill(); c.strokeStyle = T.line; c.stroke(); }); }
   });
-}
-
-function renderWeek() {
-  const log = store.get("mend.log", []), since = Date.now() - 7 * 864e5;
-  const wk = log.filter((e) => new Date(e.at).getTime() >= since);
-  const reps = wk.reduce((s, e) => s + (e.reps || 0), 0), mins = wk.reduce((s, e) => s + (e.seconds || 0), 0) / 60;
-  $("week").innerHTML = `<div><b>${wk.length}</b><span>sessions</span></div><div><b>${reps}</b><span>repetitions</span></div><div><b>${Math.round(mins)}</b><span>minutes</span></div>`;
 }
 
 // ---------------------------------------------------------------- session log
@@ -94,12 +70,12 @@ $("btnCopy").addEventListener("click", () => {
 let clearArmed = false;
 $("btnClear").addEventListener("click", () => {
   if (!clearArmed) { clearArmed = true; $("btnClear").textContent = "Tap again to delete all sessions"; setTimeout(() => { clearArmed = false; $("btnClear").textContent = "Clear log"; }, 3000); return; }
-  store.set("mend.log", []); clearArmed = false; $("btnClear").textContent = "Clear log"; renderLog(); renderWeek();
+  store.set("mend.log", []); clearArmed = false; $("btnClear").textContent = "Clear log"; renderLog(); RC.patient.render();
 });
 RC.drawGlyphs = drawGlyphs;
-Object.assign(RC, { show, goHome, renderWeek });
+Object.assign(RC, { show, goHome });
 // ---------------------------------------------------------------- boot
-renderCards(); renderEvidence(); renderWeek(); renderSound();
+renderEvidence(); renderSound();
 Input.mode = "mouse";
 Link.hosted = typeof window.Peer === "function" && /^https?:$/.test(location.protocol);
 $("pHosted").hidden = !Link.hosted; $("pArtifact").hidden = Link.hosted;
@@ -128,6 +104,17 @@ document.addEventListener("click", (e) => { if (!$("pairDrawer").hidden && !e.ta
 document.addEventListener("keydown", (e) => { if (e.key === "Escape") setDrawer(false); });
 renderRole();
 goHome();
+
+// Roll the Today bar over to a new day without a reload (app left open past midnight).
+let shownDay = RC.plan.dateKey(new Date());
+function checkDay(force) {
+  const k = RC.plan.dateKey(new Date());
+  if ((force || k !== shownDay) && !$("vPatient").hidden) RC.patient.render();
+  shownDay = k;
+}
+setInterval(() => checkDay(false), 60000);
+document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checkDay(true); });
+window.addEventListener("focus", () => checkDay(false));
 
 window.__mend = { Game, Input, data: db, plan: RC.plan }; // read by the automated tests
 
