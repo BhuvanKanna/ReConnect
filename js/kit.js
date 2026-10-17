@@ -149,7 +149,8 @@ function Guided(S, opts) {
     if (G.done || t - lastTap < 0.35) return;
     lastTap = t; pulse = 1; G.events.push("success");
     if (mode === "reps") { G._reps++; if (G._reps >= S.reps) G.done = true; }
-    else { step = Math.min(steps.length - 1, step + 1); t = Math.max(t, step * stepLen()); }
+    else if (step >= steps.length - 1) t = S.durationS || 60; // Done on the last step finishes the session
+    else { step = step + 1; t = Math.max(t, step * stepLen()); }
   }
   G.update = function (dt, a) {
     t += dt; pulse = Math.max(0, pulse - dt * 3);
