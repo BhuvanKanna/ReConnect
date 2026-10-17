@@ -126,6 +126,17 @@ with sync_playwright() as p:
         check("Session complete" in ph.inner_text("#stTitle"), "phone shows the session result")
         con.click("#home")
 
+        # ---- touch exercises steered with the phone's tilt cursor calibrate first
+        con.evaluate("""RC.register({ id: "__cursortest", name: "Cursor test", section: "memory", control: "touch", cursor: true,
+            movement: "test", desc: "test", source: "test", how: ["a", "b", "c"], params: { reps: null, level: [1, 2, 3], durationS: null },
+            make: (S) => { const G = RC.kit.base(S, 1); G.update = () => {}; G.status = () => ({ title: "Cursor test", text: "" }); G.stats = () => []; G.draw = () => {}; return G; } }); RC.patient.render()""")
+        con.click(".tile[data-id='__cursortest']")
+        check("Hold the phone" in con.inner_text("#sheet"), "tilt-cursor exercises say how to hold the phone")
+        con.click("#goPhone")
+        check("Calibrating" in con.inner_text("#sheet"), "tilt-cursor exercises calibrate before starting")
+        con.wait_for_function("window.__mend.Game.state === 'play'", timeout=8000)
+        con.evaluate("window.__mend.Game.finishNow()")
+
         # ---- phone touch pad, and falling back to the stage when the phone goes away (Review Focus 5)
         con.evaluate("""RC.register({ id: "__padtest", name: "Pad test", section: "hand", control: "touch", pad: "keys",
             movement: "test", desc: "test", mount: "", source: "test", how: ["a", "b", "c"], params: { reps: null, level: [1, 2, 3], durationS: null },
@@ -278,6 +289,9 @@ with sync_playwright() as p:
             # ---- provider: patients and plan builder
             con.click("#roleProvider")
             n_pts = con.locator("#pvPatients .pt").count()
+            n_sessions = con.evaluate("window.__mend.data.sessions().length")
+            con.click("#resetDemo")
+            check(con.evaluate("window.__mend.data.sessions().length") == n_sessions and "again" in con.inner_text("#resetDemo"), "Reset demo data asks for a second tap before wiping anything")
             con.click("#pvAddPatient"); con.fill("#pvNewName", "Tom B."); con.click("#pvNewSave")
             check(con.locator("#pvPatients .pt").count() == n_pts + 1, "provider can add a patient")
             con.click("#pvPatients .pt[data-id='p_mei']")
@@ -309,11 +323,21 @@ with sync_playwright() as p:
             dl = dl_info.value
             first_line = open(dl.path(), encoding="utf-8").readline()
             check(dl.suggested_filename.startswith("reconnect-ruth") and first_line.startswith("at,id,name"), f"CSV export downloads ({dl.suggested_filename})")
+            import csv as _csv
+            cells = [c for row in _csv.reader(open(dl.path(), encoding="utf-8")) for c in row]
+            check(not any(c[:1] in "=+-@" for c in cells if c), "CSV cells never start with a formula character")
+            con.evaluate("(() => { const d = window.__mend.data, pl = d.plan('p_ruth'), i = RC.plan.dayIndex(pl, RC.plan.dateKey(new Date())); pl.days[i].items = pl.days[i].items.filter(x => x.exerciseId !== 'lift'); d.savePlan(pl); })()")
+            con.click("#pvTabPlan"); con.click("#pvTabProgress")
+            lift_row = con.locator("#pvSessions tbody tr", has_text="Lantern Lift").first
+            check(lift_row.locator("td.kind").inner_text() == "Extra", "removing a done item from today's plan re-tags its session as Extra")
             check(con.locator("#pvPrint").count() == 1, "print report button is present")
             con.click("#pvTabPlan")
             con.click("#rolePatient")
             con.select_option("#patientSel", "p_mei")
             check(con.locator("#todaySteps li").count() == 2, "patient sees the provider's plan in the Today bar")
+            con.evaluate("(() => { const d = window.__mend.data, pl = d.plan('p_mei'); pl.days[0].items.unshift({ exerciseId: '__locked', reps: null, level: 1, durationS: null }); d.savePlan(pl); RC.patient.render(); })()")
+            check("Locked test" not in con.inner_text("#todayStart"), "Today bar skips a standing exercise the provider has switched off")
+            con.evaluate("(() => { const d = window.__mend.data, pl = d.plan('p_mei'); pl.days[0].items.shift(); d.savePlan(pl); RC.patient.render(); })()")
 
         # ---- exercise families: every tile opens, and one per family plays to the end
         con.evaluate("(() => { const d = window.__mend.data, p = d.patients().find(x => x.id === 'p_mei'); p.enabled = { sit2stand: true, balance: true }; d.savePatient(p); d.setActivePatient('p_mei'); RC.patient.render(); })()")
@@ -420,7 +444,7 @@ with sync_playwright() as p:
 
         if not ONLY:
             con.click("#toLog")
-            check(con.locator("#logBody tbody tr").count() >= 6, "session log lists the sessions")
+            check(con.locator("#logBody tbody tr").count() == con.evaluate("window.__mend.data.sessions(window.__mend.data.activePatientId()).length"), "session log lists only the signed-in patient's sessions")
 
     # ---- About page: every program listed, rows mapped to the exercises that now exist
     if con.is_visible("#btnBack"):

@@ -24,7 +24,8 @@ function todayState() {
   const todays = d.sessions(pt.id).filter((s) => P.sessionDay(s) === key);
   const t = P.today(pl, key, todays);
   const items = t.items.map((it) => Object.assign({}, it, { def: RC.exercise(it.exerciseId) }));
-  return { pt, key, pl, todays, t, items, next: items.find((i) => !i.done && i.def) || null };
+  items.forEach((i) => { i.locked = !!i.def && isLocked(i.def, pt); });
+  return { pt, key, pl, todays, t, items, next: items.find((i) => !i.done && i.def && !i.locked) || null };
 }
 function isLocked(def, pt) { return !!def.safety && !(pt.enabled || {})[def.id]; }
 function itemDetail(it) {
@@ -66,7 +67,7 @@ function renderBar(S) {
         <p class="tb-hi">Hi ${esc(first)} · <span id="todayDay">${esc(dayLabel(pl, key))}</span></p>
         <h2>${esc(copy[0])}</h2>
         <p class="tb-sub">${esc(copy[1])}</p>
-        ${items.length ? `<ol id="todaySteps" class="tb-steps">${items.map((i, k) => `<li data-done="${i.done}" class="${i === next ? "next" : ""}${i.def ? "" : " na"}${justDone[k] ? " just" : ""}">${i.done ? ICON.check : ""}<span>${i.def ? esc(i.def.name) : "Not available in this version"}</span></li>`).join("")}</ol>` : ""}
+        ${items.length ? `<ol id="todaySteps" class="tb-steps">${items.map((i, k) => `<li data-done="${i.done}" class="${i === next ? "next" : ""}${i.def ? "" : " na"}${justDone[k] ? " just" : ""}">${i.done ? ICON.check : ""}<span>${!i.def ? "Not available in this version" : i.locked ? `${esc(i.def.name)} (turned off by your therapist)` : esc(i.def.name)}</span></li>`).join("")}</ol>` : ""}
       </div>
       ${next ? `<button class="btn tb-go" id="todayStart">Start ${esc(next.def.name)}</button>` : ""}
     </section>`;
@@ -106,12 +107,12 @@ function renderProgress(S) {
   const days = Array.from({ length: 7 }, (_, k) => P.addDays(key, k - 6));
   const status = (k) => { if (!pl) return "outside"; return P.dayStatus(pl, k, all.filter((s) => P.sessionDay(s) === k), key); };
   const short = (k) => { const [y, m, dd] = k.split("-").map(Number); return new Date(y, m - 1, dd).toLocaleDateString([], { weekday: "narrow" }); };
-  const recent = all.slice(-3).reverse();
+  const assigned = pl ? P.progress(pl, all, key).assigned : new Set(), recent = all.slice(-3).reverse();
   $("myProgress").innerHTML = `
     <h3>My progress</h3>
     <div class="mp-today"><b class="num">${todays.length}</b><span>${todays.length === 1 ? "session" : "sessions"} today</span></div>
     <div class="mp-week" aria-label="Last 7 days">${days.map((k) => `<span class="mp-day" data-status="${status(k)}" title="${esc(k)}: ${status(k)}"><i></i>${short(k)}</span>`).join("")}</div>
-    ${recent.length ? `<ul class="mp-recent">${recent.map((s) => `<li><span>${esc(s.name)}</span><span class="muted">${s.assigned ? "Assigned" : s.legacy ? "Before plan" : "Extra"}</span></li>`).join("")}</ul>` : ""}
+    ${recent.length ? `<ul class="mp-recent">${recent.map((s) => `<li><span>${esc(s.name)}</span><span class="muted">${s.legacy ? "Before plan" : assigned.has(s.at) ? "Assigned" : "Extra"}</span></li>`).join("")}</ul>` : ""}
     <button class="btn alt" id="toLog">See all sessions</button>`;
 }
 

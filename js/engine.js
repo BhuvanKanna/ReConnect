@@ -24,6 +24,8 @@ function fx(kind) {
 // Settings come from the provider's plan item when there is one, otherwise from what this
 // patient last used for the exercise, otherwise from the exercise's defaults.
 function openActivity(def, opts = {}) {
+  const db = RC.db, pt = db && db.patients().find((p) => p.id === db.activePatientId());
+  if (def.safety && !(pt && pt.enabled && pt.enabled[def.id])) return; // standing work stays locked until the provider turns it on
   const per = (settings.per = settings.per || {});
   const base = Object.assign({}, def.defaults, per[def.id] || {});
   const item = opts.item || null;
@@ -68,7 +70,7 @@ function renderSetup() {
     </div>
     ${phoneReady ? "" : `<p class="note">${Link.hosted ? "Tap the phone button at the top right and scan the QR code to connect your phone." : "Mouse mode: move the pointer over the stage (or use the arrow keys). Up means raise or tip the top edge up."}</p>`}`;
   // Touch and guided exercises use the phone as a tap pad, so there is no tilt to calibrate.
-  $("goPhone").onclick = () => { Input.mode = "phone"; if (d.control === "touch" || d.control === "guided") begin(); else startCalibration(); };
+  $("goPhone").onclick = () => { Input.mode = "phone"; if ((d.control === "touch" && !d.cursor) || d.control === "guided") begin(); else startCalibration(); };
   $("goMouse").onclick = () => { Input.mode = "mouse"; renderConn(); begin(); };
   $("sheet").querySelectorAll(".setctl .seg").forEach((el) => el.addEventListener("click", (e) => {
     const b = e.target.closest("button[data-v]"); if (!b || b.disabled) return;

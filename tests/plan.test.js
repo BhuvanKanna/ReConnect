@@ -124,3 +124,19 @@ test("progress counts due days, done days, extras and lift range", () => {
   assert.deepEqual(r.strip.slice(0, 5), ["done", "missed", "rest", "done", "rest"]);
   assert.deepEqual(r.range, { first: 32, last: 41 });
 });
+
+test("progress exposes which sessions filled plan items, recomputed after edits", () => {
+  const p = planWith("2026-10-17", [[LIFT, PAIRS]]);
+  const sessions = [S("lift", 10, 2, "2026-10-17T09:00:00"), S("pairs", 0, 3, "2026-10-17T09:30:00")];
+  assert.ok(plan.progress(p, sessions, "2026-10-17").assigned.has("2026-10-17T09:00:00"));
+  p.days[0].items = [PAIRS]; // provider removes Lantern Lift after it was done
+  const r = plan.progress(p, sessions, "2026-10-17");
+  assert.equal(r.assigned.has("2026-10-17T09:00:00"), false);
+  assert.equal(r.assigned.has("2026-10-17T09:30:00"), true);
+});
+
+test("shoulder range ignores mouse-mode sessions", () => {
+  const p = planWith("2026-10-17", [[LIFT]]);
+  const sessions = [S("lift", 10, 2, "2026-10-17T09:00:00", { pitch: [0, 30], input: "phone" }), S("lift", 10, 2, "2026-10-17T10:00:00", { pitch: [0, 58], input: "mouse" })];
+  assert.deepEqual(plan.progress(p, sessions, "2026-10-17").range, { first: 30, last: 30 });
+});

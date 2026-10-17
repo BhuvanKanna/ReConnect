@@ -44,7 +44,7 @@ function drawGlyphs() {
 
 // ---------------------------------------------------------------- session log
 function renderLog() {
-  const log = store.get("mend.log", []).slice().reverse();
+  const log = db.sessions(db.activePatientId()).slice().reverse();
   if (!log.length) {
     $("logBody").innerHTML = `<div class="empty"><b>No sessions yet</b><span>Finish any activity and it appears here with repetitions, range of motion and smoothness.</span><button class="btn amber" id="logStart">Choose an activity</button></div>`;
     $("logStart").onclick = goHome; return;
@@ -55,7 +55,7 @@ function renderLog() {
   }</tbody></table></div>`;
 }
 $("btnCopy").addEventListener("click", () => {
-  const log = store.get("mend.log", []);
+  const log = db.sessions(db.activePatientId());
   const lines = ["ReConnect home rehab summary", `Generated ${new Date().toLocaleString()}`, ""];
   if (!log.length) lines.push("No sessions recorded yet.");
   for (const e of log.slice(-30)) {
@@ -71,7 +71,7 @@ $("btnCopy").addEventListener("click", () => {
 let clearArmed = false;
 $("btnClear").addEventListener("click", () => {
   if (!clearArmed) { clearArmed = true; $("btnClear").textContent = "Tap again to delete all sessions"; setTimeout(() => { clearArmed = false; $("btnClear").textContent = "Clear log"; }, 3000); return; }
-  store.set("mend.log", []); clearArmed = false; $("btnClear").textContent = "Clear log"; renderLog(); RC.patient.render();
+  db.clearSessions(db.activePatientId()); clearArmed = false; $("btnClear").textContent = "Clear log"; renderLog(); RC.patient.render();
 });
 RC.drawGlyphs = drawGlyphs;
 Object.assign(RC, { show, goHome });

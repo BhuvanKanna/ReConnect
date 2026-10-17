@@ -121,7 +121,7 @@ function render() {
 // ---------------------------------------------------------------- progress
 const CSV_COLS = ["at", "id", "name", "movement", "side", "targetDeg", "reps", "goal", "level", "seconds", "input", "pitch", "roll", "peaksPerRep", "activeS", "extra", "patientId", "assigned", "completed", "targetReps", "durationS", "legacy"];
 const STATUS_LABEL = { done: "Done", partly: "Partly done", missed: "Missed", rest: "Rest", future: "Coming up", today: "Today", outside: "" };
-function kindOf(s) { return s.legacy ? "Before plan" : s.assigned ? "Assigned" : "Extra"; }
+function kindOf(s, assigned) { return s.legacy ? "Before plan" : assigned.has(s.at) ? "Assigned" : "Extra"; }
 function resultOf(s) {
   const first = (s.extra || [])[0];
   return `${s.completed === false ? "Stopped early · " : ""}${s.reps != null ? `${s.reps}/${s.goal}` : ""}${first ? ` · ${first[0]} ${first[1]}` : ""}`;
@@ -133,7 +133,7 @@ function progressView(pt) {
   const rows = sessions.slice().reverse().slice(0, 60).map((s) => {
     const i = P.dayIndex(pl, P.sessionDay(s));
     return `<tr><td class="num">${i >= 0 ? i + 1 : "–"}</td><td class="num">${esc(fmtDate(s.at))}</td><td><b>${esc(s.name)}</b>${s.input === "mouse" ? ' <span class="chip">mouse</span>' : ""}</td>
-      <td>${esc(resultOf(s))}</td><td class="num">${Array.isArray(s.pitch) ? `${s.pitch[0]}° to ${s.pitch[1]}°` : "–"}</td><td class="kind">${kindOf(s)}</td></tr>`;
+      <td>${esc(resultOf(s))}</td><td class="num">${Array.isArray(s.pitch) ? `${s.pitch[0]}° to ${s.pitch[1]}°` : "–"}</td><td class="kind">${kindOf(s, pr.assigned)}</td></tr>`;
   }).join("");
   const plan = pl ? pl.days.map((d, i) => `<li><b>Day ${i + 1}</b> ${d.rest || !d.items.length ? "Rest" : d.items.map((it) => esc((RC.exercise(it.exerciseId) || { name: it.exerciseId }).name) + (it.reps ? ` ×${it.reps}` : "")).join(", ")}</li>`).join("") : "";
   return `
@@ -158,7 +158,8 @@ function exportCsv(pt) {
   const cell = (v) => {
     if (v == null) return "";
     if (Array.isArray(v)) v = v.length && Array.isArray(v[0]) ? v.map(([k, x]) => `${k}=${x}`).join("; ") : v.join(" to ");
-    const s = String(v);
+    let s = String(v);
+    if (/^[=+\-@]/.test(s)) s = "'" + s; // spreadsheets would read these as formulas
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
   const lines = [CSV_COLS.join(",")].concat(db().sessions(pt.id).map((s) => CSV_COLS.map((c) => cell(s[c])).join(",")));
@@ -182,7 +183,12 @@ pv.addEventListener("click", (e) => {
   if (pt) { UI.patientId = pt.dataset.id; UI.day = 0; UI.safety = null; render(); return; }
   if (t.closest("#pvAddPatient")) { UI.adding = true; render(); $("pvNewName").focus(); return; }
   if (t.closest("#pvNewCancel")) { UI.adding = false; render(); return; }
-  if (t.closest("#resetDemo")) { db().resetDemo(); UI.patientId = null; render(); RC.renderRole && RC.renderRole(); return; }
+  const reset = t.closest("#resetDemo");
+  if (reset) {
+    // Wipes every session and added patient, so it takes a second tap within 3 seconds.
+    if (!UI.resetArmed) { UI.resetArmed = true; reset.textContent = "Tap again to reset everything"; setTimeout(() => { UI.resetArmed = false; const b = $("resetDemo"); if (b) b.textContent = "Reset demo data"; }, 3000); return; }
+    UI.resetArmed = false; db().resetDemo(); UI.patientId = null; render(); RC.renderRole && RC.renderRole(); return;
+  }
   if (t.closest("#pvTabPlan")) { UI.tab = "plan"; render(); return; }
   if (t.closest("#pvTabProgress")) { UI.tab = "progress"; render(); return; }
   if (t.closest("#pvExportCsv")) { exportCsv(current()); return; }

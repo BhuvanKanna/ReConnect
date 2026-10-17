@@ -94,6 +94,7 @@
 
     return {
       patients, savePatient, plan: planOf, savePlan, sessions, addSession, ensureSeed, resetDemo,
+      clearSessions: (patientId) => set(K.log, log().filter((s) => s.patientId !== patientId || s.legacy)),
       role: () => (demo().role === "provider" ? "provider" : "patient"),
       setRole: (r) => set(K.demo, Object.assign(demo(), { role: r })),
       activePatientId: () => { const id = demo().patientId, list = patients(); return list.some((p) => p.id === id) ? id : (list[0] || {}).id; },

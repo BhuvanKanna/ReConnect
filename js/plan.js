@@ -85,9 +85,9 @@
       }
     }
     const extra = sessions.filter((s) => !s.legacy && !assigned.has(s.at)).length;
-    const lifts = sessions.filter((s) => s.id === "lift" && Array.isArray(s.pitch) && s.completed !== false);
+    const lifts = sessions.filter((s) => s.id === "lift" && Array.isArray(s.pitch) && s.completed !== false && s.input !== "mouse");
     const range = lifts.length ? { first: lifts[0].pitch[1], last: lifts[lifts.length - 1].pitch[1] } : null;
-    return { daysDone, daysDue, extra, strip, range };
+    return { daysDone, daysDue, extra, strip, range, assigned };
   }
 
   function copyWeek(plan) {

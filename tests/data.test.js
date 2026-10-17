@@ -114,3 +114,18 @@ test("a store that throws on every call still works from memory", () => {
   D.setRole("provider");
   assert.equal(D.role(), "provider");
 });
+
+test("clearSessions removes one patient's recorded sessions and keeps everyone else's", () => {
+  const D = data.createData(memStore(), NOW);
+  D.ensureSeed();
+  const ruthBefore = D.sessions("p_ruth").length;
+  D.addSession({ at: "2026-10-17T11:00:00.000Z", id: "sort", patientId: "p_mei", completed: true });
+  D.clearSessions("p_mei");
+  assert.equal(D.sessions("p_mei").length, 0);
+  assert.equal(D.sessions("p_ruth").length, ruthBefore);
+});
+
+test("a log that is valid JSON but not a list reads as empty", () => {
+  const D = data.createData(memStore({ "mend.log": "{}" }), NOW);
+  assert.deepEqual(D.sessions(), []);
+});
