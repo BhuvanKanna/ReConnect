@@ -369,6 +369,16 @@ with sync_playwright() as p:
             con.keyboard.press("Space"); time.sleep(0.5)
         family("sessions", ["mirror", "imagery"], "mirror", mirror_step, 30)
 
+        def cancel_step():
+            d = dbg()
+            left = [t for t in d["targets"] if not t["found"]]
+            if left:
+                stage_click(left[0]["x"], left[0]["y"])
+            else:
+                stage_click(*center(d["finish"]))
+            time.sleep(0.12)
+        family("scanning", ["cancel", "lookleft", "bisect"], "cancel", cancel_step, 90)
+
         if not ONLY:
             con.click("#toLog")
             check(con.locator("#logBody tbody tr").count() >= 6, "session log lists the sessions")
