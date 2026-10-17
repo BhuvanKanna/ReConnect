@@ -265,4 +265,103 @@ RC.register(Object.assign({ section: "wrist" }, {
     how: ["Rest your forearm on the table so the wrist does the work.", "Tip your hand forward, back, left or right to roll the ball.", "Gentle tilts are enough. Bring your hand level to stop."],
     make: (S) => TiltMaze(S),
   }));
+
+// ================================================================ more wrist & forearm exercises
+const { bg, dots, defineArt } = RC.kit;
+const mountTable = "Hold the phone flat in your affected hand, forearm resting on the table, wrist over the edge.";
+
+// Two targets in turn, each held briefly; reaching both is one rep. Used by Wrist Bend and Wrist Wiper.
+function Alternate(S, spec) {
+  const G = base(S, S.reps);
+  let side = 0, dwell = 0, val = 0, ranges = [0, 0];
+  G.update = function (dt, a) {
+    val = spec.signal(a);
+    ranges = [Math.max(ranges[0], val), Math.min(ranges[1], val)];
+    const tgt = spec.targets(S)[side], reached = tgt > 0 ? val >= tgt * 0.9 : val <= tgt * 0.9;
+    if (reached) { dwell += dt; if (dwell >= spec.hold) { dwell = 0; this.events.push("tick"); if (side === 1) { this._reps++; this.events.push("success"); if (this._reps >= S.reps) this.done = true; } side = 1 - side; } }
+    else dwell = Math.max(0, dwell - dt * 2);
+  };
+  G.status = () => ({ title: spec.cues[side], text: `${G._reps} of ${S.reps} done` });
+  G.stats = () => [[spec.rangeLabels[0], `${Math.round(ranges[0])}°`], [spec.rangeLabels[1], `${Math.round(ranges[1])}°`]];
+  G.debug = () => ({ side, val });
+  G.draw = function (g, W, H) {
+    bg(g, W, H); dots(g, W, S.reps, this._reps);
+    spec.draw(g, W, H, { val, side, prog: dwell / spec.hold, targets: spec.targets(S) });
+  };
+  return G;
+}
+
+function WristBend(S) {
+  return Alternate(S, {
+    signal: (a) => a.pitch, targets: (S) => [S.amp, -S.amp * 0.6], hold: 0.4,
+    cues: ["Bend your wrist up", "Now bend it down"], rangeLabels: ["Up", "Down"],
+    draw: (g, W, H, o) => {
+      const px = W * 0.34, py = H * 0.56, L = Math.min(W * 0.3, 240);
+      g.fillStyle = alpha(T.ink, 0.1); rr(g, px - L, py - 18, L, 36, 18); g.fill(); // forearm
+      const angOf = (deg) => -clamp(deg, -70, 70) * Math.PI / 180;
+      o.targets.forEach((tg, i) => { const A = angOf(tg); g.setLineDash([8, 7]); g.strokeStyle = i === o.side ? T.accent : alpha(T.accent, 0.35); g.lineWidth = 3; g.beginPath(); g.moveTo(px, py); g.lineTo(px + Math.cos(A) * L * 0.75, py + Math.sin(A) * L * 0.75); g.stroke(); });
+      g.setLineDash([]);
+      const A = angOf(o.val); g.save(); g.translate(px, py); g.rotate(A); rr(g, 0, -22, L * 0.55, 44, 20); g.fillStyle = T.accent; g.fill(); g.restore();
+      if (o.prog > 0) { g.strokeStyle = T.go; g.lineWidth = 6; g.beginPath(); g.arc(px, py, 34, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(o.prog, 0, 1)); g.stroke(); }
+    },
+  });
+}
+
+function WristWiper(S) {
+  return Alternate(S, {
+    signal: (a) => a.roll, targets: (S) => [S.amp, -S.amp], hold: 0.4,
+    cues: ["Tilt your hand to the right", "Now tilt it to the left"], rangeLabels: ["Right", "Left"],
+    draw: (g, W, H, o) => {
+      // a windscreen wiper sweeping an arc
+      const cx = W / 2, cy = H - 70, R = Math.min(W * 0.36, H - 200);
+      g.fillStyle = alpha(T.ink, 0.06); g.beginPath(); g.arc(cx, cy, R, Math.PI, TAU); g.fill();
+      const angOf = (deg) => -Math.PI / 2 + clamp(deg / 60, -1.1, 1.1) * (Math.PI / 2.3);
+      o.targets.forEach((tg, i) => { const A = angOf(tg); g.beginPath(); g.arc(cx + Math.cos(A) * R * 0.86, cy + Math.sin(A) * R * 0.86, 22, 0, TAU); g.fillStyle = i === o.side ? T.accent : alpha(T.accent, 0.25); g.fill(); });
+      const A = angOf(o.val); g.strokeStyle = T.ink; g.lineWidth = 10; g.lineCap = "round"; g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + Math.cos(A) * R * 0.95, cy + Math.sin(A) * R * 0.95); g.stroke(); g.lineCap = "butt";
+      if (o.prog > 0) { g.strokeStyle = T.go; g.lineWidth = 6; g.beginPath(); g.arc(cx, cy, 30, Math.PI, Math.PI + Math.PI * clamp(o.prog, 0, 1)); g.stroke(); }
+    },
+  });
+}
+
+// ---- Steady Cup: keep the cup level inside a shrinking circle for the whole time
+function SteadyCup(S) {
+  const dur = S.durationS || 60, G = base(S, 1);
+  let t = 0, inT = 0, sum2 = 0, n = 0, x = 0, y = 0;
+  const radius = () => lerp({ 1: 14, 2: 10, 3: 7 }[S.level] || 10, ({ 1: 14, 2: 10, 3: 7 }[S.level] || 10) * 0.55, clamp(t / dur, 0, 1));
+  G.update = function (dt, a) {
+    t += dt; x = a.roll; y = a.pitch;
+    const d = Math.hypot(x, y); sum2 += d * d; n++;
+    if (d <= radius()) inT += dt;
+    if (t >= dur) { this._reps = 1; this.done = true; }
+  };
+  G.status = () => (Math.hypot(x, y) <= radius() ? { title: "Steady. Keep it there.", text: `${RC.fmtTime(Math.max(0, dur - t))} left`, tone: "good" } : { title: "Bring the dot back to the middle", text: "Small, slow corrections." });
+  G.stats = () => [["Time steady", `${Math.round((inT / Math.max(0.1, t)) * 100)}%`], ["Sway", `${Math.sqrt(sum2 / Math.max(1, n)).toFixed(1)}° RMS`]];
+  G.debug = () => ({ t, r: radius() });
+  G.draw = function (g, W, H) {
+    bg(g, W, H);
+    const cx = W / 2, cy = H * 0.56, scale = Math.min(W, H - 160) / 70;
+    g.beginPath(); g.arc(cx, cy, 30 * scale, 0, TAU); g.fillStyle = alpha(T.ink, 0.05); g.fill();
+    g.beginPath(); g.arc(cx, cy, radius() * scale, 0, TAU); g.fillStyle = alpha(T.go, 0.16); g.fill(); g.strokeStyle = T.go; g.lineWidth = 3; g.stroke();
+    g.beginPath(); g.arc(cx + clamp(x, -30, 30) * scale, cy - clamp(y, -30, 30) * scale, 16, 0, TAU); g.fillStyle = T.accent; g.fill();
+    g.strokeStyle = T.go; g.lineWidth = 8; g.lineCap = "round"; g.beginPath(); g.arc(cx, cy, 30 * scale + 14, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(t / dur, 0, 1)); g.stroke(); g.lineCap = "butt";
+  };
+  return G;
+}
+
+[
+  { id: "wristbend", name: "Wrist Bend", movement: "Wrist flexion and extension", mount: mountTable,
+    desc: "Bend your wrist up to the top line, then down to the bottom one.", source: "FitMi wrist bend; RAPAEL wrist flexion and extension.",
+    how: ["Rest your forearm on the table with the wrist free.", "Bend your wrist up until the hand reaches the line.", "Then bend it down to the lower line."], make: WristBend },
+  { id: "wiper", name: "Wrist Wiper", movement: "Radial and ulnar deviation", mount: "Hold the phone flat in your affected hand, palm down, forearm on the table.",
+    desc: "Sweep your hand side to side like a windscreen wiper.", source: "RAPAEL radial and ulnar deviation; GRASP wrist range of motion.",
+    how: ["Keep your forearm still on the table.", "Tilt your hand toward the lit target on one side.", "Then sweep across to the other side."], make: WristWiper },
+  { id: "steady", name: "Steady Cup", movement: "Holding still · steadiness", mount: "Hold the phone flat in your affected hand like a full cup.",
+    desc: "Keep the dot inside the circle as it slowly gets smaller.", source: "mRehab Walk with Mug (keeping a cup level).",
+    params: { reps: null, level: [1, 2, 3], durationS: [30, 60, 90] }, defaults: { reps: null, level: 2, durationS: 30 },
+    how: ["Rest your forearm on the table, hand level.", "Keep the orange dot inside the green circle.", "Small, slow corrections are best."], make: SteadyCup },
+].forEach((d) => RC.register(Object.assign({ section: "wrist", control: "tilt" }, d)));
+
+defineArt("wristbend", '<rect x="18" y="32" width="46" height="12" rx="6" fill="var(--a-mute)" opacity=".3"/><rect x="62" y="20" width="32" height="12" rx="6" fill="var(--a-hi)" transform="rotate(-24 64 38)"/><path d="M64 38 L100 16 M64 38 L100 54" stroke="var(--a-hi)" stroke-width="1.5" stroke-dasharray="3 3"/>');
+defineArt("wiper", '<path d="M24 56 A36 36 0 0 1 96 56" fill="var(--a-mute)" opacity=".15"/><path d="M60 56 L84 26" stroke="var(--a-ink)" stroke-width="4" stroke-linecap="round"/><circle cx="32" cy="34" r="6" fill="var(--a-hi)" opacity=".35"/><circle cx="88" cy="34" r="6" fill="var(--a-hi)"/>');
+defineArt("steady", '<circle cx="60" cy="32" r="22" fill="var(--a-mute)" opacity=".12"/><circle cx="60" cy="32" r="11" fill="var(--a-go)" opacity=".2" stroke="var(--a-go)" stroke-width="2"/><circle cx="63" cy="30" r="5" fill="var(--a-hi)"/>');
 })();

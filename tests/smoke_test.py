@@ -341,6 +341,10 @@ with sync_playwright() as p:
             mramp(0, 0, 0, 0, 0.5); mramp(0, 0, 0, 34, 0.9); mramp(0, 34, 0, 34, 1.4); mramp(0, 34, 0, 0, 0.9)
         family("arm", ["sideraise", "reach", "cupmouth", "push", "slide", "bowl", "trace"], "sideraise", sideraise_step, 90)
 
+        def wristbend_step():
+            mramp(0, 0, 0, 0, 0.4); mramp(0, 0, 34, 0, 0.6); mramp(34, 0, 34, 0, 0.6); mramp(34, 0, -24, 0, 0.9); mramp(-24, 0, -24, 0, 0.6); mramp(-24, 0, 0, 0, 0.5)
+        family("wrist", ["wristbend", "wiper", "steady"], "wristbend", wristbend_step, 90)
+
         con.click("#toLog")
         check(con.locator("#logBody tbody tr").count() >= 6, "session log lists the sessions")
 
