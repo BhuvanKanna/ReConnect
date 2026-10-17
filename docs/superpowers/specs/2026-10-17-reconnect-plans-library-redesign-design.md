@@ -21,7 +21,7 @@ should not paint us into a corner, but no backend is built now.
    patient straight to the next one; the full exercise library below, freely playable as extra practice.
 2. **Provider side**: patient list, a 30-day plan builder, and a progress view with adherence, extra
    sessions, results, and an exportable report.
-3. **Every commonly used post-stroke motion and brain exercise** (the 47 researched types plus the 6 existing),
+3. **Every commonly used post-stroke motion and brain exercise** (the 47 researched types (57 tiles once grouped items are split) plus the 6 existing),
    each playable in the app.
 4. **Redesign** in the approved "calm clinical" direction (theme B), with considered motion.
 
@@ -186,7 +186,7 @@ Legend: 📱 phone motion · 👆 touch/click · 🧭 guided (instructions + tim
 | 46 | Finish the Sentence | 👆 | new |
 | 47 | Spell It (spelling/anagram) | 👆 | new |
 
-That is 6 existing + 61 new tiles = **67 tiles**. Each new exercise needs: a short description, a "how to"
+That is 6 existing + 57 new tiles = **63 tiles**. Each new exercise needs: a short description, a "how to"
 (3 steps), a source line (program/study it comes from, matching the style of `docs/exercise-catalog.md`),
 difficulty levels (at least 3), configurable reps/rounds or duration, and a finish summary that is recorded in
 the session log (score/time/reps and, for motion, range of motion where measurable).
