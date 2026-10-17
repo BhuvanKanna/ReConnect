@@ -22,7 +22,11 @@ ap.add_argument("--broker", help="host:port of a local PeerJS server instead of 
 ap.add_argument("--skip-games", action="store_true", help="Only test phone pairing.")
 ap.add_argument("--no-phone", action="store_true", help="Skip the phone pairing section.")
 ap.add_argument("--quick", action="store_true", help="Skip the free-play run of every exercise (faster iteration).")
+ap.add_argument("--families", help="Comma list: only run these exercise-family checks (implies --no-phone --quick).")
 args = ap.parse_args()
+if args.families:
+    args.no_phone = args.quick = True
+ONLY = set(args.families.split(",")) if args.families else None
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 failures = []
@@ -238,77 +242,78 @@ with sync_playwright() as p:
             play("simon", simon_step, 120)
             con.click("#home")
 
-        # ---- patient Today flow
-        items = [{"exerciseId": g, "reps": 6, "level": 2, "durationS": None} for g in ("lift", "pour", "sort")]
-        con.evaluate(f"window.__mend.data.resetDemo({{ todayItems: {json.dumps(items)} }}); window.__mend.data.setActivePatient('p_ruth'); RC.patient.render()")
-        check(con.get_attribute("#todayBar", "data-state") == "progress", "Today bar shows goals in progress")
-        steps = {"lift": lift_step, "pour": pour_step, "sort": sort_step}
-        for n, gid in enumerate(("lift", "pour", "sort")):
-            con.click("#todayStart")
-            if n == 0:
-                check("Set by your therapist" in con.inner_text("#sheet"), "assigned settings are shown as set by the therapist")
-            check(con.inner_text("#pTitle") == con.evaluate(f"RC.exercise('{gid}').name"), f"Start opens the next assigned exercise ({gid})")
-            run(gid, steps[gid], 90, f"assigned {gid} completes")
+        if not ONLY:
+            # ---- patient Today flow
+            items = [{"exerciseId": g, "reps": 6, "level": 2, "durationS": None} for g in ("lift", "pour", "sort")]
+            con.evaluate(f"window.__mend.data.resetDemo({{ todayItems: {json.dumps(items)} }}); window.__mend.data.setActivePatient('p_ruth'); RC.patient.render()")
+            check(con.get_attribute("#todayBar", "data-state") == "progress", "Today bar shows goals in progress")
+            steps = {"lift": lift_step, "pour": pour_step, "sort": sort_step}
+            for n, gid in enumerate(("lift", "pour", "sort")):
+                con.click("#todayStart")
+                if n == 0:
+                    check("Set by your therapist" in con.inner_text("#sheet"), "assigned settings are shown as set by the therapist")
+                check(con.inner_text("#pTitle") == con.evaluate(f"RC.exercise('{gid}').name"), f"Start opens the next assigned exercise ({gid})")
+                run(gid, steps[gid], 90, f"assigned {gid} completes")
+                con.click("#home")
+                check(con.get_attribute(f"#todaySteps li:nth-child({n + 1})", "data-done") == "true", f"Today step {n + 1} ticks off")
+            check(con.get_attribute("#todayBar", "data-state") == "done", "Today bar shows all done")
+            check("That's today's plan, done." in con.inner_text("#todayBar"), "all-done message is shown")
+            check("3" in con.inner_text("#myProgress"), "My progress shows today's sessions")
+            play("sort", sort_step, 60)
             con.click("#home")
-            check(con.get_attribute(f"#todaySteps li:nth-child({n + 1})", "data-done") == "true", f"Today step {n + 1} ticks off")
-        check(con.get_attribute("#todayBar", "data-state") == "done", "Today bar shows all done")
-        check("That's today's plan, done." in con.inner_text("#todayBar"), "all-done message is shown")
-        check("3" in con.inner_text("#myProgress"), "My progress shows today's sessions")
-        play("sort", sort_step, 60)
-        con.click("#home")
-        check(con.evaluate("window.__mend.data.sessions('p_ruth').at(-1).assigned") is False, "extra session after goals is recorded as extra")
+            check(con.evaluate("window.__mend.data.sessions('p_ruth').at(-1).assigned") is False, "extra session after goals is recorded as extra")
 
-        # ---- no plan, locked tiles
-        con.select_option("#patientSel", "p_mei")
-        check(con.get_attribute("#todayBar", "data-state") == "none" and "No plan for today" in con.inner_text("#todayBar"), "patient without a plan sees 'No plan for today'")
-        con.click(".tile[data-id='sort']")
-        check(con.is_visible("#vPlay"), "library still opens exercises without a plan")
-        con.click("#btnBack")
-        con.evaluate("""RC.register({ id: "__locked", name: "Locked test", section: "trunk", safety: "standing", control: "guided",
-            movement: "test", desc: "test", mount: "", source: "test", how: ["a", "b", "c"], make: () => null }); RC.patient.render()""")
-        check(con.get_attribute(".tile[data-id='__locked']", "aria-disabled") == "true", "safety-locked tile is disabled")
-        con.click(".tile[data-id='__locked']", force=True)
-        check(not con.is_visible("#vPlay"), "locked tile does not open")
+            # ---- no plan, locked tiles
+            con.select_option("#patientSel", "p_mei")
+            check(con.get_attribute("#todayBar", "data-state") == "none" and "No plan for today" in con.inner_text("#todayBar"), "patient without a plan sees 'No plan for today'")
+            con.click(".tile[data-id='sort']")
+            check(con.is_visible("#vPlay"), "library still opens exercises without a plan")
+            con.click("#btnBack")
+            con.evaluate("""RC.register({ id: "__locked", name: "Locked test", section: "trunk", safety: "standing", control: "guided",
+                movement: "test", desc: "test", mount: "", source: "test", how: ["a", "b", "c"], make: () => null }); RC.patient.render()""")
+            check(con.get_attribute(".tile[data-id='__locked']", "aria-disabled") == "true", "safety-locked tile is disabled")
+            con.click(".tile[data-id='__locked']", force=True)
+            check(not con.is_visible("#vPlay"), "locked tile does not open")
 
-        # ---- provider: patients and plan builder
-        con.click("#roleProvider")
-        n_pts = con.locator("#pvPatients .pt").count()
-        con.click("#pvAddPatient"); con.fill("#pvNewName", "Tom B."); con.click("#pvNewSave")
-        check(con.locator("#pvPatients .pt").count() == n_pts + 1, "provider can add a patient")
-        con.click("#pvPatients .pt[data-id='p_mei']")
-        today = con.evaluate("RC.plan.dateKey(new Date())")
-        con.fill("#pvStart", today); con.dispatch_event("#pvStart", "change")
-        check(con.locator(".calday").count() == 30, "a 30-day calendar appears once a start date is set")
-        con.click(".calday[data-day='0']")
-        con.fill("#pvPickQ", "Lantern"); con.click(".pick[data-id='lift']")
-        con.select_option(".item[data-index='0'] select[name=reps]", "6")
-        con.select_option(".item[data-index='0'] select[name=level]", "1")
-        con.fill("#pvPickQ", ""); con.click(".pick[data-id='sort']")
-        con.fill("#pvPickQ", "Locked"); con.click(".pick[data-id='__locked']")
-        check(con.is_visible("#pvSafety"), "picking a safety-flagged exercise asks for confirmation")
-        con.click("#pvSafetyNo")
-        check(con.locator(".item").count() == 2, "declining the safety confirmation adds nothing")
-        con.click(".calday[data-day='1']"); con.check("#pvRest")
-        con.click("#pvCopyWeek")
-        check(con.locator(".calday[data-day='7'] .chip").count() == 2, "copy week 1 repeats day 1's exercises on day 8")
-        check("Rest" in con.inner_text(".calday[data-day='8']"), "copy week 1 repeats the rest day")
-        check(con.evaluate("window.__mend.data.plan('p_mei').days[0].items[0].reps") == 6, "plan edits are saved")
-        # ---- provider: progress and export
-        con.click("#pvPatients .pt[data-id='p_ruth']"); con.click("#pvTabProgress")
-        check(re.match(r"^\d+/\d+$", con.inner_text("#pvKpiDays").strip()) is not None, "progress shows assigned days done as N/M")
-        strip = [con.get_attribute(f".strip span:nth-child({i + 1})", "data-status") for i in range(con.locator(".strip span").count())]
-        check(len(strip) == 30 and "missed" in strip and "partly" in strip, "adherence strip has 30 days including missed and partly done")
-        check(con.inner_text("#pvSessions tbody tr:first-child td.kind") in ("Assigned", "Extra", "Before plan"), "sessions are tagged Assigned or Extra")
-        with con.expect_download() as dl_info:
-            con.click("#pvExportCsv")
-        dl = dl_info.value
-        first_line = open(dl.path(), encoding="utf-8").readline()
-        check(dl.suggested_filename.startswith("reconnect-ruth") and first_line.startswith("at,id,name"), f"CSV export downloads ({dl.suggested_filename})")
-        check(con.locator("#pvPrint").count() == 1, "print report button is present")
-        con.click("#pvTabPlan")
-        con.click("#rolePatient")
-        con.select_option("#patientSel", "p_mei")
-        check(con.locator("#todaySteps li").count() == 2, "patient sees the provider's plan in the Today bar")
+            # ---- provider: patients and plan builder
+            con.click("#roleProvider")
+            n_pts = con.locator("#pvPatients .pt").count()
+            con.click("#pvAddPatient"); con.fill("#pvNewName", "Tom B."); con.click("#pvNewSave")
+            check(con.locator("#pvPatients .pt").count() == n_pts + 1, "provider can add a patient")
+            con.click("#pvPatients .pt[data-id='p_mei']")
+            today = con.evaluate("RC.plan.dateKey(new Date())")
+            con.fill("#pvStart", today); con.dispatch_event("#pvStart", "change")
+            check(con.locator(".calday").count() == 30, "a 30-day calendar appears once a start date is set")
+            con.click(".calday[data-day='0']")
+            con.fill("#pvPickQ", "Lantern"); con.click(".pick[data-id='lift']")
+            con.select_option(".item[data-index='0'] select[name=reps]", "6")
+            con.select_option(".item[data-index='0'] select[name=level]", "1")
+            con.fill("#pvPickQ", ""); con.click(".pick[data-id='sort']")
+            con.fill("#pvPickQ", "Locked"); con.click(".pick[data-id='__locked']")
+            check(con.is_visible("#pvSafety"), "picking a safety-flagged exercise asks for confirmation")
+            con.click("#pvSafetyNo")
+            check(con.locator(".item").count() == 2, "declining the safety confirmation adds nothing")
+            con.click(".calday[data-day='1']"); con.check("#pvRest")
+            con.click("#pvCopyWeek")
+            check(con.locator(".calday[data-day='7'] .chip").count() == 2, "copy week 1 repeats day 1's exercises on day 8")
+            check("Rest" in con.inner_text(".calday[data-day='8']"), "copy week 1 repeats the rest day")
+            check(con.evaluate("window.__mend.data.plan('p_mei').days[0].items[0].reps") == 6, "plan edits are saved")
+            # ---- provider: progress and export
+            con.click("#pvPatients .pt[data-id='p_ruth']"); con.click("#pvTabProgress")
+            check(re.match(r"^\d+/\d+$", con.inner_text("#pvKpiDays").strip()) is not None, "progress shows assigned days done as N/M")
+            strip = [con.get_attribute(f".strip span:nth-child({i + 1})", "data-status") for i in range(con.locator(".strip span").count())]
+            check(len(strip) == 30 and "missed" in strip and "partly" in strip, "adherence strip has 30 days including missed and partly done")
+            check(con.inner_text("#pvSessions tbody tr:first-child td.kind") in ("Assigned", "Extra", "Before plan"), "sessions are tagged Assigned or Extra")
+            with con.expect_download() as dl_info:
+                con.click("#pvExportCsv")
+            dl = dl_info.value
+            first_line = open(dl.path(), encoding="utf-8").readline()
+            check(dl.suggested_filename.startswith("reconnect-ruth") and first_line.startswith("at,id,name"), f"CSV export downloads ({dl.suggested_filename})")
+            check(con.locator("#pvPrint").count() == 1, "print report button is present")
+            con.click("#pvTabPlan")
+            con.click("#rolePatient")
+            con.select_option("#patientSel", "p_mei")
+            check(con.locator("#todaySteps li").count() == 2, "patient sees the provider's plan in the Today bar")
 
         # ---- exercise families: every tile opens, and one per family plays to the end
         con.evaluate("(() => { const d = window.__mend.data, p = d.patients().find(x => x.id === 'p_mei'); p.enabled = { sit2stand: true, balance: true }; d.savePatient(p); d.setActivePatient('p_mei'); RC.patient.render(); })()")
@@ -332,6 +337,8 @@ with sync_playwright() as p:
             check(bool(t) and st == "play", f"{gid} opens and runs ({t})")
 
         def family(name, ids, rep_id, rep_step, limit=120):
+            if ONLY and name not in ONLY:
+                return
             for gid in ids:
                 tile_opens(gid)
             play(rep_id, rep_step, limit)
@@ -352,8 +359,19 @@ with sync_playwright() as p:
             time.sleep(0.08)
         family("hand", ["tap", "rhythm", "dial", "pinch", "grip", "putty", "curls", "thumbs", "clothespin", "coins", "buttons", "knifefork"], "tap", tap_step, 60)
 
-        con.click("#toLog")
-        check(con.locator("#logBody tbody tr").count() >= 6, "session log lists the sessions")
+        def lean_step():
+            d = dbg()
+            p_, r_ = {"left": (0, -30), "right": (0, 30), "forward": (30, 0)}[d["dir"]]
+            mramp(0, 0, p_, r_, 0.5); mramp(p_, r_, p_, r_, 2.4); mramp(p_, r_, 0, 0, 0.5); time.sleep(0.3)
+        family("trunk", ["lean", "twist", "sit2stand", "balance", "march", "heelraise", "anklepump"], "lean", lean_step, 90)
+
+        def mirror_step():
+            con.keyboard.press("Space"); time.sleep(0.5)
+        family("sessions", ["mirror", "imagery"], "mirror", mirror_step, 30)
+
+        if not ONLY:
+            con.click("#toLog")
+            check(con.locator("#logBody tbody tr").count() >= 6, "session log lists the sessions")
 
     # ---- midnight rollover (Review Focus 1)
     night = b.new_context(viewport={"width": 1366, "height": 900})
