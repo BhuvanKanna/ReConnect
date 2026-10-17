@@ -1,107 +1,118 @@
 # ReConnect
 
-Phone-controlled stroke rehab activities. Open ReConnect on a computer, scan the QR code with your phone,
-and play six short activities by tilting the phone. Each session records repetitions, range of motion
-and movement smoothness, and saves it to a log you can share with a therapist.
+Home stroke rehab with a provider plan. A therapist assigns a 30-day plan of exercises; the patient opens
+ReConnect on a computer, sees **today's goals** at the top, does them (using their phone as a motion controller
+or tap pad), and can practise anything else in the library as bonus work. The provider sees what was assigned,
+what was done, and what was extra.
 
 **Live site:** https://bhuvankanna.github.io/ReConnect/
 
 Built as a prototype for the Sling Health neuroscience team at UT Austin. Not a medical device.
 
-## Use it
+## Demo mode
 
-1. Open the live site on a computer (Chrome, Edge, Safari or Firefox).
-2. Scan the QR code with the phone camera. On the phone, tap **Start motion**; on iPhone, tap **Allow** for motion access.
-3. On the computer, set the affected side, range target (15°, 30° or 45°) and repetitions, then pick an activity.
-4. Press **Start with phone** and hold still for the 3-second calibration. Targets are measured from that resting position.
+This version is one website that contains both sides, so you can try the whole loop on one computer. Switch
+with **Demo: Patient | Provider** at the top. Everything is saved in this browser only.
 
-No phone? Tick **Use the mouse instead of a phone**: the pointer position stands in for the tilt of the hand.
+- **Provider:** pick a patient (or add one), set a start date, and build the 30-day plan: choose a day, add
+  exercises with their level and reps or time, mark rest days, and **Copy week 1 to all weeks**. Standing
+  exercises (Sit to Stand, Balance Hold) stay locked until you turn them on for that patient. The **Progress** tab
+  shows days done, extra sessions, a 30-day adherence strip and every session tagged Assigned, Extra or Before plan,
+  with **Export CSV** and **Print report**.
+- **Patient:** the Today bar shows today's assigned exercises and starts the next one with the provider's settings.
+  When they're all done it says so, and anything played after that counts as bonus practice.
+- The demo starts with three patients (Ruth is 11 days into a plan, James is behind, Mei has no plan yet).
+  **Reset demo data** in the provider sidebar puts them back.
 
-## Activities
+Real provider and patient accounts, a server and remote reports are the next step; the data model (patients,
+plans, sessions tagged with `patientId` and `assigned`) is built so that move doesn't mean starting over.
 
-| Activity | Phone position | Movement it trains | Based on |
-| --- | --- | --- | --- |
-| Lantern Lift | Strapped to the forearm, screen up (or flat in the palm) | Shoulder flexion with a 1.2 s hold | FitMi and Flint arm raises; Penumbra REAL shoulder range of motion |
-| Pour the Tea | In the hand like a teapot handle, elbow on the table | Forearm rotation; spills if poured too fast | mRehab Slow Pour and Quick Twist; RAPAEL pouring and supination–pronation |
-| Combination Lock | In the hand like a key | Forearm rotation plus remembering a 2–4 digit code | mRehab Unlock with Key and Turn Doorknob; Constant Therapy visual memory |
-| Tilt Maze | Flat in the palm like a tray | Wrist flexion/extension and side-to-side deviation | RAPAEL wrist games |
-| Sort It | In the hand, elbow on the table | Forearm rotation plus reading and word categories | Constant Therapy categorization and reading; FitMi object rotation |
-| Memory Moves | Flat in the palm | Tilts in four directions plus sequence memory | Simon-style serious games; Constant Therapy sequencing |
+## Use it with a phone
 
-The **Evidence** tab in the app, and [`docs/exercise-catalog.md`](docs/exercise-catalog.md), list the exercises
-from each published system and the studies behind them.
+1. Open the site on a computer (Chrome, Edge, Safari or Firefox).
+2. Tap the phone button at the top right and scan the QR code. On the phone, tap **Start motion**; on iPhone, tap **Allow**.
+3. Pick an exercise and press **Start with phone**. Motion exercises calibrate for 3 seconds first; finger and
+   guided exercises turn the phone into a tap pad (a keypad, four finger lanes, or a big Done button).
+
+No phone? Tick **Use the mouse instead of a phone** in the same panel: the pointer stands in for the tilt of the
+hand, holding the mouse button stands in for a push, and touch exercises work with the mouse or a touchscreen.
+
+## The 63 exercises
+
+| Section | Exercises |
+| --- | --- |
+| Arm & shoulder (8) | Lantern Lift, Side Raise, Reach Targets, Cup to Mouth, Push Away, Table Slide, Bowl Lift, Trace It |
+| Wrist & forearm (6) | Pour the Tea, Combination Lock, Tilt Maze, Wrist Bend, Wrist Wiper, Steady Cup |
+| Hand & fingers (12) | Finger Tap, Finger Rhythm, Dial a Number, Pinch & Place; guided Grip & Release, Putty Squeeze, Finger Curls, Thumb Touches, Clothespins, Coins, Buttons, Knife & Fork |
+| Trunk & legs (7) | Lean & Shift, Trunk Twist, Sit to Stand, Balance Hold, Seated March, Heel Raises, Ankle Pumps |
+| Therapy sessions (2) | Mirror Therapy, Mental Practice |
+| Visual scanning (3) | Cancel It, Look Left Search, Find the Middle |
+| Attention (5) | Quick Catch, Go / No-Go, Night Watch, Two at Once, Trail Connect |
+| Memory (7) | Memory Moves, Card Pairs, N-Back, Number Span, Word Recall, Shopping List, Names & Faces |
+| Reasoning (8) | Sort It, Tower Puzzle, Errand Planner, What Comes Next, Turn the Shape, Make Change, Tell the Time, Rule Switch |
+| Language (5) | Name It, Word to Picture, Word Web, Finish the Sentence, Spell It |
+
+Every exercise has three levels and an assignable amount (reps, rounds or time). **About these exercises** in the
+app, and [`docs/exercise-catalog.md`](docs/exercise-catalog.md), list the programs and studies each one comes from.
 
 ## What gets measured
 
-- **Repetitions and time** for every activity.
-- **Pitch and roll range**: the smallest and largest angle reached, relative to the calibrated rest position.
-- **Speed peaks per repetition**: angular speed is resampled to 20 Hz and smoothed, and prominent peaks are counted.
-  A smooth out-and-back movement has about two; jerky, corrected movements have more. This is a simplified
-  version of the idea behind mRehab's normalized jerk score.
-- **Activity results**: best lift, spills, codes opened, wall bumps, sorting accuracy and decision time, longest pattern.
-
-Sessions are saved in the computer browser's local storage only. **Copy summary for my therapist** on the
-Session log tab copies a plain-text summary. Mouse-mode sessions are labelled so they're never mistaken for patient data.
+- **Every session:** reps or rounds, time, the settings it was played at, and whether it filled an assigned item.
+- **Motion:** pitch and roll range from the calibrated rest position, and speed peaks per repetition (a simplified
+  version of mRehab's smoothness score). Exercise-specific results such as best lift, sway, taps per second.
+- **Brain exercises:** accuracy, reaction or decision time, and task-specific results (missed on the left vs right
+  for scanning, longest span, rule changes found, hints used).
 
 ## How it works
 
 The whole app is static files, which is why it can run on GitHub Pages.
 
-- `index.html` is the computer app. On load it registers a 6-digit code (`mend-rehab-<code>`) with the free
-  [PeerJS](https://peerjs.com) broker and shows it as a QR code.
-- `phone.html` is the controller. It reads the phone's orientation (`deviceorientation`, which phones only
-  allow on https pages) and connects to the computer by that code.
-- The two talk peer-to-peer over a WebRTC data channel. When a network blocks direct connections, PeerJS falls back
-  to its public TURN relay, so phone and computer can be on different networks.
+- `index.html` is the shell; `css/app.css` the theme; `js/` the app, loaded as plain scripts sharing a `window.RC`
+  namespace. `js/plan.js` (plan rules) and `js/data.js` (storage and demo seed) are pure and unit-tested in Node.
+  Each library section is one file in `js/games/`; shared building blocks (rep counter, tilt cursor, answer cards,
+  keypad, guided session) are in `js/kit.js`.
+- The computer registers a 6-digit code (`mend-rehab-<code>`) with the free [PeerJS](https://peerjs.com) broker and
+  shows it as a QR code. `phone.html` connects by that code and the two talk over a WebRTC data channel.
 
 Messages are small JSON objects:
 
-- phone → computer: `{type:"m", b, g, a, mag}` (orientation in degrees, about 25 per second), `{type:"recenter"}`
-- computer → phone: `{type:"status", task, title, text, tone}`, `{type:"haptic", pattern}`, `{type:"calibrated"}`, `{type:"replaced"}`
+- phone → computer: `{type:"m", b, g, a, mag, lin}` (tilt, heading, acceleration), `{type:"tap", key}`, `{type:"hb"}` every 2 s, `{type:"bye"}`, `{type:"recenter"}`
+- computer → phone: `{type:"status", …}`, `{type:"pad", layout, labels}`, `{type:"haptic", pattern}`, `{type:"calibrated"}`, `{type:"replaced"}`
+
+The computer treats 6 seconds without a message as a disconnect. A pad exercise then keeps going with on-screen keys.
 
 ### Privacy note
 
-Only orientation angles travel between the devices; nothing identifies the person. The PeerJS broker sees the
-pairing code, and the public TURN relay may carry the angle stream on restrictive networks. A real clinical
-version should run its own broker and TURN server and store sessions in a HIPAA-eligible backend.
+Only angles and taps travel between the devices; nothing identifies the person. The PeerJS broker sees the
+pairing code. A real clinical version should run its own broker and TURN server and store data in a
+HIPAA-eligible backend.
 
-## Develop
-
-Any static server works for the computer page:
+## Develop and test
 
 ```bash
-python3 -m http.server 8000
-# open http://localhost:8000
-```
-
-The phone page needs https to read motion sensors, so test phone control on the deployed site, or put a tunnel
-in front of the local server (for example `cloudflared tunnel --url http://localhost:8000`).
-
-To add an activity, add an entry to `ACTIVITIES` in `index.html` and a factory function returning an object
-with `update(dt, angles)`, `draw(ctx, W, H, angles, t)`, `status()`, `stats()`, plus `_reps`, `done` and an
-`events` array (`"success"`, `"error"`, `"big"`), which the engine turns into sounds and phone vibrations.
-`angles` is `{pitch, roll}` in degrees from the calibrated rest position.
-
-## Test
-
-```bash
+python3 -m http.server 8000            # then open http://localhost:8000
+node --test "tests/*.test.js"          # plan, storage and rep-counter unit tests
 python3 -m pip install playwright && python3 -m playwright install chromium
-python3 tests/smoke_test.py                          # serves this folder locally
+python3 tests/smoke_test.py            # end to end: pairing, phone pad, all games, Today flow, provider, every exercise
+python3 tests/smoke_test.py --families memory,language   # just some exercise groups
 python3 tests/smoke_test.py --site https://<user>.github.io/<repo>/
 ```
 
-The test pairs a simulated phone, plays a phone-controlled session, then plays all six activities to completion.
+The phone page needs https to read motion sensors, so test phone control on the deployed site or through a tunnel.
 
 ## Known limits
 
+- **Pairing on restrictive networks:** if the phone says "Couldn't reach the computer", the network is blocking
+  direct connections and PeerJS's free relay isn't answering. Same home Wi-Fi usually works; the fix is a TURN relay
+  (for example Metered Open Relay) configured through `window.MEND_PEER_OPTS`.
 - iPhones don't vibrate from web pages, so haptic feedback works on Android only.
-- Large rotations past about 80° from flat can wrap; activities keep targets within 45°.
+- Pictures in the language exercises use the device's emoji font, so they look different on different systems.
 - Nothing here is clinically validated. Talk to the care team before using it with a patient.
 
 ## Credits
 
 - [PeerJS](https://github.com/peers/peerjs) 1.5.4, MIT license (`vendor/peerjs.LICENSE`)
 - [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) 1.4.4 by Kazuhiko Arase, MIT license (header of `vendor/qrcode.js`)
-- Fonts: Bricolage Grotesque, Atkinson Hyperlegible and IBM Plex Mono via Google Fonts
+- Font: Atkinson Hyperlegible (Braille Institute) via Google Fonts
 
 ReConnect's own code is MIT licensed; see `LICENSE`.

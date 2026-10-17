@@ -422,6 +422,19 @@ with sync_playwright() as p:
             con.click("#toLog")
             check(con.locator("#logBody tbody tr").count() >= 6, "session log lists the sessions")
 
+    # ---- About page: every program listed, rows mapped to the exercises that now exist
+    if con.is_visible("#btnBack"):
+        con.click("#btnBack")
+    con.click("#rolePatient"); con.click("#tabAbout")
+    n_sys = con.locator("#evgrid .sys").count()
+    tags = set(con.locator("#evgrid td.inmend .tag").all_inner_texts())
+    names = set(con.evaluate("RC.EXERCISES.map(d => d.name)"))
+    expect = {"Dial a Number", "Finger Tap", "Grip & Release", "Trunk Twist", "Seated March", "Ankle Pumps", "Table Slide", "Bowl Lift",
+              "Finger Curls", "Thumb Touches", "Cancel It", "Name It", "Sit to Stand", "Balance Hold", "Mirror Therapy", "Number Span", "Spell It"}
+    check(n_sys >= 13, f"About page lists {n_sys} programs (13 or more)")
+    check(tags <= names and expect <= tags, "About rows point at real exercises, including the new ones" + ("" if expect <= tags else f" (missing {sorted(expect - tags)})"))
+    con.click("#tabHome")
+
     # ---- midnight rollover (Review Focus 1)
     night = b.new_context(viewport={"width": 1366, "height": 900})
     pg = night.new_page()
