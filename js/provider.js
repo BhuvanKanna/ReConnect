@@ -114,8 +114,59 @@ function render() {
       <div class="pv-flags"><span class="muted">Standing exercises:</span>
         <label class="toggle"><input type="checkbox" id="pvEnable-sit2stand"${enabled.sit2stand ? " checked" : ""}> Sit to Stand</label>
         <label class="toggle"><input type="checkbox" id="pvEnable-balance"${enabled.balance ? " checked" : ""}> Balance Hold</label></div>
-      ${UI.tab === "plan" ? renderPlanTab(pt) : (RC.providerProgress ? RC.providerProgress(pt) : '<div class="pv-card"><p class="muted">Progress is coming next.</p></div>')}` : '<p class="muted">Add a patient to get started.</p>'}
+      ${UI.tab === "plan" ? renderPlanTab(pt) : progressView(pt)}` : '<p class="muted">Add a patient to get started.</p>'}
     </div></div>`;
+}
+
+// ---------------------------------------------------------------- progress
+const CSV_COLS = ["at", "id", "name", "movement", "side", "targetDeg", "reps", "goal", "level", "seconds", "input", "pitch", "roll", "peaksPerRep", "activeS", "extra", "patientId", "assigned", "completed", "targetReps", "durationS", "legacy"];
+const STATUS_LABEL = { done: "Done", partly: "Partly done", missed: "Missed", rest: "Rest", future: "Coming up", today: "Today", outside: "" };
+function kindOf(s) { return s.legacy ? "Before plan" : s.assigned ? "Assigned" : "Extra"; }
+function resultOf(s) {
+  const first = (s.extra || [])[0];
+  return `${s.completed === false ? "Stopped early · " : ""}${s.reps != null ? `${s.reps}/${s.goal}` : ""}${first ? ` · ${first[0]} ${first[1]}` : ""}`;
+}
+function progressView(pt) {
+  const pl = db().plan(pt.id), sessions = db().sessions(pt.id), tk = todayKey();
+  const pr = P.progress(pl, sessions, tk);
+  const fmtDate = (iso) => new Date(iso).toLocaleDateString([], { month: "short", day: "numeric" });
+  const rows = sessions.slice().reverse().slice(0, 60).map((s) => {
+    const i = P.dayIndex(pl, P.sessionDay(s));
+    return `<tr><td class="num">${i >= 0 ? i + 1 : "–"}</td><td class="num">${esc(fmtDate(s.at))}</td><td><b>${esc(s.name)}</b>${s.input === "mouse" ? ' <span class="chip">mouse</span>' : ""}</td>
+      <td>${esc(resultOf(s))}</td><td class="num">${Array.isArray(s.pitch) ? `${s.pitch[0]}° to ${s.pitch[1]}°` : "–"}</td><td class="kind">${kindOf(s)}</td></tr>`;
+  }).join("");
+  const plan = pl ? pl.days.map((d, i) => `<li><b>Day ${i + 1}</b> ${d.rest || !d.items.length ? "Rest" : d.items.map((it) => esc((RC.exercise(it.exerciseId) || { name: it.exerciseId }).name) + (it.reps ? ` ×${it.reps}` : "")).join(", ")}</li>`).join("") : "";
+  return `
+    <div class="pv-kpis">
+      <div class="pv-card kpi"><b id="pvKpiDays" class="num">${pr.daysDone}/${pr.daysDue}</b><span>Assigned days done</span></div>
+      <div class="pv-card kpi"><b id="pvKpiExtra" class="num">+${pr.extra}</b><span>Extra sessions</span></div>
+      <div class="pv-card kpi"><b id="pvKpiRange" class="num">${pr.range ? `${pr.range.first}° → ${pr.range.last}°` : "–"}</b><span>Shoulder raise, first to latest</span></div>
+    </div>
+    <div class="pv-card">
+      <div class="pv-rowhead"><h3>Adherence</h3><span class="legend"><i class="lg done"></i>Done <i class="lg partly"></i>Partly <i class="lg missed"></i>Missed <i class="lg rest"></i>Rest</span></div>
+      ${pl ? `<div class="strip">${pr.strip.map((st, i) => `<span data-status="${st}" title="Day ${i + 1}: ${STATUS_LABEL[st]}"></span>`).join("")}</div>` : '<p class="muted">No plan yet.</p>'}
+    </div>
+    <div class="pv-card">
+      <div class="pv-rowhead"><h3>Sessions</h3><div class="actions"><button class="btn alt" id="pvExportCsv">Export CSV</button><button class="btn alt" id="pvPrint">Print report</button></div></div>
+      ${rows ? `<div class="tablewrap"><table id="pvSessions"><thead><tr><th>Day</th><th>Date</th><th>Exercise</th><th>Result</th><th>Range</th><th>Type</th></tr></thead><tbody>${rows}</tbody></table></div>` : '<p class="muted">No sessions yet.</p>'}
+    </div>
+    ${plan ? `<div class="pv-card print-only"><h3>Plan from ${esc(pl.start)}</h3><ol class="plan-list">${plan}</ol></div>` : ""}`;
+}
+RC.providerProgress = progressView;
+
+function exportCsv(pt) {
+  const cell = (v) => {
+    if (v == null) return "";
+    if (Array.isArray(v)) v = v.length && Array.isArray(v[0]) ? v.map(([k, x]) => `${k}=${x}`).join("; ") : v.join(" to ");
+    const s = String(v);
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
+  const lines = [CSV_COLS.join(",")].concat(db().sessions(pt.id).map((s) => CSV_COLS.map((c) => cell(s[c])).join(",")));
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([lines.join("\n") + "\n"], { type: "text/csv" }));
+  a.download = `reconnect-${pt.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}-${todayKey()}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 
 function mutatePlan(fn) { const pt = current(), pl = db().plan(pt.id); fn(pl); db().savePlan(pl); render(); }
@@ -134,6 +185,8 @@ pv.addEventListener("click", (e) => {
   if (t.closest("#resetDemo")) { db().resetDemo(); UI.patientId = null; render(); RC.renderRole && RC.renderRole(); return; }
   if (t.closest("#pvTabPlan")) { UI.tab = "plan"; render(); return; }
   if (t.closest("#pvTabProgress")) { UI.tab = "progress"; render(); return; }
+  if (t.closest("#pvExportCsv")) { exportCsv(current()); return; }
+  if (t.closest("#pvPrint")) { window.print(); return; }
   const day = t.closest(".calday[data-day]");
   if (day) { UI.day = +day.dataset.day; UI.safety = null; render(); return; }
   if (t.closest("#pvCopyWeek")) { const p = current(); db().savePlan(P.copyWeek(db().plan(p.id))); render(); return; }

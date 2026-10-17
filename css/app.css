@@ -265,6 +265,31 @@ input[type="date"], input[type="search"] { min-height: 44px; border-radius: 12px
 .pick-sec p { width: 100%; font-size: 14px; font-weight: 700; color: var(--muted); }
 .pick { border: 0; background: var(--sunk); border-radius: 10px; padding: 7px 11px; min-height: 40px; font-weight: 700; font-size: 15px; }
 .pick:hover { background: var(--primary-soft); color: var(--primary); }
+.pv-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+@media (max-width: 640px) { .pv-kpis { grid-template-columns: minmax(0, 1fr); } }
+.kpi { gap: 4px; }
+.kpi b { font-size: 34px; line-height: 1.05; }
+.kpi span { color: var(--muted); font-size: 15px; }
+.pv-rowhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
+.legend { display: inline-flex; align-items: center; gap: 6px 10px; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+.lg { width: 12px; height: 12px; border-radius: 4px; display: inline-block; }
+.strip { display: grid; grid-template-columns: repeat(30, minmax(0, 1fr)); gap: 3px; }
+.strip span { height: 26px; border-radius: 5px; background: var(--sunk); }
+.strip [data-status="done"], .lg.done { background: var(--primary); }
+.strip [data-status="partly"], .lg.partly { background: color-mix(in srgb, var(--primary) 45%, var(--sunk)); }
+.strip [data-status="missed"], .lg.missed { background: color-mix(in srgb, var(--accent) 45%, var(--sunk)); }
+.strip [data-status="rest"], .lg.rest { background: repeating-linear-gradient(135deg, var(--sunk) 0 4px, color-mix(in srgb, var(--muted) 18%, var(--sunk)) 4px 6px); }
+.strip [data-status="today"] { box-shadow: inset 0 0 0 2.5px var(--primary); background: var(--surface); }
+td.kind { font-weight: 700; color: var(--muted); }
+.print-only { display: none; }
+.plan-list { margin: 0; padding-left: 0; list-style: none; columns: 2; font-size: 14px; }
+@media print {
+  body { background: #fff; font-size: 12pt; }
+  .top, .pv-side, .pv-flags, .pv-head .seg, #pvExportCsv, #pvPrint, .skip { display: none !important; }
+  .pv { display: block; }
+  .pv-card { box-shadow: none; border: 1px solid #ccd; break-inside: avoid; }
+  .print-only { display: flex; }
+}
 
 /* ---------- play ---------- */
 .playhead { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }

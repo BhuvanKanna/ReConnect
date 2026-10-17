@@ -13,7 +13,7 @@ Usage:
 
 Exit code 0 means every check passed.
 """
-import argparse, collections, datetime, functools, http.server, json, math, os, socketserver, sys, threading, time
+import argparse, collections, datetime, re, functools, http.server, json, math, os, socketserver, sys, threading, time
 from playwright.sync_api import sync_playwright
 
 ap = argparse.ArgumentParser()
@@ -270,6 +270,19 @@ with sync_playwright() as p:
         check(con.locator(".calday[data-day='7'] .chip").count() == 2, "copy week 1 repeats day 1's exercises on day 8")
         check("Rest" in con.inner_text(".calday[data-day='8']"), "copy week 1 repeats the rest day")
         check(con.evaluate("window.__mend.data.plan('p_mei').days[0].items[0].reps") == 6, "plan edits are saved")
+        # ---- provider: progress and export
+        con.click("#pvPatients .pt[data-id='p_ruth']"); con.click("#pvTabProgress")
+        check(re.match(r"^\d+/\d+$", con.inner_text("#pvKpiDays").strip()) is not None, "progress shows assigned days done as N/M")
+        strip = [con.get_attribute(f".strip span:nth-child({i + 1})", "data-status") for i in range(con.locator(".strip span").count())]
+        check(len(strip) == 30 and "missed" in strip and "partly" in strip, "adherence strip has 30 days including missed and partly done")
+        check(con.inner_text("#pvSessions tbody tr:first-child td.kind") in ("Assigned", "Extra", "Before plan"), "sessions are tagged Assigned or Extra")
+        with con.expect_download() as dl_info:
+            con.click("#pvExportCsv")
+        dl = dl_info.value
+        first_line = open(dl.path(), encoding="utf-8").readline()
+        check(dl.suggested_filename.startswith("reconnect-ruth") and first_line.startswith("at,id,name"), f"CSV export downloads ({dl.suggested_filename})")
+        check(con.locator("#pvPrint").count() == 1, "print report button is present")
+        con.click("#pvTabPlan")
         con.click("#rolePatient")
         con.select_option("#patientSel", "p_mei")
         check(con.locator("#todaySteps li").count() == 2, "patient sees the provider's plan in the Today bar")
