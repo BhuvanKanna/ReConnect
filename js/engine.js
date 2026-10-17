@@ -58,7 +58,7 @@ function renderSetup() {
     <span class="eyebrow">${d.movement}</span>
     <h2>${d.name}</h2>
     <p>${d.desc}</p>
-    <p class="muted"><b>Phone:</b> ${d.mount.replace("affected", sideTxt + " (affected)")}</p>
+    ${d.mount ? `<p class="muted"><b>Phone:</b> ${d.mount.replace("affected", sideTxt + " (affected)")}</p>` : ""}
     <ol class="howto">${d.how.map((h) => `<li>${h}</li>`).join("")}</ol>
     ${setupControls()}
     <p class="note">Sit in a sturdy chair. Stop if anything hurts.</p>

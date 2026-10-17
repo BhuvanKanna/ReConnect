@@ -193,5 +193,46 @@ const ART = {};
 const defineArt = (id, svg) => { ART[id] = svg; };
 const art = (id) => (ART[id] ? `<svg viewBox="0 0 120 64" aria-hidden="true" class="art">${ART[id]}</svg>` : null);
 
-RC.kit = { base, drawGonio, RepCounter, Cursor, Choice, Keypad, Guided, defineArt, art, inRect };
+// Small shared helpers for the exercise families.
+const rand = (a, b) => a + Math.random() * (b - a);
+const randInt = (a, b) => Math.floor(rand(a, b + 1));
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+function shuffle(arr) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function bg(g, W, H, brain) { g.fillStyle = brain ? alpha(T.brain || "#5b4bb5", 0.06) : T.stage; g.fillRect(0, 0, W, H); if (brain) { g.fillStyle = alpha(T.surface, 0.55); g.fillRect(0, 0, W, H); } }
+// Progress dots along the top of the stage.
+function dots(g, W, n, done, y = 122) {
+  const gap = Math.min(26, (W - 80) / Math.max(1, n)), x0 = W / 2 - ((n - 1) * gap) / 2;
+  for (let k = 0; k < n; k++) { g.beginPath(); g.arc(x0 + k * gap, y, 6, 0, TAU); g.fillStyle = k < done ? T.go : alpha(T.ink, 0.15); g.fill(); }
+}
+// A simple hold-to-target motion exercise: RepCounter on one signal plus a target bar and gauge.
+// spec: { signal(a) -> number, target(S), rest(S), hold, label, title, cue, gauge }
+function Reach(S, spec) {
+  const G = base(S, S.reps), tgt = () => spec.target(S);
+  const rc = RepCounter({ target: tgt(), rest: spec.rest(S), hold: spec.hold || 1, reps: S.reps });
+  let val = 0;
+  G.update = function (dt, a) {
+    val = spec.signal(a);
+    const before = rc.state;
+    if (spec.valid && rc.state === "move" && !spec.valid(a)) rc.holdT = 0;
+    if (rc.update(dt, val) === "rep") { this._reps++; this.events.push("success"); }
+    if (before === "return" && rc.state === "rest" && this._reps >= S.reps) this.done = true;
+  };
+  G.status = function () {
+    if (rc.state === "rest") return { title: spec.restTitle || "Back to rest", text: spec.restText || "Relax to start the next one." };
+    if (rc.state === "move") return rc.holdT > 0.05 ? { title: "Hold it there", text: `${Math.max(0, (spec.hold || 1) - rc.holdT).toFixed(1)} s`, tone: "good" } : { title: spec.title, text: spec.cue || `Target ${Math.round(Math.abs(rc.target))}°` };
+    return { title: "Good. Back to rest.", text: `${this._reps} of ${S.reps} done`, tone: "good" };
+  };
+  const best = () => (rc.peaks.length ? Math.round(Math.max(...rc.peaks.map(Math.abs))) : null);
+  G.stats = () => [["Best", best() == null ? "–" : `${best()}°`], ["Average", rc.peaks.length ? `${Math.round(rc.peaks.reduce((s, x) => s + Math.abs(x), 0) / rc.peaks.length)}°` : "–"]].concat(spec.stats ? spec.stats() : []);
+  G.debug = () => ({ state: rc.state, target: rc.target, val });
+  G.draw = function (g, W, H, a, t) {
+    bg(g, W, H);
+    dots(g, W, S.reps, this._reps);
+    spec.draw(g, W, H, { val, target: rc.target, prog: rc.progress(), state: rc.state, a, t });
+    if (spec.gauge !== false) drawGonio(g, W - 200, H - 24, Math.min(100, W * 0.11), Math.abs(val), Math.abs(rc.target), spec.label);
+  };
+  return G;
+}
+
+RC.kit = { base, drawGonio, RepCounter, Cursor, Choice, Keypad, Guided, defineArt, art, inRect, rand, randInt, pick, shuffle, bg, dots, Reach };
 })(typeof self !== "undefined" ? self : this);

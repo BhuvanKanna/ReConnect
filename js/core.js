@@ -19,7 +19,7 @@ const saveSettings = () => store.set("mend.settings", settings);
 let T = {};
 function readTheme() {
   const cs = getComputedStyle(document.documentElement);
-  for (const k of ["paper","surface","ink","muted","line","accent","accent-ink","go","warn","sky-top","sky-bot","hill","stage"]) T[k] = cs.getPropertyValue("--" + k).trim();
+  for (const k of ["paper","surface","ink","muted","line","accent","accent-ink","go","warn","sky-top","sky-bot","hill","stage","brain","brain-soft","primary-soft","sunk"]) T[k] = cs.getPropertyValue("--" + k).trim();
   T.display = cs.getPropertyValue("--display"); T.mono = cs.getPropertyValue("--mono"); T.body = cs.getPropertyValue("--body");
 }
 readTheme();

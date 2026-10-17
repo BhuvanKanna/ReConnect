@@ -310,6 +310,37 @@ with sync_playwright() as p:
         con.select_option("#patientSel", "p_mei")
         check(con.locator("#todaySteps li").count() == 2, "patient sees the provider's plan in the Today bar")
 
+        # ---- exercise families: every tile opens, and one per family plays to the end
+        con.evaluate("(() => { const d = window.__mend.data, p = d.patients().find(x => x.id === 'p_mei'); p.enabled = { sit2stand: true, balance: true }; d.savePatient(p); d.setActivePatient('p_mei'); RC.patient.render(); })()")
+        dbg = lambda: con.evaluate("window.__mend.Game.inst.debug()")
+
+        def stage_click(x, y):
+            bx = con.locator("#stageWrap").bounding_box()
+            con.mouse.click(bx["x"] + x, bx["y"] + y)
+
+        def center(r):
+            return r["x"] + r["w"] / 2, r["y"] + r["h"] / 2
+
+        def tile_opens(gid):
+            if con.is_visible("#btnBack"):
+                con.click("#btnBack")
+            con.click(f".tile[data-id='{gid}']")
+            con.click("#goMouse")
+            time.sleep(1.5)
+            t, st = title(), state()
+            con.evaluate("window.__mend.Game.finishNow()")
+            check(bool(t) and st == "play", f"{gid} opens and runs ({t})")
+
+        def family(name, ids, rep_id, rep_step, limit=120):
+            for gid in ids:
+                tile_opens(gid)
+            play(rep_id, rep_step, limit)
+            con.click("#home")
+
+        def sideraise_step():
+            mramp(0, 0, 0, 0, 0.5); mramp(0, 0, 0, 34, 0.9); mramp(0, 34, 0, 34, 1.4); mramp(0, 34, 0, 0, 0.9)
+        family("arm", ["sideraise", "reach", "cupmouth", "push", "slide", "bowl", "trace"], "sideraise", sideraise_step, 90)
+
         con.click("#toLog")
         check(con.locator("#logBody tbody tr").count() >= 6, "session log lists the sessions")
 
