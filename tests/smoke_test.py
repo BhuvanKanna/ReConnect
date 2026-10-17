@@ -411,6 +411,13 @@ with sync_playwright() as p:
             stage_click(*center(d["rects"][a])); time.sleep(0.12); stage_click(*center(d["rects"][c])); time.sleep(0.15)
         family("reasoning", ["tower", "errands", "next", "rotate", "change", "clock", "ruleswitch"], "tower", tower_step, 90)
 
+        def nameit_step():
+            d = dbg()
+            if not d["fb"] and d["rects"]:
+                stage_click(*center(d["rects"][d["answer"]]))
+            time.sleep(0.25)
+        family("language", ["nameit", "wordpic", "wordweb", "sentence", "spell"], "nameit", nameit_step, 90)
+
         if not ONLY:
             con.click("#toLog")
             check(con.locator("#logBody tbody tr").count() >= 6, "session log lists the sessions")

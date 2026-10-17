@@ -216,10 +216,10 @@ function RuleSwitch(S) {
   }
   G.draw = function (g, W, H) {
     bg(g, W, H, true); dots(g, W, trials, G._reps);
-    const kw = Math.min(150, (W - 100) / 4 - 14), kh = kw * 1.2, x0 = W / 2 - (kw * 4 + 14 * 3) / 2;
+    const kh = Math.min(180, (H - 150 - 70) / 2.2), kw = Math.min(kh / 1.2, (W - 100) / 4 - 14), x0 = W / 2 - (kw * 4 + 14 * 3) / 2;
     rects = keys.map((_, i) => ({ x: x0 + i * (kw + 14), y: 150, w: kw, h: kh }));
     keys.forEach((k, i) => drawCard(g, rects[i].x, rects[i].y, kw, kh, k, false));
-    drawCard(g, W / 2 - kw / 2, Math.min(H - kh - 40, 150 + kh + 50), kw, kh, card, fb === true);
+    drawCard(g, W / 2 - kw / 2, 150 + kh + 40, kw, kh, card, fb === true);
   };
   return G;
 }
