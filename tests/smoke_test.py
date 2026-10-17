@@ -96,7 +96,7 @@ with sync_playwright() as p:
         for i in range(n + 1):
             orient(a + (b_ - a) * (0.5 - 0.5 * math.cos(math.pi * i / n)), 0); time.sleep(0.04)
 
-    for _ in range(6):
+    for _ in range(9):  # 6 reps needed; spare cycles absorb relay lag
         ramp(10, 10, 0.7); ramp(10, 48, 1.2); ramp(48, 48, 1.8); ramp(48, 8, 1.2)
         if con.is_visible("#again"):
             break
