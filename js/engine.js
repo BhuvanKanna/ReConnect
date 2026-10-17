@@ -242,12 +242,15 @@ function draw(a, now) {
   g.clearRect(0, 0, W, H);
   if (Game.inst && (Game.state === "play" || Game.state === "paused" || Game.state === "results")) Game.inst.draw(g, W, H, a, now / 1000);
   else drawIdle(a, now / 1000);
-  // live tilt cursor in the corner: always shows the input is alive
-  const cx = W - 46, cy = H - 46, R = 30;
-  g.beginPath(); g.arc(cx, cy, R, 0, TAU); g.fillStyle = alpha(T.surface, 0.85); g.fill(); g.strokeStyle = T.line; g.lineWidth = 1; g.stroke();
-  g.beginPath(); g.moveTo(cx - R, cy); g.lineTo(cx + R, cy); g.moveTo(cx, cy - R); g.lineTo(cx, cy + R); g.stroke();
-  const dx = clamp(a.roll / 60, -1, 1) * (R - 7), dy = -clamp(a.pitch / 60, -1, 1) * (R - 7);
-  g.beginPath(); g.arc(cx + dx, cy + dy, 6, 0, TAU); g.fillStyle = T.accent; g.fill();
+  // live tilt cursor in the corner shows the input is alive (motion exercises only)
+  const ctl = Game.current && Game.current.def.control;
+  if (!ctl || ctl === "tilt" || ctl === "accel") {
+    const cx = W - 46, cy = H - 46, R = 30;
+    g.beginPath(); g.arc(cx, cy, R, 0, TAU); g.fillStyle = alpha(T.surface, 0.85); g.fill(); g.strokeStyle = T.line; g.lineWidth = 1; g.stroke();
+    g.beginPath(); g.moveTo(cx - R, cy); g.lineTo(cx + R, cy); g.moveTo(cx, cy - R); g.lineTo(cx, cy + R); g.stroke();
+    const dx = clamp(a.roll / 60, -1, 1) * (R - 7), dy = -clamp(a.pitch / 60, -1, 1) * (R - 7);
+    g.beginPath(); g.arc(cx + dx, cy + dy, 6, 0, TAU); g.fillStyle = T.accent; g.fill();
+  }
   // banner
   let b = null;
   if (Game.state === "play" && Game.inst) b = Game.inst.status();

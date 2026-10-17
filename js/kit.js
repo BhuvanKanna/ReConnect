@@ -235,5 +235,57 @@ function Reach(S, spec) {
   return G;
 }
 
-RC.kit = { base, drawGonio, RepCounter, Cursor, Choice, Keypad, Guided, defineArt, art, inRect, rand, randInt, pick, shuffle, bg, dots, Reach };
+// Answer-card rounds: each round shows a prompt (drawn by the exercise) and 2–6 answer cards.
+// spec.round(i) → { title, text, options, answer (index or [indices]), draw(g, area, t), label(i), explain, hints[] }
+// Cards are picked by pointer, number keys, or (spec.cursor) by resting the tilt cursor on them.
+function Quiz(S, spec) {
+  const n = spec.rounds != null ? spec.rounds : S.reps || 10, G = base(S, n), cur = Cursor({ amp: S.amp });
+  let r = null, ch = null, fb = null, fbT = 0, t = 0, startT = 0, correct = 0, times = [], hint = 0, hintsUsed = 0, hintRect = null, W0 = 800, H0 = 500;
+  const isAns = (i) => (Array.isArray(r.answer) ? r.answer.includes(i) : i === r.answer);
+  function load() { r = spec.round(G._reps); ch = Choice({ options: r.options, layout: r.layout || (r.options.length > 4 ? "grid" : "row") }); startT = t; hint = 0; }
+  load();
+  function choose(i) {
+    if (fbT > 0 || i < 0 || i >= r.options.length) return;
+    const ok = isAns(i); fb = { i, ok }; fbT = ok ? 0.8 : 1.6;
+    if (ok) correct++; times.push(t - startT); G.events.push(ok ? "success" : "error");
+    if (spec.onAnswer) spec.onAnswer(ok, r);
+  }
+  G.update = function (dt, a) {
+    t += dt;
+    if (spec.cursor) { cur.update(dt, a, W0, H0); const i = cur.dwell(dt, ch.rects); if (i >= 0) choose(i); }
+    if (fbT > 0) { fbT -= dt; if (fbT <= 0) { G._reps++; fb = null; if (G._reps >= n) G.done = true; else load(); } }
+  };
+  G.pointer = (e) => {
+    if (e.type !== "down") return;
+    if (hintRect && inRect(e.x, e.y, hintRect) && r.hints && hint < r.hints.length && !fb) { hint++; hintsUsed++; return; }
+    choose(ch.hit(e.x, e.y));
+  };
+  G.key = (k) => { if (/^[1-9]$/.test(k)) choose(Number(k) - 1); };
+  const answerLabel = () => { const i = Array.isArray(r.answer) ? r.answer[0] : r.answer; const L = r.label ? r.label(i) : r.options[i]; return typeof L === "string" ? L : String(r.options[i]); };
+  G.status = function () {
+    if (fb) return fb.ok ? { title: r.good || "Correct", text: r.explain || "", tone: "good" } : { title: "Not quite", text: r.explain || `The answer was ${answerLabel()}.`, tone: "warn" };
+    return { title: r.title, text: hint ? r.hints[hint - 1] : r.text || "" };
+  };
+  G.stats = () => [["Correct", `${correct} / ${G._reps}`], ["Average time", times.length ? `${(times.reduce((s, x) => s + x, 0) / times.length).toFixed(1)} s` : "–"]]
+    .concat(hintsUsed ? [["Hints used", String(hintsUsed)]] : []).concat(spec.stats ? spec.stats() : []);
+  G.debug = () => ({ answer: Array.isArray(r.answer) ? r.answer[0] : r.answer, rects: ch.rects, fb: !!fb, round: G._reps });
+  G.draw = function (g, W, H) {
+    W0 = W; H0 = H;
+    bg(g, W, H, true); dots(g, W, n, G._reps);
+    const top = 140, split = spec.split || 0.5;
+    if (r.draw) r.draw(g, { x: 40, y: top, w: W - 80, h: (H - top) * split - 10 }, t);
+    ch.place({ x: W * 0.08, y: top + (H - top) * split, w: W * 0.84, h: (H - top) * (1 - split) - 24 });
+    ch.draw(g, (i) => (fb ? (i === fb.i ? (fb.ok ? "good" : "bad") : !fb.ok && isAns(i) ? "good" : null) : cur.active && cur.idx === i ? "hover" : null), (i) => (r.label ? r.label(i) : String(r.options[i])));
+    hintRect = null;
+    if (r.hints && r.hints.length) {
+      hintRect = { x: W - 150, y: top, w: 110, h: 44 };
+      rr(g, hintRect.x, hintRect.y, hintRect.w, hintRect.h, 12); g.fillStyle = hint >= r.hints.length ? alpha(T.ink, 0.06) : T.surface; g.fill();
+      txt(g, "Hint", hintRect.x + hintRect.w / 2, hintRect.y + 22, 17, hint >= r.hints.length ? T.muted : T.ink, { font: T.body });
+    }
+    cur.draw(g);
+  };
+  return G;
+}
+
+RC.kit = { base, drawGonio, RepCounter, Cursor, Choice, Keypad, Guided, defineArt, art, inRect, rand, randInt, pick, shuffle, bg, dots, Reach, Quiz };
 })(typeof self !== "undefined" ? self : this);

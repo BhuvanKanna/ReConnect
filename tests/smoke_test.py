@@ -386,6 +386,17 @@ with sync_playwright() as p:
             time.sleep(0.08)
         family("attention", ["quick", "gonogo", "watch", "twoatonce", "trail"], "quick", quick_step, 90)
 
+        def pairs_step():
+            d = dbg()
+            if d["busy"]:
+                time.sleep(0.2); return
+            left = [c for c in d["cards"] if not c["matched"]]
+            if not left:
+                time.sleep(0.2); return
+            a = left[0]; b_ = next(c for c in left[1:] if c["sym"] == a["sym"])
+            stage_click(*center(a)); time.sleep(0.15); stage_click(*center(b_)); time.sleep(0.4)
+        family("memory", ["pairs", "nback", "span", "wordlist", "shopping", "faces"], "pairs", pairs_step, 90)
+
         if not ONLY:
             con.click("#toLog")
             check(con.locator("#logBody tbody tr").count() >= 6, "session log lists the sessions")

@@ -70,7 +70,7 @@ function CancelIt(S) {
       if (it.target) star(g, p.x, p.y, 17, it.found ? alpha(T.go, 0.35) : T.ink); else shape(g, it.kind, p.x, p.y, 14, alpha(T.ink, 0.35));
       if (it.found) { g.strokeStyle = T.go; g.lineWidth = 4; g.beginPath(); g.moveTo(p.x - 12, p.y); g.lineTo(p.x - 3, p.y + 9); g.lineTo(p.x + 13, p.y - 9); g.stroke(); }
     }
-    finish = { x: W - 250, y: H - 56, w: 220, h: 44 };
+    finish = { x: W / 2 - 120, y: H - 54, w: 240, h: 44 };
     rr(g, finish.x, finish.y, finish.w, finish.h, 12); g.fillStyle = T.surface; g.fill();
     txt(g, "I've found them all", finish.x + finish.w / 2, finish.y + 22, 16, T.ink, { font: T.body });
     cur.draw(g);
