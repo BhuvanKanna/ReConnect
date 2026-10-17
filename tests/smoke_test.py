@@ -397,6 +397,20 @@ with sync_playwright() as p:
             stage_click(*center(a)); time.sleep(0.15); stage_click(*center(b_)); time.sleep(0.4)
         family("memory", ["pairs", "nback", "span", "wordlist", "shopping", "faces"], "pairs", pairs_step, 90)
 
+        hanoi_moves = []
+        def tower_step():
+            d = dbg()
+            if not hanoi_moves:
+                def solve(n, a, c, b_):
+                    if n:
+                        solve(n - 1, a, b_, c); hanoi_moves.append((a, c)); solve(n - 1, b_, c, a)
+                solve(d["n"], 0, 2, 1)
+            if d["moves"] >= len(hanoi_moves):
+                time.sleep(0.2); return
+            a, c = hanoi_moves[d["moves"]]
+            stage_click(*center(d["rects"][a])); time.sleep(0.12); stage_click(*center(d["rects"][c])); time.sleep(0.15)
+        family("reasoning", ["tower", "errands", "next", "rotate", "change", "clock", "ruleswitch"], "tower", tower_step, 90)
+
         if not ONLY:
             con.click("#toLog")
             check(con.locator("#logBody tbody tr").count() >= 6, "session log lists the sessions")
