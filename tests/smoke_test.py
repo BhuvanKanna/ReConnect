@@ -108,6 +108,7 @@ with sync_playwright() as p:
     # ---- every activity in mouse mode
     if not args.skip_games:
         con.click("#home")
+        con.click("#conn")  # pairing drawer holds the mouse toggle
         con.click("#useMouse")
         BX = {}
 

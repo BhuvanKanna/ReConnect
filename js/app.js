@@ -4,15 +4,18 @@ const RC = window.RC;
 const { $, clamp, lerp, TAU, reduceMotion, store, settings, saveSettings, T, alpha, txt, rr, chime, esc, fmtTime, Game, readTheme } = RC;
 const { Input, Link, startPeer, renderConn, pushStatus, openActivity, renderEvidence } = RC;
 const ACTIVITIES = RC.EXERCISES;
+const db = (RC.db = RC.data.createData(store, () => new Date()));
+db.ensureSeed();
 // ---------------------------------------------------------------- views
+const VIEWS = ["vPatient", "vProvider", "vPlay", "vAbout", "vLog"];
 function show(id) {
-  for (const v of ["vHome", "vPlay", "vEvidence", "vLog"]) $(v).hidden = v !== id;
-  document.querySelectorAll("nav.tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.view === id || (id === "vPlay" && b.dataset.view === "vHome"))));
+  for (const v of VIEWS) $(v).hidden = v !== id;
+  document.querySelectorAll("nav.tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.view === id || (id === "vPlay" && b.dataset.view === "vPatient"))));
   if (id === "vLog") renderLog();
   window.scrollTo({ top: 0 });
 }
-function goHome() { Game.state = "idle"; Game.current = null; Game.inst = null; show("vHome"); pushStatus(true); }
-document.querySelectorAll("nav.tabs button").forEach((b) => b.addEventListener("click", () => { if (b.dataset.view === "vHome") goHome(); else { Game.state = "idle"; Game.current = null; Game.inst = null; show(b.dataset.view); pushStatus(true); } }));
+function goHome() { Game.state = "idle"; Game.current = null; Game.inst = null; show(db.role() === "provider" ? "vProvider" : "vPatient"); pushStatus(true); }
+document.querySelectorAll("nav.tabs button").forEach((b) => b.addEventListener("click", () => { if (b.dataset.view === "vPatient") goHome(); else { Game.state = "idle"; Game.current = null; Game.inst = null; show(b.dataset.view); pushStatus(true); } }));
 $("btnBack").addEventListener("click", goHome);
 $("toLog").addEventListener("click", () => show("vLog"));
 $("btnSound").addEventListener("click", () => { settings.sound = !settings.sound; saveSettings(); renderSound(); });
@@ -104,6 +107,28 @@ if (Link.hosted) startPeer();
 renderConn();
 window.addEventListener("resize", () => drawGlyphs());
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { readTheme(); drawGlyphs(); });
-window.__mend = { Game, Input }; // read by the automated tests
+// ---------------------------------------------------------------- demo role switch, patient picker, pairing drawer
+function renderRole() {
+  const role = db.role();
+  $("rolePatient").setAttribute("aria-pressed", String(role === "patient"));
+  $("roleProvider").setAttribute("aria-pressed", String(role === "provider"));
+  $("navPatient").hidden = role !== "patient";
+  $("patientSel").hidden = role !== "patient";
+  const active = db.activePatientId();
+  $("patientSel").innerHTML = db.patients().map((p) => `<option value="${esc(p.id)}"${p.id === active ? " selected" : ""}>${esc(p.name)}</option>`).join("");
+}
+function setRole(role) { db.setRole(role); renderRole(); goHome(); }
+$("roleSwitch").addEventListener("click", (e) => { const b = e.target.closest("button[data-role]"); if (b) setRole(b.dataset.role); });
+$("patientSel").addEventListener("change", (e) => { db.setActivePatient(e.target.value); renderRole(); goHome(); });
+$("resetDemo").addEventListener("click", () => { db.resetDemo(); renderRole(); goHome(); });
+function setDrawer(open) { $("pairDrawer").hidden = !open; $("conn").setAttribute("aria-expanded", String(open)); }
+$("conn").addEventListener("click", (e) => { e.stopPropagation(); setDrawer($("pairDrawer").hidden); });
+$("pairClose").addEventListener("click", () => setDrawer(false));
+document.addEventListener("click", (e) => { if (!$("pairDrawer").hidden && !e.target.closest("#pairDrawer")) setDrawer(false); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") setDrawer(false); });
+renderRole();
+goHome();
+
+window.__mend = { Game, Input, data: db, plan: RC.plan }; // read by the automated tests
 
 })();

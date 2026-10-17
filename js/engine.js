@@ -45,7 +45,7 @@ function renderSetup() {
       <button class="btn amber" id="goPhone" ${phoneReady ? "" : "disabled"}>Start with phone</button>
       <button class="btn alt" id="goMouse">${phoneReady ? "Use mouse instead" : "Start in mouse mode"}</button>
     </div>
-    ${phoneReady ? "" : `<p class="note">${Link.hosted ? "Scan the QR code on the Activities page to connect your phone." : "Mouse mode: move the pointer over the stage (or use the arrow keys). Up means raise or tip the top edge up."}</p>`}`;
+    ${phoneReady ? "" : `<p class="note">${Link.hosted ? "Tap the phone button at the top right and scan the QR code to connect your phone." : "Mouse mode: move the pointer over the stage (or use the arrow keys). Up means raise or tip the top edge up."}</p>`}`;
   $("goPhone").onclick = () => { Input.mode = "phone"; startCalibration(); };
   $("goMouse").onclick = () => { Input.mode = "mouse"; renderConn(); begin(); };
 }

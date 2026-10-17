@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="ReConnect: phone-controlled stroke rehab activities. Pick an activity, pair your phone by QR code, and play with motion controls.">
+<meta name="description" content="ReConnect: home stroke rehab. Providers assign a 30-day plan; patients follow today's goals and practise with their phone as a motion controller.">
 <style>[hidden]{display:none!important}</style>
 <script src="vendor/peerjs.min.js"></script>
 <script src="vendor/qrcode.js"></script>
@@ -11,28 +11,59 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
+<a class="skip" href="#main">Skip to content</a>
 <div class="app">
   <header class="top">
-    <div class="brand"><b>ReConnect<span>.</span></b><small>Home stroke rehab</small></div>
-    <nav class="tabs" role="tablist" aria-label="Sections">
-      <button role="tab" id="tabHome" aria-selected="true" data-view="vHome">Activities</button>
-      <button role="tab" id="tabEvidence" aria-selected="false" data-view="vEvidence">Evidence</button>
+    <div class="brand"><b>ReConnect<span>.</span></b></div>
+    <nav class="tabs" role="tablist" aria-label="Sections" id="navPatient">
+      <button role="tab" id="tabHome" aria-selected="true" data-view="vPatient">Today</button>
       <button role="tab" id="tabLog" aria-selected="false" data-view="vLog">Session log</button>
+      <button role="tab" id="tabAbout" aria-selected="false" data-view="vAbout">About these exercises</button>
     </nav>
-    <div id="conn" class="conn"><i></i><span id="connText">No phone</span></div>
+    <div class="topright">
+      <div class="demo" role="group" aria-label="Demo mode: choose a side">
+        <span class="demo-label">Demo</span>
+        <div class="seg" id="roleSwitch"><button id="rolePatient" data-role="patient">Patient</button><button id="roleProvider" data-role="provider">Provider</button></div>
+        <select id="patientSel" aria-label="Signed-in patient"></select>
+      </div>
+      <button id="conn" class="conn" aria-expanded="false" aria-controls="pairDrawer"><i></i><span id="connText">No phone</span></button>
+    </div>
+    <div class="drawer" id="pairDrawer" hidden>
+      <div class="drawer-head"><h2>Connect your phone</h2><button class="iconbtn" id="pairClose" aria-label="Close">×</button></div>
+      <div id="pHosted" hidden>
+        <div class="qrbox">
+          <div class="qr" id="qrBox" role="img" aria-label="QR code that opens the ReConnect controller on your phone"></div>
+          <div class="qrtext">
+            <span class="muted">Scan with the phone camera, or open the address below and type this code</span>
+            <span class="code num" id="pCode">······</span>
+          </div>
+        </div>
+        <p class="url" id="pUrl"></p>
+        <p class="note" id="pStatus" aria-live="polite">Starting pairing…</p>
+      </div>
+      <div id="pArtifact" hidden>
+        <p class="muted">This preview can't talk to a phone, so it runs in mouse mode. Move the mouse over the stage to stand in for the tilt of your hand.</p>
+        <ol class="steps">
+          <li>Open ReConnect at its GitHub Pages address on your computer.</li>
+          <li>Scan the QR code with your phone and tap <b>Start motion</b>.</li>
+        </ol>
+      </div>
+      <div id="pLive" hidden class="evidence">Phone connected. Tilt it and the dot on the stage follows.</div>
+      <label class="toggle"><input type="checkbox" id="useMouse"> Use the mouse instead of a phone</label>
+    </div>
   </header>
 
-  <!-- ===== Activities ===== -->
-  <section id="vHome" class="home">
+  <main id="main">
+  <!-- ===== Patient home ===== -->
+  <section id="vPatient" class="home">
     <div class="lib">
       <div class="intro">
-        <span class="eyebrow">Between therapy visits</span>
-        <h1>Pick an activity. Your phone becomes the controller.</h1>
-        <p class="muted">Each activity trains a movement used in published home-rehab systems, records your range of motion and repetitions, and adds the session to a log your therapist can read.</p>
+        <h1>Your exercises</h1>
+        <p class="muted">Each one trains a movement used in published home-rehab programs and adds the session to a log your therapist can read.</p>
       </div>
       <div class="settings" role="group" aria-label="Session settings">
         <div class="field"><label>Affected side</label>
@@ -44,31 +75,7 @@
       </div>
       <div class="cards" id="cards"></div>
     </div>
-
     <aside class="side">
-      <div class="panel" id="phonePanel">
-        <h2>Connect your phone</h2>
-        <div id="pHosted" hidden>
-          <div class="qrbox">
-            <div class="qr" id="qrBox" role="img" aria-label="QR code that opens the ReConnect controller on your phone"></div>
-            <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
-              <span class="muted" style="font-size:14px">Scan with the phone camera, or open the address below and type this code</span>
-              <span class="code num" id="pCode">······</span>
-            </div>
-          </div>
-          <p class="url" id="pUrl"></p>
-          <p class="note" id="pStatus" aria-live="polite">Starting pairing…</p>
-        </div>
-        <div id="pArtifact" hidden>
-          <p class="muted">This preview can't talk to a phone, so it runs in mouse mode. Move the mouse over the stage to stand in for the tilt of your hand.</p>
-          <ol class="steps">
-            <li>Open ReConnect at its GitHub Pages address on your computer.</li>
-            <li>Scan the QR code with your phone and tap <b>Start motion</b>.</li>
-          </ol>
-        </div>
-        <div id="pLive" hidden class="evidence">Phone connected. Tilt it and the dot on the stage follows.</div>
-        <label class="toggle"><input type="checkbox" id="useMouse"> Use the mouse instead of a phone</label>
-      </div>
       <div class="panel">
         <h3>This week</h3>
         <div class="week" id="week"></div>
@@ -77,11 +84,20 @@
     </aside>
   </section>
 
+  <!-- ===== Provider ===== -->
+  <section id="vProvider" hidden>
+    <div class="pv-empty">
+      <h1>Provider</h1>
+      <p class="muted">Patients, plans and progress.</p>
+      <button class="btn alt" id="resetDemo">Reset demo data</button>
+    </div>
+  </section>
+
   <!-- ===== Play ===== -->
-  <section id="vPlay" hidden style="display:flex;flex-direction:column;gap:14px">
+  <section id="vPlay" hidden>
     <div class="playhead">
-      <button class="btn alt" id="btnBack">Activities</button>
-      <div class="grow"><span class="eyebrow" id="pMove">Movement</span><h2 id="pTitle">Activity</h2></div>
+      <button class="btn alt" id="btnBack">Back</button>
+      <div class="grow"><span class="kicker" id="pMove">Movement</span><h2 id="pTitle">Activity</h2></div>
       <div class="gauges">
         <span class="gauge">Pitch <b id="gP">+0°</b></span>
         <span class="gauge">Roll <b id="gR">+0°</b></span>
@@ -96,31 +112,31 @@
     </div>
   </section>
 
-  <!-- ===== Evidence ===== -->
-  <section id="vEvidence" hidden style="display:flex;flex-direction:column;gap:20px">
+  <!-- ===== About ===== -->
+  <section id="vAbout" hidden>
     <div class="prose">
-      <span class="eyebrow">Exercise library</span>
-      <h1>What the tested systems ask patients to do</h1>
-      <p class="muted">Every exercise below comes from a home or clinic rehab system that has been tested with stroke survivors. The right column shows which ReConnect activity trains the same movement. Some vendors publish only part of their catalog, noted where it applies.</p>
+      <h1>Where these exercises come from</h1>
+      <p class="muted">Every exercise comes from a home or clinic rehab program tested with stroke survivors. The right column shows which ReConnect exercise trains the same movement. Some vendors publish only part of their catalog; that's noted where it applies.</p>
       <p class="evidence">The 2025 Cochrane review of 190 trials found game-based and virtual-reality rehab slightly better than other therapy for arm function and balance, with larger gains when it adds practice time on top of usual care. ReConnect is built to add that practice time at home.</p>
     </div>
     <div class="evgrid" id="evgrid"></div>
   </section>
 
   <!-- ===== Log ===== -->
-  <section id="vLog" hidden style="display:flex;flex-direction:column;gap:16px">
+  <section id="vLog" hidden>
     <div class="logtop">
-      <div class="prose"><span class="eyebrow">For you and your therapist</span><h1>Session log</h1>
+      <div class="prose"><h1>Session log</h1>
         <p class="muted">Sessions are saved in this browser only. Copy the summary to share it with your care team.</p></div>
-      <div class="actions" style="display:flex;gap:10px;flex-wrap:wrap">
+      <div class="actions">
         <button class="btn" id="btnCopy">Copy summary for my therapist</button>
         <button class="btn alt" id="btnClear">Clear log</button>
       </div>
     </div>
     <p class="note" id="copyMsg" aria-live="polite"></p>
-    <textarea id="copyFallback" hidden rows="8" style="width:100%;font:13px/1.4 var(--mono);padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--surface)"></textarea>
+    <textarea id="copyFallback" hidden rows="8"></textarea>
     <div id="logBody"></div>
   </section>
+  </main>
 </div>
 <script src="js/core.js"></script>
 <script src="js/input.js"></script>
@@ -131,6 +147,8 @@
 <script src="js/games/memory.js"></script>
 <script src="js/games/reasoning.js"></script>
 <script src="js/games/wrist.js"></script>
+<script src="js/plan.js"></script>
+<script src="js/data.js"></script>
 <script src="js/engine.js"></script>
 <script src="js/about.js"></script>
 <script src="js/app.js"></script>

@@ -80,7 +80,7 @@ function setPhone(on) {
 function renderConn() {
   const c = $("conn");
   if (Input.phone && !settings.mouse) { c.className = "conn on"; $("connText").textContent = "Phone connected"; }
-  else if (settings.mouse || !Link.hosted) { c.className = "conn demo"; $("connText").textContent = "Mouse mode"; }
+  else if (settings.mouse || !Link.hosted) { c.className = "conn demo-mode"; $("connText").textContent = "Mouse mode"; }
   else { c.className = "conn"; $("connText").textContent = "No phone"; }
   $("pLive").hidden = !(Input.phone && !settings.mouse);
   $("useMouse").checked = !!settings.mouse || !Link.hosted;
