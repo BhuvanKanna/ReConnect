@@ -14,6 +14,8 @@ const ICON = {
 };
 const CONTROL = { tilt: ["phone", "Phone motion"], accel: ["phone", "Phone motion"], touch: ["touch", "Touch"], guided: ["guided", "Guided"] };
 let filter = "all";
+// What the bar showed last time, so changes since then can animate (and nothing else does).
+let prev = { who: null, done: [], pct: 0, state: null };
 
 const db = () => RC.db;
 function patient() { const d = db(), id = d.activePatientId(); return d.patients().find((p) => p.id === id) || { id, name: "", enabled: {} }; }
@@ -49,22 +51,29 @@ function renderBar(S) {
     rest: ["Rest day", "Nothing is assigned today. Anything you play counts as bonus practice."],
     none: ["No plan for today", "Your therapist hasn't set a plan for today. You can still practise anything below."],
   }[t.state];
-  const C = 2 * Math.PI * 26;
+  const C = 2 * Math.PI * 26, who = `${pt.id}|${key}`, same = prev.who === who;
+  const justDone = items.map((i, k) => same && i.done && !prev.done[k]);
+  const celebrate = same && t.state === "done" && prev.state !== "done";
+  const fromPct = same ? prev.pct : pct;
+  prev = { who, done: items.map((i) => i.done), pct, state: t.state };
   const ring = t.state === "done"
     ? `<span class="ring-done">${ICON.check}</span>`
-    : `<svg viewBox="0 0 64 64" aria-hidden="true"><circle class="ring-track" cx="32" cy="32" r="26"/><circle class="ring-fill" cx="32" cy="32" r="26" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - pct)}"/></svg><span class="ring-num num">${t.total ? `${t.doneCount}/${t.total}` : "–"}</span>`;
+    : `<svg viewBox="0 0 64 64" aria-hidden="true"><circle class="ring-track" cx="32" cy="32" r="26"/><circle class="ring-fill" cx="32" cy="32" r="26" stroke-dasharray="${C}" stroke-dashoffset="${C * (1 - fromPct)}"/></svg><span class="ring-num num">${t.total ? `${t.doneCount}/${t.total}` : "–"}</span>`;
   $("todayWrap").innerHTML = `
-    <section id="todayBar" class="todaybar" data-state="${t.state}" aria-live="polite">
+    <section id="todayBar" class="todaybar${celebrate ? " celebrate" : ""}" data-state="${t.state}" aria-live="polite">
       <div class="ring" id="todayRing" role="img" aria-label="${t.doneCount} of ${t.total} assigned exercises done">${ring}</div>
       <div class="tb-main">
         <p class="tb-hi">Hi ${esc(first)} · <span id="todayDay">${esc(dayLabel(pl, key))}</span></p>
         <h2>${esc(copy[0])}</h2>
         <p class="tb-sub">${esc(copy[1])}</p>
-        ${items.length ? `<ol id="todaySteps" class="tb-steps">${items.map((i) => `<li data-done="${i.done}" class="${i === next ? "next" : ""}${i.def ? "" : " na"}">${i.done ? ICON.check : ""}<span>${i.def ? esc(i.def.name) : "Not available in this version"}</span></li>`).join("")}</ol>` : ""}
+        ${items.length ? `<ol id="todaySteps" class="tb-steps">${items.map((i, k) => `<li data-done="${i.done}" class="${i === next ? "next" : ""}${i.def ? "" : " na"}${justDone[k] ? " just" : ""}">${i.done ? ICON.check : ""}<span>${i.def ? esc(i.def.name) : "Not available in this version"}</span></li>`).join("")}</ol>` : ""}
       </div>
       ${next ? `<button class="btn tb-go" id="todayStart">Start ${esc(next.def.name)}</button>` : ""}
     </section>`;
   if (next) $("todayStart").onclick = () => RC.openActivity(next.def, { item: next });
+  // Let the ring move from where it was to the new value.
+  const fill = $("todayWrap").querySelector(".ring-fill");
+  if (fill && fromPct !== pct) requestAnimationFrame(() => requestAnimationFrame(() => fill.setAttribute("stroke-dashoffset", String(C * (1 - pct)))));
 }
 
 function renderLibrary(S) {

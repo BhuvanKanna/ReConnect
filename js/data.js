@@ -9,7 +9,8 @@
   "use strict";
   const K = { patients: "mend.patients", plans: "mend.plans", log: "mend.log", demo: "mend.demo" };
   const MAX_SESSIONS = 2000;
-  const NAMES = { lift: "Lantern Lift", pour: "Pour the Tea", lock: "Combination Lock", maze: "Tilt Maze", sort: "Sort It", simon: "Memory Moves" };
+  const NAMES = { lift: "Lantern Lift", pour: "Pour the Tea", lock: "Combination Lock", maze: "Tilt Maze", sort: "Sort It", simon: "Memory Moves",
+    pairs: "Card Pairs", wiper: "Wrist Wiper", trail: "Trail Connect", cancel: "Cancel It", reach: "Reach Targets" };
   const item = (exerciseId, reps = 10, level = 2) => ({ exerciseId, reps, level, durationS: null });
 
   // Small deterministic random so the demo looks the same every time.
@@ -22,7 +23,8 @@
       { id: "p_james", name: "James O.", side: "left", enabled: { sit2stand: false, balance: false } },
       { id: "p_mei", name: "Mei L.", side: "right", enabled: { sit2stand: false, balance: false } },
     ];
-    const week = [[item("lift"), item("sort")], [item("pour"), item("simon")], [item("lift"), item("maze")], [item("lock"), item("sort")], [item("lift"), item("pour"), item("simon")], "rest", "rest"];
+    // A week mixing arm, wrist and brain work; brain exercises are assigned by level only (no reps).
+    const week = [[item("lift"), item("pairs", null, 1)], [item("pour"), item("trail", 1, 1)], [item("reach"), item("wiper")], [item("lift"), item("cancel", 1, 1)], [item("pour"), item("pairs", null, 1), item("wiper")], "rest", "rest"];
     const ruth = plan.emptyPlan("p_ruth", plan.addDays(today, -11));
     ruth.days.forEach((d, i) => { const w = week[i % 7]; if (w === "rest") d.rest = true; else d.items = w.map((x) => Object.assign({}, x)); });
     const james = plan.emptyPlan("p_james", plan.addDays(today, -4));
@@ -30,24 +32,25 @@
 
     const sessions = [];
     const at = (key, hour, min) => { const [y, m, d] = key.split("-").map(Number); return new Date(y, m - 1, d, hour, min).toISOString(); };
-    function session(patientId, side, id, key, hour, min, level, liftPeak) {
-      const isMaze = id === "maze";
+    function session(patientId, side, id, key, hour, min, it, liftPeak) {
+      const level = it ? it.level : 2, reps = it ? it.reps : 10, motion = ["lift", "pour", "reach", "wiper"].includes(id);
       return {
         at: at(key, hour, min), id, name: NAMES[id], movement: "", side, targetDeg: { 1: 15, 2: 30, 3: 45 }[level],
-        reps: isMaze ? 3 : 10, goal: isMaze ? 3 : 10, targetReps: 10, level, seconds: Math.round(90 + rand() * 110), input: "phone",
+        reps: reps == null ? (id === "pairs" ? 6 : 1) : reps, goal: reps == null ? (id === "pairs" ? 6 : 1) : reps, targetReps: reps, level, seconds: Math.round(90 + rand() * 110), input: motion ? "phone" : "mouse",
         pitch: id === "lift" ? [-3, liftPeak] : [-4, Math.round(8 + rand() * 14)], roll: [Math.round(-10 - rand() * 18), Math.round(10 + rand() * 18)],
         peaksPerRep: +(2.1 + rand() * 1.3).toFixed(1), activeS: Math.round(40 + rand() * 60), extra: [], patientId, completed: true, seed: true,
       };
     }
     function day(p, patient, i, ids, extras) {
       const key = plan.addDays(p.start, i), peak = 32 + Math.round((9 * i) / 10), list = [];
-      ids.forEach((id, k) => list.push(session(patient.id, patient.side, id, key, 10, k * 25, p.days[i].items[0] ? p.days[i].items[0].level : 2, peak)));
-      (extras || []).forEach((id, k) => list.push(session(patient.id, patient.side, id, key, 17, k * 25, 2, peak)));
+      const itemOf = (id) => p.days[i].items.find((x) => x.exerciseId === id) || p.days.flatMap((d) => d.items).find((x) => x.exerciseId === id);
+      ids.forEach((id, k) => list.push(session(patient.id, patient.side, id, key, 10, k * 25, itemOf(id), peak)));
+      (extras || []).forEach((id, k) => list.push(session(patient.id, patient.side, id, key, 17, k * 25, itemOf(id), peak)));
       const { assignedAt } = plan.matchDay(plan.itemsFor(p, key), list);
       list.forEach((s) => { s.assigned = assignedAt.has(s.at); sessions.push(s); });
     }
-    const ruthDays = { 0: [["lift", "sort"], ["simon"]], 1: [["pour", "simon"]], 2: [["lift"]], 3: [["lock", "sort"], ["maze"]], 4: [["lift", "pour", "simon"]],
-      6: [[], ["lift"]], 7: [["lift", "sort"]], 9: [["lift", "maze"], ["sort"]], 10: [["lock", "sort"]] }; // day 8 missed, day 2 partly
+    const ruthDays = { 0: [["lift", "pairs"], ["trail"]], 1: [["pour", "trail"]], 2: [["reach"]], 3: [["lift", "cancel"], ["pairs"]], 4: [["pour", "pairs", "wiper"]],
+      6: [[], ["lift"]], 7: [["lift", "pairs"]], 9: [["reach", "wiper"], ["cancel"]], 10: [["lift", "cancel"]] }; // day 8 missed, day 2 partly
     for (const [i, [ids, extras]] of Object.entries(ruthDays)) day(ruth, patients[0], +i, ids, extras);
     day(james, patients[1], 0, ["lift", "pour"]); day(james, patients[1], 1, ["lift"]);
     return { patients, plans: { p_ruth: ruth, p_james: james }, sessions };

@@ -37,6 +37,17 @@ test("seeded Ruth has done, partly and missed days and some extras", () => {
   assert.ok(sessions.some((s) => s.assigned === false) && sessions.some((s) => s.assigned === true));
 });
 
+test("seeded plan mixes motion and brain exercises from the full library", () => {
+  const D = data.createData(memStore(), NOW);
+  D.ensureSeed();
+  const ids = new Set(D.plan("p_ruth").days.flatMap((d) => d.items.map((i) => i.exerciseId)));
+  for (const id of ["lift", "pairs", "wiper", "pour", "trail", "cancel", "reach"]) assert.ok(ids.has(id), `plan includes ${id}`);
+  const pairs = D.plan("p_ruth").days.flatMap((d) => d.items).find((i) => i.exerciseId === "pairs");
+  assert.equal(pairs.reps, null, "rounds-free exercises are assigned without reps");
+  const names = new Set(D.sessions("p_ruth").map((s) => s.name));
+  assert.ok(names.has("Card Pairs") && names.has("Cancel It"), "seed sessions carry real exercise names");
+});
+
 test("legacy log entries are attributed to the demo patient as before-plan history", () => {
   const legacy = [{ at: "2026-09-01T10:00:00.000Z", id: "lift", name: "Lantern Lift", reps: 10, goal: 10, seconds: 80 }];
   const st = memStore({ "mend.log": JSON.stringify(legacy) });
