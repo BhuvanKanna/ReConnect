@@ -33,7 +33,8 @@
 
   function meets(session, item) {
     if (!session.completed || session.id !== item.exerciseId) return false;
-    if (item.reps && !(session.reps >= item.reps)) return false;
+    // targetReps is the reps setting the session ran at; some exercises count rounds, not reps.
+    if (item.reps && !((session.targetReps != null ? session.targetReps : session.reps) >= item.reps)) return false;
     if (item.level && !(session.level >= item.level)) return false;
     if (item.durationS && !(session.seconds >= item.durationS * 0.9)) return false;
     return true;

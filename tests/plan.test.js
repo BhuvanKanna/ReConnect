@@ -41,6 +41,12 @@ test("a session below the assigned reps or level does not tick the goal", () => 
   assert.deepEqual(plan.matchDay([LIFT], [S("lift", 10, 2, "a", { completed: false })]).done, [false]);
 });
 
+test("sessions that count rounds (not reps) match by the reps setting they were played at", () => {
+  const maze = { exerciseId: "maze", reps: 10, level: 2, durationS: null };
+  assert.deepEqual(plan.matchDay([maze], [S("maze", 3, 2, "a", { targetReps: 10 })]).done, [true]);
+  assert.deepEqual(plan.matchDay([maze], [S("maze", 2, 2, "a", { targetReps: 6 })]).done, [false]);
+});
+
 test("guided items need about the assigned duration", () => {
   const item = { exerciseId: "putty", reps: null, level: 1, durationS: 120 };
   assert.deepEqual(plan.matchDay([item], [S("putty", 0, 1, "a", { seconds: 100 })]).done, [false]);
