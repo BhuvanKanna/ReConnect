@@ -345,6 +345,13 @@ with sync_playwright() as p:
             mramp(0, 0, 0, 0, 0.4); mramp(0, 0, 34, 0, 0.6); mramp(34, 0, 34, 0, 0.6); mramp(34, 0, -24, 0, 0.9); mramp(-24, 0, -24, 0, 0.6); mramp(-24, 0, 0, 0, 0.5)
         family("wrist", ["wristbend", "wiper", "steady"], "wristbend", wristbend_step, 90)
 
+        def tap_step():
+            d = dbg()
+            if d.get("rects") and d.get("lit") is not None and d["lit"] < len(d["rects"]):
+                stage_click(*center(d["rects"][d["lit"]]))
+            time.sleep(0.08)
+        family("hand", ["tap", "rhythm", "dial", "pinch", "grip", "putty", "curls", "thumbs", "clothespin", "coins", "buttons", "knifefork"], "tap", tap_step, 60)
+
         con.click("#toLog")
         check(con.locator("#logBody tbody tr").count() >= 6, "session log lists the sessions")
 
