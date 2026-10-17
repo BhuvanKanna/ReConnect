@@ -76,7 +76,7 @@ function renderLibrary(S) {
     const [icon, label] = CONTROL[d.control] || CONTROL.tilt, locked = isLocked(d, pt);
     const tag = todayIds.has(d.id) ? `<span class="tile-tag${todayIds.get(d.id) ? " done" : ""}">${todayIds.get(d.id) ? "✓ Today" : "Today"}</span>` : "";
     return `<button class="tile${BRAIN.has(d.section) ? " brain" : ""}" data-id="${esc(d.id)}" aria-disabled="${locked}">
-      <span class="tile-art"><canvas data-glyph="${esc(d.id)}"></canvas></span>
+      <span class="tile-art">${RC.kit.art(d.id) || `<canvas data-glyph="${esc(d.id)}"></canvas>`}</span>
       <span class="tile-name">${esc(d.name)}</span>
       <span class="tile-meta">${locked ? "Your therapist turns this on" : `${ICON[icon]}${label}`}</span>${tag}</button>`;
   };

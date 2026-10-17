@@ -122,6 +122,29 @@ with sync_playwright() as p:
         check("Session complete" in ph.inner_text("#stTitle"), "phone shows the session result")
         con.click("#home")
 
+        # ---- phone touch pad, and falling back to the stage when the phone goes away (Review Focus 5)
+        con.evaluate("""RC.register({ id: "__padtest", name: "Pad test", section: "hand", control: "touch", pad: "keys",
+            movement: "test", desc: "test", mount: "", source: "test", how: ["a", "b", "c"], params: { reps: null, level: [1, 2, 3], durationS: null },
+            make: (S) => { const G = RC.kit.base(S, 99), kp = RC.kit.Keypad({ labels: ["1","2","3","4","5","6","7","8","9","←","0","OK"] }); let last = null;
+              G.update = () => {}; G.status = () => ({ title: "Tap a key", text: String(last) }); G.stats = () => [];
+              G.pad = (e) => { last = e.key; }; G.pointer = (e) => { if (e.type === "down") { const k = kp.hit(e.x, e.y); if (k) last = k; } };
+              G.draw = (g, W, H) => { g.fillStyle = RC.T.stage; g.fillRect(0, 0, W, H); kp.place({ x: W * 0.3, y: H * 0.2, w: W * 0.4, h: H * 0.7 }); kp.draw(g, last); };
+              G.debug = () => ({ last, rects: kp.rects }); return G; } }); RC.patient.render()""")
+        con.click(".tile[data-id='__padtest']")
+        con.click("#goPhone")
+        ph.wait_for_selector("#pad:not([hidden]) button", timeout=8000)
+        check(ph.locator("#pad button").count() == 12, "phone shows a 12-key touch pad")
+        ph.click("#pad button[data-key='5']")
+        con.wait_for_function("window.__mend.Game.inst && window.__mend.Game.inst.debug().last === '5'", timeout=8000)
+        check(True, "a tap on the phone pad reaches the exercise")
+        ph.close()
+        con.wait_for_function("document.getElementById('bTitle').textContent.includes('Phone disconnected')", timeout=30000)
+        check(con.evaluate("window.__mend.Game.state") == "play", "exercise keeps running when the phone disconnects")
+        r = con.evaluate("window.__mend.Game.inst.debug().rects['7']"); bx = con.locator("#stageWrap").bounding_box()
+        con.mouse.click(bx["x"] + r["x"] + r["w"] / 2, bx["y"] + r["y"] + r["h"] / 2)
+        check(con.evaluate("window.__mend.Game.inst.debug().last") == "7", "stage keys take over after the phone disconnects")
+        con.evaluate("window.__mend.Game.finishNow()")
+
     if not args.skip_games:
         # ---- helpers for mouse-mode play
         con.click("#conn")  # pairing drawer holds the mouse toggle

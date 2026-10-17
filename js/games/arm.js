@@ -5,21 +5,16 @@ const { $, clamp, lerp, TAU, reduceMotion, store, settings, saveSettings, T, alp
 const { base, drawGonio } = RC.kit;
 // ---- 1. Lantern Lift: shoulder flexion with hold --------------------------------
 function LanternLift(S) {
-  const amp = S.amp, G = base(S, S.reps);
-  let state = "rest", restT = 0, hold = 0, target = amp, peak = -99, peaks = [], holdTimes = [], sparkle = [];
-  const HOLD = 1.2;
+  const amp = S.amp, G = base(S, S.reps), HOLD = 1.2;
+  const newTarget = () => amp * (0.9 + Math.random() * 0.2);
+  const rc = RC.kit.RepCounter({ target: newTarget(), rest: amp * 0.35, hold: HOLD, reps: S.reps });
+  const peaks = rc.peaks, NAMES = { rest: "rest", move: "raise", return: "lower" };
+  let state = "rest", hold = 0, target = rc.target, sparkle = [];
   G.update = function (dt, a) {
-    const p = a.pitch;
-    if (state === "rest") {
-      if (p < amp * 0.35) { restT += dt; if (restT > 0.4) { state = "raise"; restT = 0; peak = -99; hold = 0; target = amp * (0.9 + Math.random() * 0.2); } } else restT = 0;
-    } else if (state === "raise") {
-      peak = Math.max(peak, p);
-      if (p >= target * 0.9) { hold += dt; if (hold >= HOLD) { this._reps++; peaks.push(peak); state = "lower"; this.events.push("success"); burst(); } }
-      else hold = Math.max(0, hold - dt * 1.5);
-    } else if (state === "lower") {
-      peak = Math.max(peak, p);
-      if (p < amp * 0.35) { if (peaks.length) peaks[peaks.length - 1] = peak; state = "rest"; restT = 0; if (this._reps >= S.reps) this.done = true; }
-    }
+    const before = rc.state;
+    if (rc.update(dt, a.pitch) === "rep") { this._reps++; this.events.push("success"); burst(); }
+    if (before === "return" && rc.state === "rest") { if (this._reps >= S.reps) this.done = true; else rc.target = newTarget(); }
+    state = NAMES[rc.state]; hold = rc.holdT; target = rc.target;
     sparkle = sparkle.filter((s) => (s.life -= dt) > 0); sparkle.forEach((s) => { s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 40 * dt; });
   };
   function burst() { if (reduceMotion) return; for (let i = 0; i < 18; i++) { const ang = Math.random() * TAU, sp = 40 + Math.random() * 90; sparkle.push({ x: 0, y: 0, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, life: 0.8 }); } }

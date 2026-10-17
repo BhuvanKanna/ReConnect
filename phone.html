@@ -65,6 +65,15 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
 .tip { font-size: 15px; }
 ol.tip { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap: 6px; }
 @media (prefers-reduced-motion: reduce) { .bubble { transition: none; } }
+  /* touch pad: the computer asks for it during finger and guided exercises */
+  .pad { display: grid; gap: 10px; }
+  .pad.keys { grid-template-columns: repeat(3, 1fr); }
+  .pad.fingers { grid-template-columns: repeat(4, 1fr); }
+  .pad button { min-height: 72px; border: 0; border-radius: 16px; background: var(--card, #fff); font: 700 28px/1 inherit; color: inherit; box-shadow: 0 1px 0 rgba(0,0,0,.06), 0 8px 20px -12px rgba(0,0,0,.35); touch-action: manipulation; transition: transform 120ms ease-out; }
+  .pad.fingers button { min-height: 46vh; font-size: 22px; }
+  .pad.done button { min-height: 38vh; font-size: 34px; background: #0f766e; color: #fff; }
+  .pad button:active { transform: scale(0.96); }
+  .pad-on .level, .pad-on .readout { display: none; }
 </style>
 <script src="vendor/peerjs.min.js"></script>
 </head>
@@ -106,6 +115,7 @@ ol.tip { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap:
       <h2 id="stTitle">Choose an activity on your computer</h2>
       <p id="stText">Keep this screen open. It stays awake while you play.</p>
     </div>
+    <div id="pad" class="pad" hidden></div>
     <div class="level" aria-hidden="true"><div class="ring"></div><div class="bubble" id="bubble"></div></div>
     <div class="readout"><span>Pitch <b id="rdP">0°</b></span><span>Roll <b id="rdR">0°</b></span></div>
     <div class="row">
@@ -157,10 +167,27 @@ ol.tip { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap:
   const PEER_PREFIX = "mend-rehab-";
   const send = (obj) => { if (conn && conn.open) { try { conn.send(obj); } catch (_) {} } };
 
+  const PAD_LABELS = { keys: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "←", "0", "OK"], fingers: ["1", "2", "3", "4"], done: ["Done"] };
+  function renderPad(layout, labels) {
+    const pad = $("pad");
+    $("vLive").classList.toggle("pad-on", !!layout);
+    if (!layout) { pad.hidden = true; pad.innerHTML = ""; return; }
+    pad.className = "pad " + layout;
+    pad.innerHTML = (labels || PAD_LABELS[layout] || []).map((k) => `<button data-key="${String(k).replace(/"/g, "&quot;")}">${k}</button>`).join("");
+    pad.hidden = false;
+  }
+  $("pad").addEventListener("pointerdown", (e) => {
+    const b = e.target.closest("button[data-key]"); if (!b) return;
+    e.preventDefault();
+    send({ type: "tap", key: b.dataset.key });
+    try { navigator.vibrate && navigator.vibrate(30); } catch (_) {}
+  });
+
   function onMessage(m) {
     if (!m || typeof m !== "object") return;
     if (m.type === "status") setStatus(m);
     else if (m.type === "calibrated") center = { b: ori.b, g: ori.g };
+    else if (m.type === "pad") renderPad(m.layout, m.labels);
     else if (m.type === "haptic") { try { navigator.vibrate && navigator.vibrate(m.pattern || 60); } catch (_) {} }
     else if (m.type === "replaced") {
       paired = false; clearTimeout(reconnectTimer);
@@ -194,6 +221,7 @@ ol.tip { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap:
     });
     c.on("data", onMessage);
     const lost = () => {
+      renderPad(null);
       if (conn !== c || !paired) return;
       setPill("bad", "Reconnecting…");
       setStatus({ task: "Waiting", title: "Lost the computer", text: "Keep ReConnect open on the computer. This phone reconnects by itself.", tone: "warn" });
@@ -234,6 +262,7 @@ ol.tip { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap:
     const a = e.acceleration || e.accelerationIncludingGravity;
     if (!a || a.x == null) return;
     ori.mag = Math.hypot(a.x, a.y, a.z || 0);
+    ori.lin = !!(e.acceleration && e.acceleration.x != null); // false: gravity is still in the reading
   }
 
   async function startMotion() {
@@ -270,11 +299,15 @@ ol.tip { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap:
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && motionOn) requestWake(); });
 
   // Stream ~25 samples a second; the console smooths them.
+  // Heartbeat, so the computer notices quickly if this page closes or the phone sleeps.
+  setInterval(() => { if (paired && conn && conn.open) send({ type: "hb" }); }, 2000);
+  window.addEventListener("pagehide", () => { if (paired && conn && conn.open) send({ type: "bye" }); });
+
   setInterval(() => {
     if (!motionOn || !paired || !conn || !conn.open || ori.t === 0 || ori.t === lastSample) return;
     lastSample = ori.t;
     $("noData").hidden = true;
-    send({ type: "m", b: +ori.b.toFixed(2), g: +ori.g.toFixed(2), a: +ori.a.toFixed(1), mag: +ori.mag.toFixed(2) });
+    send({ type: "m", b: +ori.b.toFixed(2), g: +ori.g.toFixed(2), a: +ori.a.toFixed(1), mag: +ori.mag.toFixed(2), lin: ori.lin !== false });
   }, 40);
 
   // Bubble level (pure display, relative to the phone's own center).

@@ -13,7 +13,8 @@ const renderSetup = (...a) => RC.renderSetup(...a);
 // be hosted as static files (GitHub Pages). PeerJS falls back to its public TURN relay when a
 // network blocks direct connections.
 const PEER_PREFIX = "mend-rehab-";
-const Link = { hosted: false, peer: null, conn: null, code: null, retry: null };
+const Link = { hosted: false, peer: null, conn: null, code: null, retry: null, lastMsg: 0 };
+const SILENT_MS = 6000; // the phone sends a heartbeat every 2 s
 function sendPhone(obj) { if (Link.conn && Link.conn.open && Input.phone) { try { Link.conn.send(obj); } catch (_) {} } }
 
 function phoneUrl() { return new URL("phone.html", location.href).href.split("#")[0].split("?")[0]; }
@@ -29,12 +30,26 @@ function renderPairing() {
 }
 function setPairStatus(t) { $("pStatus").textContent = t; }
 
+// Treat the phone as gone (it said goodbye, or went quiet) and close the connection.
+function dropPhone(msg) {
+  const c = Link.conn; if (!c) return;
+  Link.conn = null; try { c.close(); } catch (_) {}
+  setPhone(false); setPairStatus(msg || "Phone disconnected. Waiting for it to reconnect.");
+}
+setInterval(() => { if (Link.conn && Input.phone && performance.now() - Link.lastMsg > SILENT_MS) dropPhone(); }, 1000);
+
 function onPhoneMessage(m) {
   if (!m || typeof m !== "object") return;
+  Link.lastMsg = performance.now();
+  if (m.type === "bye") { dropPhone(); return; }
   if (m.type === "m") {
     if (typeof m.b !== "number" || typeof m.g !== "number") return;
     Input.raw.b = clamp(m.b, -180, 180); Input.raw.g = clamp(m.g, -90, 90); Input.lastAt = performance.now();
+    if (typeof m.a === "number") Input.raw.a = m.a;
+    if (typeof m.mag === "number") { Input.raw.mag = m.mag; Input.raw.lin = m.lin !== false; }
     if (!Input.phone) setPhone(true);
+  } else if (m.type === "tap") {
+    if (Game.state === "play" && Game.inst && Game.inst.pad) Game.inst.pad({ type: "tap", key: String(m.key) });
   } else if (m.type === "recenter") {
     Input.neutral = { b: Input.raw.b, g: Input.raw.g };
     flash("Center reset", "Your current position is the new resting point.", "good");
@@ -60,7 +75,7 @@ function startPeer() {
   peer.on("connection", (conn) => {
     conn.on("open", () => {
       if (Link.conn && Link.conn !== conn) { try { Link.conn.send({ type: "replaced" }); Link.conn.close(); } catch (_) {} }
-      Link.conn = conn; setPhone(true); chime("success"); pushStatus(true);
+      Link.conn = conn; Link.lastMsg = performance.now(); setPhone(true); chime("success"); pushStatus(true);
       setPairStatus("Phone paired.");
     });
     conn.on("data", onPhoneMessage);
@@ -72,6 +87,7 @@ window.addEventListener("beforeunload", () => { try { Link.peer && Link.peer.des
 function setPhone(on) {
   const was = Input.phone;
   Input.phone = on;
+  if (!on && RC.padDisconnected && RC.padDisconnected()) { Input.mode = "mouse"; renderConn(); return; }
   if (!on && Input.mode === "phone" && Game.state === "play") pauseForPhone();
   if (on && Input.mode === "phone" && Game.state === "paused") resume();
   if (on !== was && Game.state === "setup") renderSetup();

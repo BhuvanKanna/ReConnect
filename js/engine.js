@@ -67,7 +67,8 @@ function renderSetup() {
       <button class="btn alt" id="goMouse">${phoneReady ? "Use mouse instead" : "Start in mouse mode"}</button>
     </div>
     ${phoneReady ? "" : `<p class="note">${Link.hosted ? "Tap the phone button at the top right and scan the QR code to connect your phone." : "Mouse mode: move the pointer over the stage (or use the arrow keys). Up means raise or tip the top edge up."}</p>`}`;
-  $("goPhone").onclick = () => { Input.mode = "phone"; startCalibration(); };
+  // Touch and guided exercises use the phone as a tap pad, so there is no tilt to calibrate.
+  $("goPhone").onclick = () => { Input.mode = "phone"; if (d.control === "touch" || d.control === "guided") begin(); else startCalibration(); };
   $("goMouse").onclick = () => { Input.mode = "mouse"; renderConn(); begin(); };
   $("sheet").querySelectorAll(".setctl .seg").forEach((el) => el.addEventListener("click", (e) => {
     const b = e.target.closest("button[data-v]"); if (!b || b.disabled) return;
@@ -82,12 +83,13 @@ function startCalibration() {
   let n = 3; const samples = [];
   $("sheet").innerHTML = `<span class="eyebrow">Calibrating</span><h2>Rest in your starting position and hold still</h2><div class="count num" id="cnt">3</div><p class="muted">This sets the zero point, so every target is measured from where your arm is comfortable.</p>`;
   const iv = setInterval(() => {
-    samples.push({ b: Input.f.b, g: Input.f.g });
+    samples.push({ b: Input.f.b, g: Input.f.g, a: Input.f.a });
     if (samples.length % 10 === 0) { n--; const el = $("cnt"); if (el) el.textContent = Math.max(n, 1); chime("tick"); }
     if (samples.length >= 30) {
       clearInterval(iv);
       const tail = samples.slice(-12);
-      Input.neutral = { b: tail.reduce((s, x) => s + x.b, 0) / tail.length, g: tail.reduce((s, x) => s + x.g, 0) / tail.length };
+      const avg = (k) => tail.reduce((s, x) => s + x[k], 0) / tail.length;
+      Input.neutral = { b: avg("b"), g: avg("g"), a: Input.f.a };
       sendPhone({ type: "calibrated" });
       begin();
     }
@@ -101,7 +103,25 @@ function begin() {
   Game.rec = []; Game.t0 = performance.now(); Game.state = "play";
   Input.mouse = { p: 0, r: 0 }; Input.mf = { p: 0, r: 0 };
   $("overlay").hidden = true; $("banner").hidden = false;
+  startPad();
   pushStatus(true);
+}
+
+// Phone touch pad: shown on the phone while a pad exercise runs. If the phone drops out mid-way the
+// exercise keeps going and its on-stage keys take over.
+function startPad() {
+  const d = Game.current.def;
+  Game.padActive = false; Game.padFallback = false; Game.padAck = false;
+  if (d.pad && Input.phone && Link.conn && Link.conn.open) {
+    sendPhone({ type: "pad", layout: d.pad, labels: Game.inst.padLabels ? Game.inst.padLabels() : null });
+    Game.padActive = true;
+  }
+}
+function endPad() { if (Game.padActive) sendPhone({ type: "pad", layout: null }); Game.padActive = false; Game.padFallback = false; }
+function padDisconnected() {
+  if (!Game.padActive || Game.state !== "play") return false;
+  Game.padActive = false; Game.padFallback = true; Game.padAck = false;
+  return true;
 }
 
 function pauseForPhone() {
@@ -141,6 +161,7 @@ function finish() {
   Game.state = "results";
   const def = Game.current.def;
   const { entry, a, own } = record(true);
+  endPad();
   fx("big");
   $("overlay").hidden = false; $("banner").hidden = true;
   const fmtR = (r) => r ? `${r[0] > 0 ? "+" : ""}${r[0]}° to ${r[1] > 0 ? "+" : ""}${r[1]}°` : "–";
@@ -207,7 +228,7 @@ function frame(now) {
       if (Game.rec.length > 40000) Game.rec.splice(0, 1000);
       for (const e of Game.inst.events.splice(0)) fx(e);
       if (Game.inst.done) finish();
-      if (Input.mode === "phone" && Input.phone && now - Input.lastAt > 3000) flash("No motion data from the phone", "Check that the phone screen is on and ReConnect is open.", "warn");
+      if (Input.mode === "phone" && Input.phone && Game.current.def.control !== "touch" && Game.current.def.control !== "guided" && now - Input.lastAt > 3000) flash("No motion data from the phone", "Check that the phone screen is on and ReConnect is open.", "warn");
     }
     $("gReps").textContent = Game.inst ? `${Game.inst.reps()} / ${Game.inst.goal()}` : `0 / ${settings.reps}`;
     draw(a, now);
@@ -231,6 +252,7 @@ function draw(a, now) {
   let b = null;
   if (Game.state === "play" && Game.inst) b = Game.inst.status();
   if (flashT > now && Game.banner) b = Game.banner;
+  if (Game.padFallback && !Game.padAck) b = { title: "Phone disconnected", text: "Use the mouse or touchscreen to keep going.", tone: "warn" };
   const bn = $("banner");
   if (b && Game.state === "play") {
     bn.hidden = false;
@@ -243,6 +265,6 @@ function drawIdle(a, t) {
   const grd = g.createLinearGradient(0, 0, 0, H); grd.addColorStop(0, T["sky-top"]); grd.addColorStop(1, T["sky-bot"]);
   g.fillStyle = grd; g.fillRect(0, 0, W, H);
 }
-Object.assign(RC, { openActivity, renderSetup, flash, pauseForPhone, resume, finish });
+Object.assign(RC, { openActivity, renderSetup, flash, pauseForPhone, resume, finish, endPad, padDisconnected });
 requestAnimationFrame(frame);
 })();

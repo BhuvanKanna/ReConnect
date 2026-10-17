@@ -1,7 +1,41 @@
-(() => {
+// Building blocks shared by the exercises. RepCounter is pure (also loaded by the Node tests);
+// everything else draws on the stage canvas and only loads in the browser.
+(function (root) {
 "use strict";
-const RC = window.RC;
-const { $, clamp, lerp, TAU, reduceMotion, store, settings, saveSettings, T, alpha, txt, rr, chime, esc, fmtTime, Game, readTheme } = RC;
+
+// Rest → reach the target → hold → return, the cycle behind most motion exercises.
+// `target` may be negative (reach in the negative direction) and may change between reps.
+function RepCounter(opts) {
+  const o = Object.assign({ target: 30, rest: 10, hold: 1.2, reps: 10, settle: 0.4 }, opts);
+  const rc = { state: "rest", holdT: 0, peaks: [], target: o.target, count: 0 };
+  let restT = 0, peak = 0;
+  rc.update = function (dt, value) {
+    const sgn = rc.target < 0 ? -1 : 1, v = value * sgn, tgt = Math.abs(rc.target);
+    if (rc.state === "rest") {
+      if (v < o.rest) { restT += dt; if (restT >= o.settle) { rc.state = "move"; peak = v; rc.holdT = 0; } } else restT = 0;
+      return null;
+    }
+    peak = Math.max(peak, v);
+    if (rc.state === "move") {
+      if (v >= tgt * 0.9) { rc.holdT += dt; if (rc.holdT >= o.hold) { rc.state = "return"; rc.count++; rc.peaks.push(peak * sgn); return "rep"; } }
+      else rc.holdT = Math.max(0, rc.holdT - dt * 1.5);
+      return null;
+    }
+    // return: keep the peak up to date until the limb is back at rest
+    rc.peaks[rc.peaks.length - 1] = peak * sgn;
+    if (v < o.rest) { rc.state = "rest"; restT = 0; }
+    return null;
+  };
+  rc.progress = () => (rc.state === "move" ? Math.min(1, rc.holdT / o.hold) : 0);
+  return rc;
+}
+
+if (typeof module === "object" && module.exports) { module.exports = { RepCounter }; return; }
+
+const RC = root.RC;
+const { clamp, TAU, T, alpha, txt, rr, fmtTime } = RC;
+const inRect = (x, y, r) => r && x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
+
 function base(S, goal) {
   return { S, events: [], done: false, _reps: 0, reps() { return this._reps; }, goal() { return goal; } };
 }
@@ -24,5 +58,140 @@ function drawGonio(g, cx, cy, R, deg, target, label) {
   txt(g, label, cx + 34, cy - 34, 11, T.muted, { font: T.mono, weight: 500 });
   g.restore();
 }
-RC.kit = { base, drawGonio };
-})();
+
+// Tilt-driven pointer for playing touch exercises with the phone: hold still over a target to pick it.
+function Cursor(opts) {
+  const amp = (opts && opts.amp) || 30;
+  const c = { x: 0, y: 0, dwellT: 0, idx: -1, active: false };
+  c.update = function (dt, a, W, H) {
+    c.active = !a.demo;
+    c.x = W / 2 + clamp(a.roll / amp, -1.2, 1.2) * W * 0.42;
+    c.y = H / 2 - clamp(a.pitch / amp, -1.2, 1.2) * H * 0.4;
+  };
+  // Returns the index of the rect the cursor has rested on for `seconds`, else -1.
+  c.dwell = function (dt, rects, seconds = 0.8) {
+    if (!c.active) return -1;
+    const i = rects.findIndex((r) => inRect(c.x, c.y, r));
+    if (i !== c.idx) { c.idx = i; c.dwellT = 0; return -1; }
+    if (i < 0) return -1;
+    c.dwellT += dt;
+    if (c.dwellT >= seconds) { c.dwellT = -0.5; return i; } // brief cool-down before the next pick
+    return -1;
+  };
+  c.draw = function (g, seconds = 0.8) {
+    if (!c.active) return;
+    g.beginPath(); g.arc(c.x, c.y, 14, 0, TAU); g.fillStyle = alpha(T.ink, 0.15); g.fill();
+    g.beginPath(); g.arc(c.x, c.y, 6, 0, TAU); g.fillStyle = T.ink; g.fill();
+    if (c.idx >= 0 && c.dwellT > 0) { g.strokeStyle = T.go; g.lineWidth = 4; g.beginPath(); g.arc(c.x, c.y, 18, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(c.dwellT / seconds, 0, 1)); g.stroke(); }
+  };
+  return c;
+}
+
+// Large answer cards laid out in a row or grid inside `area`.
+function Choice(opts) {
+  const ch = { options: opts.options.slice(), rects: [], layout: opts.layout || "row" };
+  ch.place = function (area) {
+    const n = ch.options.length, gap = 14;
+    const cols = ch.layout === "grid" ? Math.ceil(Math.sqrt(n)) : n, rows = Math.ceil(n / cols);
+    const w = (area.w - gap * (cols - 1)) / cols, h = Math.min(140, (area.h - gap * (rows - 1)) / rows);
+    ch.rects = ch.options.map((_, i) => ({ x: area.x + (i % cols) * (w + gap), y: area.y + Math.floor(i / cols) * (h + gap), w, h }));
+    return ch.rects;
+  };
+  ch.hit = (x, y) => ch.rects.findIndex((r) => inRect(x, y, r));
+  // mark(i) → null | "good" | "bad" | "hover"; label(i) → string (drawn) or a function(g, rect)
+  ch.draw = function (g, mark = () => null, label = (i) => String(ch.options[i])) {
+    ch.rects.forEach((r, i) => {
+      const m = mark(i);
+      rr(g, r.x, r.y, r.w, r.h, 16);
+      g.fillStyle = m === "good" ? alpha(T.go, 0.18) : m === "bad" ? alpha(T.accent, 0.2) : m === "hover" ? alpha(T.go, 0.08) : T.surface; g.fill();
+      g.strokeStyle = m === "good" ? T.go : m === "bad" ? T.accent : alpha(T.ink, 0.12); g.lineWidth = m ? 3 : 1.5; g.stroke();
+      const L = label(i);
+      if (typeof L === "function") L(g, r);
+      else txt(g, L, r.x + r.w / 2, r.y + r.h / 2, Math.min(34, r.h * 0.32, (r.w - 16) / Math.max(3, L.length) * 1.7), T.ink, { font: T.body });
+    });
+  };
+  return ch;
+}
+
+// On-stage keypad that mirrors the phone's touch pad, so a pad exercise still works without the phone.
+function Keypad(opts) {
+  const kp = { labels: opts.labels, cols: opts.cols || 3, rects: {} };
+  kp.place = function (area) {
+    const rows = Math.ceil(kp.labels.length / kp.cols), gap = 10;
+    const s = Math.min((area.w - gap * (kp.cols - 1)) / kp.cols, (area.h - gap * (rows - 1)) / rows);
+    const x0 = area.x + (area.w - (s * kp.cols + gap * (kp.cols - 1))) / 2;
+    kp.rects = {};
+    kp.labels.forEach((l, i) => { kp.rects[l] = { x: x0 + (i % kp.cols) * (s + gap), y: area.y + Math.floor(i / kp.cols) * (s + gap), w: s, h: s }; });
+    return kp.rects;
+  };
+  kp.hit = (x, y) => { for (const l of kp.labels) if (inRect(x, y, kp.rects[l])) return l; return null; };
+  kp.draw = function (g, lit) {
+    for (const l of kp.labels) {
+      const r = kp.rects[l]; if (!r) continue;
+      rr(g, r.x, r.y, r.w, r.h, 14); g.fillStyle = lit === l ? alpha(T.go, 0.25) : T.surface; g.fill();
+      g.strokeStyle = alpha(T.ink, 0.12); g.lineWidth = 1.5; g.stroke();
+      txt(g, l, r.x + r.w / 2, r.y + r.h / 2, Math.min(30, r.h * 0.42), T.ink, { font: T.body });
+    }
+  };
+  return kp;
+}
+
+// A guided exercise the phone can't measure: instructions, a counter or timer, and a big Done button.
+// mode "reps": each Done (Space, click, phone pad) is one rep. mode "time": runs for S.durationS,
+// stepping through the instructions; Done moves to the next instruction.
+function Guided(S, opts) {
+  const mode = opts.mode || (S.durationS ? "time" : "reps");
+  const steps = opts.steps, G = base(S, mode === "reps" ? S.reps : steps.length);
+  let t = 0, step = 0, lastTap = -9, pulse = 0;
+  const btn = { x: 0, y: 0, w: 0, h: 0 };
+  const stepLen = () => (S.durationS || 60) / steps.length;
+  function tap() {
+    if (G.done || t - lastTap < 0.35) return;
+    lastTap = t; pulse = 1; G.events.push("success");
+    if (mode === "reps") { G._reps++; if (G._reps >= S.reps) G.done = true; }
+    else { step = Math.min(steps.length - 1, step + 1); t = Math.max(t, step * stepLen()); }
+  }
+  G.update = function (dt, a) {
+    t += dt; pulse = Math.max(0, pulse - dt * 3);
+    if (mode === "time") {
+      step = Math.min(steps.length - 1, Math.max(step, Math.floor(t / stepLen())));
+      G._reps = step + (t >= S.durationS ? 1 : 0);
+      if (t >= S.durationS) { G._reps = steps.length; G.done = true; }
+    } else if (opts.accel && a.acc > 4 && !a.demo) tap();
+  };
+  G.key = (k) => { if (k === " " || k === "Enter") tap(); };
+  G.pad = () => tap();
+  G.pointer = (ev) => { if (ev.type === "down" && inRect(ev.x, ev.y, btn)) tap(); };
+  G.padLabels = () => ["Done"];
+  G.status = function () {
+    if (mode === "reps") return { title: `${G._reps} of ${S.reps}`, text: opts.cue || "Press Done (or Space) after each one." };
+    return { title: steps[step], text: `${fmtTime(Math.max(0, (S.durationS || 60) - t))} left · press Done to move on` };
+  };
+  G.stats = () => [[mode === "reps" ? "Completed" : "Steps done", mode === "reps" ? `${G._reps} / ${S.reps}` : `${Math.min(steps.length, step + 1)} / ${steps.length}`], ["Active time", fmtTime(t)]];
+  G.debug = () => ({ mode, step, t });
+  G.draw = function (g, W, H) {
+    g.fillStyle = T.stage; g.fillRect(0, 0, W, H);
+    const lx = Math.max(24, W * 0.06), top = 120, colW = Math.min(W * 0.46, 460);
+    steps.forEach((s, i) => {
+      const y = top + i * 54, on = mode === "time" ? i === step : i === G._reps % steps.length;
+      rr(g, lx, y, colW, 44, 12); g.fillStyle = on ? alpha(T.go, 0.14) : alpha(T.surface, 0.7); g.fill();
+      txt(g, `${i + 1}.  ${s}`, lx + 16, y + 22, 17, on ? T.ink : T.muted, { align: "left", font: T.body, weight: on ? 700 : 400 });
+    });
+    const cx = lx + colW + (W - lx - colW) / 2, cy = H * 0.42;
+    const big = mode === "reps" ? `${G._reps}/${S.reps}` : fmtTime(Math.max(0, (S.durationS || 60) - t));
+    txt(g, big, cx, cy, Math.min(96, W * 0.09), T.ink, { font: T.body });
+    btn.w = Math.min(280, W * 0.3); btn.h = 76; btn.x = cx - btn.w / 2; btn.y = cy + 70;
+    rr(g, btn.x - pulse * 4, btn.y - pulse * 4, btn.w + pulse * 8, btn.h + pulse * 8, 18); g.fillStyle = T.go; g.fill();
+    txt(g, mode === "reps" ? "Done" : "Next step", cx, btn.y + btn.h / 2, 26, T.surface, { font: T.body });
+    txt(g, "or press Space", cx, btn.y + btn.h + 24, 14, T.muted, { font: T.body, weight: 400 });
+  };
+  return G;
+}
+
+// Small inline-SVG pictures for library tiles. Exercises register their own with defineArt.
+const ART = {};
+const defineArt = (id, svg) => { ART[id] = svg; };
+const art = (id) => (ART[id] ? `<svg viewBox="0 0 120 64" aria-hidden="true" class="art">${ART[id]}</svg>` : null);
+
+RC.kit = { base, drawGonio, RepCounter, Cursor, Choice, Keypad, Guided, defineArt, art, inRect };
+})(typeof self !== "undefined" ? self : this);

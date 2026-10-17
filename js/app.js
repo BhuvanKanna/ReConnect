@@ -15,6 +15,7 @@ function show(id) {
   window.scrollTo({ top: 0 });
 }
 function goHome() {
+  RC.endPad();
   Game.state = "idle"; Game.current = null; Game.inst = null;
   const provider = db.role() === "provider";
   if (provider) RC.provider.render(); else RC.patient.render();
