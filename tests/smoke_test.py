@@ -21,6 +21,7 @@ ap.add_argument("--site", help="Base URL of a deployed site. Default: serve this
 ap.add_argument("--broker", help="host:port of a local PeerJS server instead of the public one.")
 ap.add_argument("--skip-games", action="store_true", help="Only test phone pairing.")
 ap.add_argument("--no-phone", action="store_true", help="Skip the phone pairing section.")
+ap.add_argument("--quick", action="store_true", help="Skip the free-play run of every exercise (faster iteration).")
 args = ap.parse_args()
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -159,7 +160,7 @@ with sync_playwright() as p:
             run(gid, step, limit)
 
         lift_step = lambda: (mramp(0, 0, 0, 0, 0.6), mramp(0, 0, 34, 0, 1.0), mramp(34, 0, 34, 0, 1.5), mramp(34, 0, 0, 0, 1.0))
-        play("lift", lift_step, 60)
+        if not args.quick: play("lift", lift_step, 60)
 
         cup = [0]
         def pour_step():
@@ -167,7 +168,7 @@ with sync_playwright() as p:
             mramp(0, 0, 0, d * 28, 1.2); t0 = time.time()
             while title().startswith("Turn your hand") and time.time() - t0 < 8: time.sleep(0.1)
             mramp(0, d * 28, 0, 0, 1.0); time.sleep(0.3); cup[0] += 1
-        play("pour", pour_step, 90)
+        if not args.quick: play("pour", pour_step, 90)
 
         k = [0]
         def lock_step():
@@ -175,7 +176,7 @@ with sync_playwright() as p:
                 dgt = [2, 7][k[0] % 2]; k[0] += 1
                 setang(0, dgt / 9 * 2 * AMP - AMP); time.sleep(1.4)
             else: time.sleep(0.2)
-        play("lock", lock_step, 90)
+        if not args.quick: play("lock", lock_step, 90)
 
         def maze_step():
             d = con.evaluate("(() => { const d = window.__mend.Game.inst.debug(); return { C: d.maze.C, R: d.maze.R, cells: d.maze.cells.map(c => [c.n,c.e,c.s,c.w]), x: d.ball.x, y: d.ball.y, vx: d.ball.vx, vy: d.ball.vy } })()")
@@ -195,14 +196,14 @@ with sync_playwright() as p:
             ax = max(-1, min(1, 1.6 * (tgt[0] + 0.5 - d["x"]) - 0.9 * d["vx"]))
             ay = max(-1, min(1, 1.6 * (tgt[1] + 0.5 - d["y"]) - 0.9 * d["vy"]))
             setang(-ay * AMP * 0.9, ax * AMP * 0.9); time.sleep(0.04)
-        play("maze", maze_step, 120)
+        if not args.quick: play("maze", maze_step, 120)
 
         side = [1]
         def sort_step():
             if title().startswith("Where does"):
                 mramp(0, 0, 0, side[0] * 28, 0.4); time.sleep(0.8); mramp(0, side[0] * 28, 0, 0, 0.4); side[0] = -side[0]
             time.sleep(0.15)
-        play("sort", sort_step, 60)
+        if not args.quick: play("sort", sort_step, 60)
 
         def simon_step():
             if title().startswith("Move"):
@@ -210,8 +211,9 @@ with sync_playwright() as p:
                 pr = {0: (26, 0), 1: (0, 26), 2: (-26, 0), 3: (0, -26)}[dd]
                 mramp(0, 0, pr[0], pr[1], 0.35); time.sleep(0.25); mramp(pr[0], pr[1], 0, 0, 0.35); time.sleep(0.25)
             else: time.sleep(0.15)
-        play("simon", simon_step, 120)
-        con.click("#home")
+        if not args.quick:
+            play("simon", simon_step, 120)
+            con.click("#home")
 
         # ---- patient Today flow
         items = [{"exerciseId": g, "reps": 6, "level": 2, "durationS": None} for g in ("lift", "pour", "sort")]
@@ -244,6 +246,33 @@ with sync_playwright() as p:
         check(con.get_attribute(".tile[data-id='__locked']", "aria-disabled") == "true", "safety-locked tile is disabled")
         con.click(".tile[data-id='__locked']", force=True)
         check(not con.is_visible("#vPlay"), "locked tile does not open")
+
+        # ---- provider: patients and plan builder
+        con.click("#roleProvider")
+        n_pts = con.locator("#pvPatients .pt").count()
+        con.click("#pvAddPatient"); con.fill("#pvNewName", "Tom B."); con.click("#pvNewSave")
+        check(con.locator("#pvPatients .pt").count() == n_pts + 1, "provider can add a patient")
+        con.click("#pvPatients .pt[data-id='p_mei']")
+        today = con.evaluate("RC.plan.dateKey(new Date())")
+        con.fill("#pvStart", today); con.dispatch_event("#pvStart", "change")
+        check(con.locator(".calday").count() == 30, "a 30-day calendar appears once a start date is set")
+        con.click(".calday[data-day='0']")
+        con.fill("#pvPickQ", "Lantern"); con.click(".pick[data-id='lift']")
+        con.select_option(".item[data-index='0'] select[name=reps]", "6")
+        con.select_option(".item[data-index='0'] select[name=level]", "1")
+        con.fill("#pvPickQ", ""); con.click(".pick[data-id='sort']")
+        con.fill("#pvPickQ", "Locked"); con.click(".pick[data-id='__locked']")
+        check(con.is_visible("#pvSafety"), "picking a safety-flagged exercise asks for confirmation")
+        con.click("#pvSafetyNo")
+        check(con.locator(".item").count() == 2, "declining the safety confirmation adds nothing")
+        con.click(".calday[data-day='1']"); con.check("#pvRest")
+        con.click("#pvCopyWeek")
+        check(con.locator(".calday[data-day='7'] .chip").count() == 2, "copy week 1 repeats day 1's exercises on day 8")
+        check("Rest" in con.inner_text(".calday[data-day='8']"), "copy week 1 repeats the rest day")
+        check(con.evaluate("window.__mend.data.plan('p_mei').days[0].items[0].reps") == 6, "plan edits are saved")
+        con.click("#rolePatient")
+        con.select_option("#patientSel", "p_mei")
+        check(con.locator("#todaySteps li").count() == 2, "patient sees the provider's plan in the Today bar")
 
         con.click("#toLog")
         check(con.locator("#logBody tbody tr").count() >= 6, "session log lists the sessions")

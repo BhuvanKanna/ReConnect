@@ -17,7 +17,7 @@ function show(id) {
 function goHome() {
   Game.state = "idle"; Game.current = null; Game.inst = null;
   const provider = db.role() === "provider";
-  if (!provider) RC.patient.render();
+  if (provider) RC.provider.render(); else RC.patient.render();
   show(provider ? "vProvider" : "vPatient"); pushStatus(true);
 }
 document.querySelectorAll("nav.tabs button").forEach((b) => b.addEventListener("click", () => { if (b.dataset.view === "vPatient") goHome(); else { Game.state = "idle"; Game.current = null; Game.inst = null; show(b.dataset.view); pushStatus(true); } }));
@@ -93,10 +93,10 @@ function renderRole() {
   const active = db.activePatientId();
   $("patientSel").innerHTML = db.patients().map((p) => `<option value="${esc(p.id)}"${p.id === active ? " selected" : ""}>${esc(p.name)}</option>`).join("");
 }
+RC.renderRole = renderRole;
 function setRole(role) { db.setRole(role); renderRole(); goHome(); }
 $("roleSwitch").addEventListener("click", (e) => { const b = e.target.closest("button[data-role]"); if (b) setRole(b.dataset.role); });
 $("patientSel").addEventListener("change", (e) => { db.setActivePatient(e.target.value); renderRole(); goHome(); });
-$("resetDemo").addEventListener("click", () => { db.resetDemo(); renderRole(); goHome(); });
 function setDrawer(open) { $("pairDrawer").hidden = !open; $("conn").setAttribute("aria-expanded", String(open)); }
 $("conn").addEventListener("click", (e) => { e.stopPropagation(); setDrawer($("pairDrawer").hidden); });
 $("pairClose").addEventListener("click", () => setDrawer(false));
