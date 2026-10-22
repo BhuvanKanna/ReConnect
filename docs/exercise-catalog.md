@@ -1,7 +1,7 @@
 # Exercise catalog
 
 Exercises from home and clinic stroke-rehab systems that have been tested with stroke survivors, and the
-ReConnect activity that trains the same movement. Compiled October 2026 from public sources; extended for the full 63-exercise library. Some vendors publish
+ReConnect activity that trains the same movement. Compiled October 2026 from public sources; extended for the full 121-exercise library. Some vendors publish
 only part of their catalog; that's noted where it applies.
 
 ## mRehab (smartphone + 3D-printed household objects, University at Buffalo)
@@ -253,3 +253,91 @@ Sources: [VoiceAdapt trial](https://mhealth.jmir.org/2025/1/e67711), [Tactus Nam
 | Mental practice (motor imagery) | Mental Practice (spoken script) |
 
 Source: [CIMT and mirror therapy evidence](https://pmc.ncbi.nlm.nih.gov/articles/PMC5080161)
+
+## Standard stroke assessments (items turned into practice)
+
+These are the tests therapists use to measure recovery. ReConnect turns some of their items into practice
+tasks; practising an item is not the same as being assessed.
+
+| Assessment item | ReConnect |
+| --- | --- |
+| Fugl-Meyer upper extremity: shoulder flexion 90–180° | High Shelf |
+| Fugl-Meyer: shoulder external rotation | Swing the Gate |
+| Fugl-Meyer: circumduction | Stir the Pot, Wrist Circles |
+| Fugl-Meyer: wrist stability in extension | Raise the Drawbridge |
+| Fugl-Meyer: finger to nose (coordination) | Finger to Nose |
+| Action Research Arm Test: hand to top of head | Hand to Head |
+| Wolf Motor Function Test: turn key in lock | Turn the Key, Reach and Turn |
+| Wolf Motor Function Test: flip cards | Turn the Pages |
+| Wolf Motor Function Test: reach and retrieve | Pick the Apples |
+| Nine-Hole Peg Test | Peg Board |
+| Berg Balance Scale: pick up an object from the floor | Reach to the Floor (seated) |
+| Berg Balance Scale: alternate foot on a step | Toe Taps (seated) |
+| Functional Reach Test | Standing Reach |
+
+## The motion library (added October 2026)
+
+58 more exercises, each measured by the phone. "Tilt" uses the phone's angle, "turn" its compass heading,
+"accel" a burst of acceleration, "tilt pointer" steers an on-screen pointer by tilting, and "touch" uses the
+screen or the phone's touch pad.
+
+| Exercise | Movement | Measured by | Based on |
+| --- | --- | --- | --- |
+| High Shelf | Shoulder flexion, overhead | Tilt | Fugl-Meyer shoulder flexion; WMFT hand to box |
+| Hand to Head | Shoulder and elbow flexion | Tilt | ARAT hand to top of head |
+| Open the Curtains | Horizontal abduction | Turn | Standard shoulder range-of-motion exercise |
+| Swing the Gate | Shoulder external rotation | Turn | Fugl-Meyer external rotation |
+| Paint the Fence | Up-and-down strokes | Tilt | Repetitive task practice (RAPAEL painting game) |
+| Hammer the Nail | Elbow flexion and extension | Tilt | Task-oriented tool use |
+| Hold the Torch | Sustained shoulder hold | Tilt | Graded isometric arm training |
+| Follow the Moon | Smooth tracking | Tilt | Pursuit tracking in robot and VR therapy |
+| Stir the Pot | Shoulder and elbow circles | Tilt | Robot circle drawing; Fugl-Meyer circumduction |
+| Pendulum Swing | Shoulder mobility | Tilt | Codman pendulum exercises |
+| Bean Bag Toss | Throwing, force control | Accel | Graded throwing practice |
+| Row the Boat | Two-arm pull and push | Accel | Bilateral arm training |
+| Pick the Apples | Reach, grasp, place | Tilt pointer | WMFT reach and retrieve |
+| Pop the Balloons | Quick reaching | Tilt pointer | VR target-popping games |
+| Connect the Dots | Point-to-point reaching | Tilt pointer | Robot point-to-point targets |
+| Clean the Window | Wide reaching, wiping | Tilt pointer | CIMT shaping (wiping) |
+| Fruit Catch | Side-to-side control | Tilt | Kinect and VR catching games |
+| Fly the Kite | Up-and-down control | Tilt | Steering games in phone and VR rehab |
+| Quick Reach | Reaction reaching | Tilt | Choice-reaction reaching |
+| Write Letters | Fine arm control | Tilt pointer | Letter-tracing pre-writing practice |
+| Reach and Turn | Reach, then rotate | Tilt | WMFT turn key in lock |
+| Finger to Nose | Coordination | Tilt | Fugl-Meyer finger to nose |
+| Turn the Key | Supination | Tilt | WMFT turn key; mRehab unlock with key |
+| Turn the Pages | Pronation and supination | Tilt | CIMT page turning; WMFT flip cards |
+| Flip the Pancake | Quick rotation, timing | Tilt | mRehab quick twist; RAPAEL cooking games |
+| Screwdriver | Repeated rotation | Tilt | Task practice with a tool |
+| Wave Hello | Wrist flexion and extension, speed | Tilt | FitMi wrist exercises |
+| Raise the Drawbridge | Wrist extension hold | Tilt | Fugl-Meyer wrist stability |
+| Steering Wheel | Two-handed rotation | Tilt | Driving simulation in rehab |
+| Tune the Radio | Precise rotation | Tilt | RAPAEL fine-control games |
+| Flashlight Search | Wrist control with scanning | Tilt pointer | Wrist range of motion with visual scanning |
+| Wrist Circles | Circumduction | Tilt | Fugl-Meyer wrist circumduction |
+| Water the Plants | Aim, then pour | Turn + tilt | mRehab slow pour |
+| Whack-a-Mole | Finger reach, reaction | Touch | Reha@Stroke touch exercises |
+| Piano Scales | Finger sequencing | Touch | Finger sequencing and piano training |
+| Drum Roll | Alternating finger taps | Touch | Alternating finger-tapping test |
+| Tap the Beat | Timing | Touch | Rhythmic auditory cueing |
+| Number Hunt | Finger reach, search | Touch | Trail Making A (touch version) |
+| Type the Word | Finger accuracy | Touch | Phone typing practice |
+| Count the Taps | Controlled tapping | Touch | Graded tapping with counting |
+| Peg Board | Pinch and place, speed | Touch | Nine-Hole Peg Test |
+| Shake the Bottle | Grip endurance | Accel | Repetitive grip-and-shake practice |
+| Pinch & Hold | Pinch steadiness | Tilt | Fugl-Meyer grasp items |
+| Reach to the Floor | Seated forward reach | Tilt | Berg pick up object (seated) |
+| Side Reach | Seated lateral reach | Tilt | Seated reach training |
+| Forward and Back | Trunk flexion and extension | Tilt | Seated trunk training |
+| Trunk Circles | Trunk control | Tilt | Seated trunk training |
+| Knee Straighten | Knee extension | Tilt | Otago knee extensor strengthening |
+| Knees Apart | Seated hip abduction | Tilt | Home leg programs |
+| Foot Lift | Ankle dorsiflexion | Tilt | FitMi ankle dorsiflexion; Otago toe raises |
+| Ankle Trace | Ankle control | Tilt pointer | Ankle alphabet and circles |
+| Toe Taps | Foot placement | Accel | Berg alternate foot on step (seated) |
+| Bridges | Hip extension, lying | Tilt | Bridging programs |
+| Heel Slides | Knee flexion, lying | Tilt | Supine heel slides |
+| Standing Weight Shift | Standing balance | Tilt | Otago and Berg weight shifting (standing, locked) |
+| Mini Squats | Standing knee bends | Tilt | Otago knee bends (standing, locked) |
+| March in Place | Standing stepping | Accel | Otago walking practice (standing, locked) |
+| Standing Reach | Standing forward reach | Tilt | Functional Reach Test (standing, locked) |

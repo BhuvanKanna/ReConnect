@@ -76,7 +76,8 @@ with sync_playwright() as p:
     con = desk.new_page()
     con.on("pageerror", lambda e: errors.append("computer: " + str(e)))
     con.goto(base)
-    con.evaluate("window.__mend.data.resetDemo(); window.__mend.data.setRole('patient'); window.__mend.data.setActivePatient('p_mei')")  # no plan: free play keeps its own settings
+    # the demo patients both have plans; add one without a plan for free play and plan building
+    con.evaluate("window.__mend.data.resetDemo(); window.__mend.data.savePatient({ id: 'p_new', name: 'New P.', side: 'right', enabled: {} }); window.__mend.data.setRole('patient'); window.__mend.data.setActivePatient('p_new')")  # no plan: free play keeps its own settings
     con.reload()
 
     def set_reps(n):
@@ -265,7 +266,7 @@ with sync_playwright() as p:
         if not ONLY:
             # ---- patient Today flow
             items = [{"exerciseId": g, "reps": 6, "level": 2, "durationS": None} for g in ("lift", "pour", "sort")]
-            con.evaluate(f"window.__mend.data.resetDemo({{ todayItems: {json.dumps(items)} }}); window.__mend.data.setActivePatient('p_ruth'); RC.patient.render()")
+            con.evaluate(f"window.__mend.data.resetDemo({{ todayItems: {json.dumps(items)} }}); window.__mend.data.savePatient({{ id: 'p_new', name: 'New P.', side: 'right', enabled: {{}} }}); window.__mend.data.setActivePatient('p_bhuvan'); RC.patient.render()")
             check(con.get_attribute("#todayBar", "data-state") == "progress", "Today bar shows goals in progress")
             steps = {"lift": lift_step, "pour": pour_step, "sort": sort_step}
             for n, gid in enumerate(("lift", "pour", "sort")):
@@ -281,10 +282,10 @@ with sync_playwright() as p:
             check("3" in con.inner_text("#myProgress"), "My progress shows today's sessions")
             play("sort", sort_step, 60)
             con.click("#home")
-            check(con.evaluate("window.__mend.data.sessions('p_ruth').at(-1).assigned") is False, "extra session after goals is recorded as extra")
+            check(con.evaluate("window.__mend.data.sessions('p_bhuvan').at(-1).assigned") is False, "extra session after goals is recorded as extra")
 
             # ---- no plan, locked tiles
-            con.select_option("#patientSel", "p_mei")
+            con.select_option("#patientSel", "p_new")
             check(con.get_attribute("#todayBar", "data-state") == "none" and "No plan for today" in con.inner_text("#todayBar"), "patient without a plan sees 'No plan for today'")
             con.click(".tile[data-id='sort']")
             check(con.is_visible("#vPlay"), "library still opens exercises without a plan")
@@ -303,7 +304,7 @@ with sync_playwright() as p:
             check(con.evaluate("window.__mend.data.sessions().length") == n_sessions and "again" in con.inner_text("#resetDemo"), "Reset demo data asks for a second tap before wiping anything")
             con.click("#pvAddPatient"); con.fill("#pvNewName", "Tom B."); con.click("#pvNewSave")
             check(con.locator("#pvPatients .pt").count() == n_pts + 1, "provider can add a patient")
-            con.click("#pvPatients .pt[data-id='p_mei']")
+            con.click("#pvPatients .pt[data-id='p_new']")
             today = con.evaluate("RC.plan.dateKey(new Date())")
             con.fill("#pvStart", today); con.dispatch_event("#pvStart", "change")
             check(con.locator(".calday").count() == 30, "a 30-day calendar appears once a start date is set")
@@ -320,9 +321,9 @@ with sync_playwright() as p:
             con.click("#pvCopyWeek")
             check(con.locator(".calday[data-day='7'] .chip").count() == 2, "copy week 1 repeats day 1's exercises on day 8")
             check("Rest" in con.inner_text(".calday[data-day='8']"), "copy week 1 repeats the rest day")
-            check(con.evaluate("window.__mend.data.plan('p_mei').days[0].items[0].reps") == 6, "plan edits are saved")
+            check(con.evaluate("window.__mend.data.plan('p_new').days[0].items[0].reps") == 6, "plan edits are saved")
             # ---- provider: progress and export
-            con.click("#pvPatients .pt[data-id='p_ruth']"); con.click("#pvTabProgress")
+            con.click("#pvPatients .pt[data-id='p_bhuvan']"); con.click("#pvTabProgress")
             check(re.match(r"^\d+/\d+$", con.inner_text("#pvKpiDays").strip()) is not None, "progress shows assigned days done as N/M")
             strip = [con.get_attribute(f".strip span:nth-child({i + 1})", "data-status") for i in range(con.locator(".strip span").count())]
             check(len(strip) == 30 and "missed" in strip and "partly" in strip, "adherence strip has 30 days including missed and partly done")
@@ -331,25 +332,25 @@ with sync_playwright() as p:
                 con.click("#pvExportCsv")
             dl = dl_info.value
             first_line = open(dl.path(), encoding="utf-8").readline()
-            check(dl.suggested_filename.startswith("reconnect-ruth") and first_line.startswith("at,id,name"), f"CSV export downloads ({dl.suggested_filename})")
+            check(dl.suggested_filename.startswith("reconnect-bhuvan") and first_line.startswith("at,id,name"), f"CSV export downloads ({dl.suggested_filename})")
             import csv as _csv
             cells = [c for row in _csv.reader(open(dl.path(), encoding="utf-8")) for c in row]
             check(not any(c[:1] in "=+-@" for c in cells if c), "CSV cells never start with a formula character")
-            con.evaluate("(() => { const d = window.__mend.data, pl = d.plan('p_ruth'), i = RC.plan.dayIndex(pl, RC.plan.dateKey(new Date())); pl.days[i].items = pl.days[i].items.filter(x => x.exerciseId !== 'lift'); d.savePlan(pl); })()")
+            con.evaluate("(() => { const d = window.__mend.data, pl = d.plan('p_bhuvan'), i = RC.plan.dayIndex(pl, RC.plan.dateKey(new Date())); pl.days[i].items = pl.days[i].items.filter(x => x.exerciseId !== 'lift'); d.savePlan(pl); })()")
             con.click("#pvTabPlan"); con.click("#pvTabProgress")
             lift_row = con.locator("#pvSessions tbody tr", has_text="Lantern Lift").first
             check(lift_row.locator("td.kind").inner_text() == "Extra", "removing a done item from today's plan re-tags its session as Extra")
             check(con.locator("#pvPrint").count() == 1, "print report button is present")
             con.click("#pvTabPlan")
             con.click("#rolePatient")
-            con.select_option("#patientSel", "p_mei")
+            con.select_option("#patientSel", "p_new")
             check(con.locator("#todaySteps li").count() == 2, "patient sees the provider's plan in the Today bar")
-            con.evaluate("(() => { const d = window.__mend.data, pl = d.plan('p_mei'); pl.days[0].items.unshift({ exerciseId: '__locked', reps: null, level: 1, durationS: null }); d.savePlan(pl); RC.patient.render(); })()")
+            con.evaluate("(() => { const d = window.__mend.data, pl = d.plan('p_new'); pl.days[0].items.unshift({ exerciseId: '__locked', reps: null, level: 1, durationS: null }); d.savePlan(pl); RC.patient.render(); })()")
             check("Locked test" not in con.inner_text("#todayStart"), "Today bar skips a standing exercise the provider has switched off")
-            con.evaluate("(() => { const d = window.__mend.data, pl = d.plan('p_mei'); pl.days[0].items.shift(); d.savePlan(pl); RC.patient.render(); })()")
+            con.evaluate("(() => { const d = window.__mend.data, pl = d.plan('p_new'); pl.days[0].items.shift(); d.savePlan(pl); RC.patient.render(); })()")
 
         # ---- exercise families: every tile opens, and one per family plays to the end
-        con.evaluate("(() => { const d = window.__mend.data, p = d.patients().find(x => x.id === 'p_mei'); p.enabled = { sit2stand: true, balance: true }; d.savePatient(p); d.setActivePatient('p_mei'); RC.patient.render(); })()")
+        con.evaluate("(() => { const d = window.__mend.data, p = d.patients().find(x => x.id === 'p_new'); p.enabled = Object.fromEntries(RC.EXERCISES.filter(x => x.safety).map(x => [x.id, true])); d.savePatient(p); d.setActivePatient('p_new'); RC.patient.render(); })()")
         dbg = lambda: con.evaluate("window.__mend.Game.inst.debug()")
 
         def stage_click(x, y):
@@ -369,38 +370,39 @@ with sync_playwright() as p:
             con.evaluate("window.__mend.Game.finishNow()")
             check(bool(t) and st == "play", f"{gid} opens and runs ({t})")
 
-        def family(name, ids, rep_id, rep_step, limit=120):
+        def family(name, rep_id, rep_step, limit=120):
+            """Every exercise registered in this section opens and runs; rep_id plays to the end."""
             if ONLY and name not in ONLY:
                 return
-            for gid in ids:
+            for gid in con.evaluate(f"RC.EXERCISES.filter(d => d.section === '{name}' && !d.id.startsWith('__')).map(d => d.id)"):
                 tile_opens(gid)
             play(rep_id, rep_step, limit)
             con.click("#home")
 
         def sideraise_step():
             mramp(0, 0, 0, 0, 0.5); mramp(0, 0, 0, 34, 0.9); mramp(0, 34, 0, 34, 1.4); mramp(0, 34, 0, 0, 0.9)
-        family("arm", ["sideraise", "reach", "cupmouth", "push", "slide", "bowl", "trace"], "sideraise", sideraise_step, 90)
+        family("arm", "sideraise", sideraise_step, 90)
 
         def wristbend_step():
             mramp(0, 0, 0, 0, 0.4); mramp(0, 0, 34, 0, 0.6); mramp(34, 0, 34, 0, 0.6); mramp(34, 0, -24, 0, 0.9); mramp(-24, 0, -24, 0, 0.6); mramp(-24, 0, 0, 0, 0.5)
-        family("wrist", ["wristbend", "wiper", "steady"], "wristbend", wristbend_step, 90)
+        family("wrist", "wristbend", wristbend_step, 90)
 
         def tap_step():
             d = dbg()
             if d.get("rects") and d.get("lit") is not None and d["lit"] < len(d["rects"]):
                 stage_click(*center(d["rects"][d["lit"]]))
             time.sleep(0.08)
-        family("hand", ["tap", "rhythm", "dial", "pinch", "grip", "putty", "curls", "thumbs", "clothespin", "coins", "buttons", "knifefork"], "tap", tap_step, 60)
+        family("hand", "tap", tap_step, 60)
 
         def lean_step():
             d = dbg()
             p_, r_ = {"left": (0, -30), "right": (0, 30), "forward": (30, 0)}[d["dir"]]
             mramp(0, 0, p_, r_, 0.5); mramp(p_, r_, p_, r_, 2.4); mramp(p_, r_, 0, 0, 0.5); time.sleep(0.3)
-        family("trunk", ["lean", "twist", "sit2stand", "balance", "march", "heelraise", "anklepump"], "lean", lean_step, 90)
+        family("trunk", "lean", lean_step, 90)
 
         def mirror_step():
             con.keyboard.press("Space"); time.sleep(0.5)
-        family("sessions", ["mirror", "imagery"], "mirror", mirror_step, 30)
+        family("sessions", "mirror", mirror_step, 30)
 
         def cancel_step():
             d = dbg()
@@ -410,14 +412,14 @@ with sync_playwright() as p:
             else:
                 stage_click(*center(d["finish"]))
             time.sleep(0.12)
-        family("scanning", ["cancel", "lookleft", "bisect"], "cancel", cancel_step, 90)
+        family("scanning", "cancel", cancel_step, 90)
 
         def quick_step():
             d = dbg()
             if d["shown"]:
                 stage_click(*center(d["rect"]))
             time.sleep(0.08)
-        family("attention", ["quick", "gonogo", "watch", "twoatonce", "trail"], "quick", quick_step, 90)
+        family("attention", "quick", quick_step, 90)
 
         def pairs_step():
             d = dbg()
@@ -428,7 +430,7 @@ with sync_playwright() as p:
                 time.sleep(0.2); return
             a = left[0]; b_ = next(c for c in left[1:] if c["sym"] == a["sym"])
             stage_click(*center(a)); time.sleep(0.15); stage_click(*center(b_)); time.sleep(0.4)
-        family("memory", ["pairs", "nback", "span", "wordlist", "shopping", "faces"], "pairs", pairs_step, 90)
+        family("memory", "pairs", pairs_step, 90)
 
         hanoi_moves = []
         def tower_step():
@@ -442,14 +444,14 @@ with sync_playwright() as p:
                 time.sleep(0.2); return
             a, c = hanoi_moves[d["moves"]]
             stage_click(*center(d["rects"][a])); time.sleep(0.12); stage_click(*center(d["rects"][c])); time.sleep(0.15)
-        family("reasoning", ["tower", "errands", "next", "rotate", "change", "clock", "ruleswitch"], "tower", tower_step, 90)
+        family("reasoning", "tower", tower_step, 90)
 
         def nameit_step():
             d = dbg()
             if not d["fb"] and d["rects"]:
                 stage_click(*center(d["rects"][d["answer"]]))
             time.sleep(0.25)
-        family("language", ["nameit", "wordpic", "wordweb", "sentence", "spell"], "nameit", nameit_step, 90)
+        family("language", "nameit", nameit_step, 90)
 
         if not ONLY:
             con.click("#toLog")
@@ -474,7 +476,7 @@ with sync_playwright() as p:
     pg.on("pageerror", lambda e: errors.append("night: " + str(e)))
     pg.clock.install(time=datetime.datetime(2026, 10, 20, 23, 59, 30))
     pg.goto(base)
-    pg.evaluate("window.__mend.data.resetDemo(); window.__mend.data.setActivePatient('p_ruth'); RC.patient.render()")
+    pg.evaluate("window.__mend.data.resetDemo(); window.__mend.data.setActivePatient('p_bhuvan'); RC.patient.render()")
     before = pg.inner_text("#todayDay")
     pg.clock.run_for(61000)
     pg.wait_for_timeout(100)

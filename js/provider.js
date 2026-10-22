@@ -112,8 +112,7 @@ function render() {
       <div class="pv-head"><div><h1>${esc(pt.name)}</h1><p class="muted">${esc(pt.side === "left" ? "Left" : "Right")} side affected</p></div>
         <div class="seg" role="tablist"><button id="pvTabPlan" aria-pressed="${UI.tab === "plan"}">Plan</button><button id="pvTabProgress" aria-pressed="${UI.tab === "progress"}">Progress</button></div></div>
       <div class="pv-flags"><span class="muted">Standing exercises:</span>
-        <label class="toggle"><input type="checkbox" id="pvEnable-sit2stand"${enabled.sit2stand ? " checked" : ""}> Sit to Stand</label>
-        <label class="toggle"><input type="checkbox" id="pvEnable-balance"${enabled.balance ? " checked" : ""}> Balance Hold</label></div>
+        ${RC.EXERCISES.filter((d) => d.safety).map((d) => `<label class="toggle"><input type="checkbox" id="pvEnable-${esc(d.id)}"${enabled[d.id] ? " checked" : ""}> ${esc(d.name)}</label>`).join("")}</div>
       ${UI.tab === "plan" ? renderPlanTab(pt) : progressView(pt)}` : '<p class="muted">Add a patient to get started.</p>'}
     </div></div>`;
 }

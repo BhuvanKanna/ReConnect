@@ -11,6 +11,7 @@
   const MAX_SESSIONS = 2000;
   const NAMES = { lift: "Lantern Lift", pour: "Pour the Tea", lock: "Combination Lock", maze: "Tilt Maze", sort: "Sort It", simon: "Memory Moves",
     pairs: "Card Pairs", wiper: "Wrist Wiper", trail: "Trail Connect", cancel: "Cancel It", reach: "Reach Targets" };
+  const OLD_DEMO = { p_ruth: { name: "Ruth A.", to: "p_bhuvan", rename: "Bhuvan K." }, p_james: { name: "James O.", to: "p_argye", rename: "Argye H." }, p_mei: { name: "Mei L.", to: null } };
   const item = (exerciseId, reps = 10, level = 2) => ({ exerciseId, reps, level, durationS: null });
 
   // Small deterministic random so the demo looks the same every time.
@@ -19,16 +20,15 @@
   function seedData(now) {
     const today = plan.dateKey(now), rand = rng(7);
     const patients = [
-      { id: "p_ruth", name: "Ruth A.", side: "right", enabled: { sit2stand: false, balance: false } },
-      { id: "p_james", name: "James O.", side: "left", enabled: { sit2stand: false, balance: false } },
-      { id: "p_mei", name: "Mei L.", side: "right", enabled: { sit2stand: false, balance: false } },
+      { id: "p_bhuvan", name: "Bhuvan K.", side: "right", enabled: { sit2stand: false, balance: false } },
+      { id: "p_argye", name: "Argye H.", side: "left", enabled: { sit2stand: false, balance: false } },
     ];
     // A week mixing arm, wrist and brain work; brain exercises are assigned by level only (no reps).
     const week = [[item("lift"), item("pairs", null, 1)], [item("pour"), item("trail", 1, 1)], [item("reach"), item("wiper")], [item("lift"), item("cancel", 1, 1)], [item("pour"), item("pairs", null, 1), item("wiper")], "rest", "rest"];
-    const ruth = plan.emptyPlan("p_ruth", plan.addDays(today, -11));
-    ruth.days.forEach((d, i) => { const w = week[i % 7]; if (w === "rest") d.rest = true; else d.items = w.map((x) => Object.assign({}, x)); });
-    const james = plan.emptyPlan("p_james", plan.addDays(today, -4));
-    james.days.forEach((d) => { d.items = [item("lift", 10, 1), item("pour", 10, 1)]; });
+    const bhuvan = plan.emptyPlan("p_bhuvan", plan.addDays(today, -11));
+    bhuvan.days.forEach((d, i) => { const w = week[i % 7]; if (w === "rest") d.rest = true; else d.items = w.map((x) => Object.assign({}, x)); });
+    const argye = plan.emptyPlan("p_argye", plan.addDays(today, -4));
+    argye.days.forEach((d) => { d.items = [item("lift", 10, 1), item("pour", 10, 1)]; });
 
     const sessions = [];
     const at = (key, hour, min) => { const [y, m, d] = key.split("-").map(Number); return new Date(y, m - 1, d, hour, min).toISOString(); };
@@ -49,11 +49,11 @@
       const { assignedAt } = plan.matchDay(plan.itemsFor(p, key), list);
       list.forEach((s) => { s.assigned = assignedAt.has(s.at); sessions.push(s); });
     }
-    const ruthDays = { 0: [["lift", "pairs"], ["trail"]], 1: [["pour", "trail"]], 2: [["reach"]], 3: [["lift", "cancel"], ["pairs"]], 4: [["pour", "pairs", "wiper"]],
+    const bhuvanDays = { 0: [["lift", "pairs"], ["trail"]], 1: [["pour", "trail"]], 2: [["reach"]], 3: [["lift", "cancel"], ["pairs"]], 4: [["pour", "pairs", "wiper"]],
       6: [[], ["lift"]], 7: [["lift", "pairs"]], 9: [["reach", "wiper"], ["cancel"]], 10: [["lift", "cancel"]] }; // day 8 missed, day 2 partly
-    for (const [i, [ids, extras]] of Object.entries(ruthDays)) day(ruth, patients[0], +i, ids, extras);
-    day(james, patients[1], 0, ["lift", "pour"]); day(james, patients[1], 1, ["lift"]);
-    return { patients, plans: { p_ruth: ruth, p_james: james }, sessions };
+    for (const [i, [ids, extras]] of Object.entries(bhuvanDays)) day(bhuvan, patients[0], +i, ids, extras);
+    day(argye, patients[1], 0, ["lift", "pour"]); day(argye, patients[1], 1, ["lift"]);
+    return { patients, plans: { p_bhuvan: bhuvan, p_argye: argye }, sessions };
   }
 
   function createData(store, now) {
@@ -75,15 +75,30 @@
 
     // Sessions recorded before plans existed belong to the demo patient as "before plan" history.
     function migrate() {
+      renameDemo();
       const l = log();
       if (!l.some((s) => !s.patientId)) return;
-      set(K.log, l.map((s) => (s.patientId ? s : Object.assign({}, s, { patientId: "p_ruth", assigned: false, completed: true, legacy: true }))));
+      set(K.log, l.map((s) => (s.patientId ? s : Object.assign({}, s, { patientId: "p_bhuvan", assigned: false, completed: true, legacy: true }))));
+    }
+    // The first demo had three patients (Ruth A., James O., Mei L.). Carry their plans and sessions
+    // over to the current demo patients, and drop Mei's demo record.
+    function renameDemo() {
+      const list = get(K.patients, null);
+      if (!Array.isArray(list) || !list.some((p) => p && OLD_DEMO[p.id] && p.name === OLD_DEMO[p.id].name)) return;
+      const ids = {}; for (const [id, o] of Object.entries(OLD_DEMO)) if (list.some((p) => p && p.id === id && p.name === o.name)) ids[id] = o.to;
+      const swap = (id) => (id in ids ? ids[id] : id);
+      set(K.patients, list.filter((p) => ids[p.id] !== null).map((p) => (ids[p.id] ? Object.assign({}, p, { id: ids[p.id], name: OLD_DEMO[p.id].rename }) : p)));
+      const pl = plans(), next = {};
+      for (const [id, p] of Object.entries(pl)) if (swap(id) !== null) next[swap(id)] = Object.assign({}, p, { patientId: swap(p.patientId) });
+      set(K.plans, next);
+      set(K.log, log().filter((s) => swap(s.patientId) !== null).map((s) => (s.patientId in ids ? Object.assign({}, s, { patientId: ids[s.patientId] }) : s)));
+      const d = demo(); if (d.patientId in ids) set(K.demo, Object.assign(d, { patientId: ids[d.patientId] }));
     }
     function writeSeed(opts) {
       const s = seedData(now());
       if (opts && opts.todayItems) {
-        const i = plan.dayIndex(s.plans.p_ruth, plan.dateKey(now()));
-        if (i >= 0) { s.plans.p_ruth.days[i].rest = false; s.plans.p_ruth.days[i].items = opts.todayItems.map((x) => Object.assign({}, x)); }
+        const i = plan.dayIndex(s.plans.p_bhuvan, plan.dateKey(now()));
+        if (i >= 0) { s.plans.p_bhuvan.days[i].rest = false; s.plans.p_bhuvan.days[i].items = opts.todayItems.map((x) => Object.assign({}, x)); }
       }
       set(K.patients, s.patients);
       set(K.plans, s.plans);

@@ -18,21 +18,21 @@ function memStore(init = {}) {
 test("corrupt or missing storage falls back to the seed", () => {
   const D = data.createData(memStore({ "mend.patients": "{not json" }), NOW);
   D.ensureSeed();
-  assert.deepEqual(D.patients().map((p) => p.name), ["Ruth A.", "James O.", "Mei L."]);
-  assert.equal(D.plan("p_ruth").start, "2026-10-06"); // 11 days before today
-  assert.equal(D.plan("p_mei"), null);
+  assert.deepEqual(D.patients().map((p) => p.name), ["Bhuvan K.", "Argye H."]);
+  assert.equal(D.plan("p_bhuvan").start, "2026-10-06"); // 11 days before today
+  assert.equal(D.plan("p_argye").start, "2026-10-13");
 });
 
-test("seeded Ruth has done, partly and missed days and some extras", () => {
+test("seeded Bhuvan has done, partly and missed days and some extras", () => {
   const D = data.createData(memStore(), NOW);
   D.ensureSeed();
-  const pr = plan.progress(D.plan("p_ruth"), D.sessions("p_ruth"), "2026-10-17");
+  const pr = plan.progress(D.plan("p_bhuvan"), D.sessions("p_bhuvan"), "2026-10-17");
   assert.equal(pr.strip[8], "missed");
   assert.equal(pr.strip[2], "partly");
   assert.ok(pr.daysDone >= 5);
   assert.ok(pr.extra >= 3);
   assert.ok(pr.range.first <= 33 && pr.range.last >= 40);
-  const sessions = D.sessions("p_ruth");
+  const sessions = D.sessions("p_bhuvan");
   assert.ok(sessions.every((s, i) => i === 0 || sessions[i - 1].at <= s.at), "chronological");
   assert.ok(sessions.some((s) => s.assigned === false) && sessions.some((s) => s.assigned === true));
 });
@@ -40,11 +40,11 @@ test("seeded Ruth has done, partly and missed days and some extras", () => {
 test("seeded plan mixes motion and brain exercises from the full library", () => {
   const D = data.createData(memStore(), NOW);
   D.ensureSeed();
-  const ids = new Set(D.plan("p_ruth").days.flatMap((d) => d.items.map((i) => i.exerciseId)));
+  const ids = new Set(D.plan("p_bhuvan").days.flatMap((d) => d.items.map((i) => i.exerciseId)));
   for (const id of ["lift", "pairs", "wiper", "pour", "trail", "cancel", "reach"]) assert.ok(ids.has(id), `plan includes ${id}`);
-  const pairs = D.plan("p_ruth").days.flatMap((d) => d.items).find((i) => i.exerciseId === "pairs");
+  const pairs = D.plan("p_bhuvan").days.flatMap((d) => d.items).find((i) => i.exerciseId === "pairs");
   assert.equal(pairs.reps, null, "rounds-free exercises are assigned without reps");
-  const names = new Set(D.sessions("p_ruth").map((s) => s.name));
+  const names = new Set(D.sessions("p_bhuvan").map((s) => s.name));
   assert.ok(names.has("Card Pairs") && names.has("Cancel It"), "seed sessions carry real exercise names");
 });
 
@@ -53,27 +53,27 @@ test("legacy log entries are attributed to the demo patient as before-plan histo
   const st = memStore({ "mend.log": JSON.stringify(legacy) });
   const D = data.createData(st, NOW);
   D.ensureSeed();
-  const old = D.sessions("p_ruth").find((s) => s.at === legacy[0].at);
+  const old = D.sessions("p_bhuvan").find((s) => s.at === legacy[0].at);
   assert.equal(old.legacy, true);
   assert.equal(old.assigned, false);
   assert.equal(old.completed, true);
   D.ensureSeed();
-  assert.equal(D.sessions("p_ruth").filter((s) => s.at === legacy[0].at).length, 1, "not duplicated");
+  assert.equal(D.sessions("p_bhuvan").filter((s) => s.at === legacy[0].at).length, 1, "not duplicated");
 });
 
 test("ensureSeed is idempotent and never overwrites provider edits", () => {
   const st = memStore();
   const D = data.createData(st, NOW);
   D.ensureSeed();
-  const p = D.plan("p_mei") || plan.emptyPlan("p_mei", "2026-10-17");
+  const p = D.plan("p_new") || plan.emptyPlan("p_new", "2026-10-17");
   p.days[0].items = [{ exerciseId: "sort", reps: 6, level: 1, durationS: null }];
   D.savePlan(p);
   D.savePatient({ id: "p_new", name: "New P.", side: "left", enabled: { sit2stand: false, balance: false } });
   const n = D.sessions().length;
   const D2 = data.createData(st, NOW);
   D2.ensureSeed();
-  assert.equal(D2.plan("p_mei").days[0].items[0].exerciseId, "sort");
-  assert.equal(D2.patients().length, 4);
+  assert.equal(D2.plan("p_new").days[0].items[0].exerciseId, "sort");
+  assert.equal(D2.patients().length, 3);
   assert.equal(D2.sessions().length, n);
 });
 
@@ -82,17 +82,17 @@ test("role and active patient persist with sensible defaults", () => {
   const D = data.createData(st, NOW);
   D.ensureSeed();
   assert.equal(D.role(), "patient");
-  assert.equal(D.activePatientId(), "p_ruth");
-  D.setRole("provider"); D.setActivePatient("p_mei");
+  assert.equal(D.activePatientId(), "p_bhuvan");
+  D.setRole("provider"); D.setActivePatient("p_argye");
   const D2 = data.createData(st, NOW);
   assert.equal(D2.role(), "provider");
-  assert.equal(D2.activePatientId(), "p_mei");
+  assert.equal(D2.activePatientId(), "p_argye");
 });
 
 test("addSession appends and keeps the newest 2,000", () => {
   const D = data.createData(memStore(), NOW);
   D.ensureSeed();
-  for (let i = 0; i < 2100; i++) D.addSession({ at: `2026-10-17T12:${String(i % 60).padStart(2, "0")}:00.${String(i).padStart(4, "0")}Z`, id: "sort", patientId: "p_mei", completed: true });
+  for (let i = 0; i < 2100; i++) D.addSession({ at: `2026-10-17T12:${String(i % 60).padStart(2, "0")}:00.${String(i).padStart(4, "0")}Z`, id: "sort", patientId: "p_new", completed: true });
   assert.equal(D.sessions().length, 2000);
 });
 
@@ -100,17 +100,17 @@ test("resetDemo can replace today's items for tests and clears today's sessions"
   const D = data.createData(memStore(), NOW);
   D.ensureSeed();
   const items = [{ exerciseId: "lift", reps: 6, level: 2, durationS: null }, { exerciseId: "pour", reps: 6, level: 2, durationS: null }];
-  D.addSession({ at: new Date(2026, 9, 17, 9).toISOString(), id: "lift", patientId: "p_ruth", completed: true, reps: 10, level: 2 });
+  D.addSession({ at: new Date(2026, 9, 17, 9).toISOString(), id: "lift", patientId: "p_bhuvan", completed: true, reps: 10, level: 2 });
   D.resetDemo({ todayItems: items });
-  assert.deepEqual(plan.itemsFor(D.plan("p_ruth"), "2026-10-17"), items);
-  assert.equal(D.sessions("p_ruth").filter((s) => plan.sessionDay(s) === "2026-10-17").length, 0);
+  assert.deepEqual(plan.itemsFor(D.plan("p_bhuvan"), "2026-10-17"), items);
+  assert.equal(D.sessions("p_bhuvan").filter((s) => plan.sessionDay(s) === "2026-10-17").length, 0);
 });
 
 test("a store that throws on every call still works from memory", () => {
   const boom = () => { throw new Error("blocked"); };
   const D = data.createData({ get: boom, set: boom }, NOW);
   assert.doesNotThrow(() => D.ensureSeed());
-  assert.equal(D.patients()[0].name, "Ruth A.");
+  assert.equal(D.patients()[0].name, "Bhuvan K.");
   D.setRole("provider");
   assert.equal(D.role(), "provider");
 });
@@ -118,14 +118,31 @@ test("a store that throws on every call still works from memory", () => {
 test("clearSessions removes one patient's recorded sessions and keeps everyone else's", () => {
   const D = data.createData(memStore(), NOW);
   D.ensureSeed();
-  const ruthBefore = D.sessions("p_ruth").length;
-  D.addSession({ at: "2026-10-17T11:00:00.000Z", id: "sort", patientId: "p_mei", completed: true });
-  D.clearSessions("p_mei");
-  assert.equal(D.sessions("p_mei").length, 0);
-  assert.equal(D.sessions("p_ruth").length, ruthBefore);
+  const bhuvanBefore = D.sessions("p_bhuvan").length;
+  D.addSession({ at: "2026-10-17T11:00:00.000Z", id: "sort", patientId: "p_new", completed: true });
+  D.clearSessions("p_new");
+  assert.equal(D.sessions("p_new").length, 0);
+  assert.equal(D.sessions("p_bhuvan").length, bhuvanBefore);
 });
 
 test("a log that is valid JSON but not a list reads as empty", () => {
   const D = data.createData(memStore({ "mend.log": "{}" }), NOW);
   assert.deepEqual(D.sessions(), []);
+});
+
+test("the first demo's patients carry over to the current demo names", () => {
+  const old = data.seedData(NOW());
+  const rename = { p_bhuvan: ["p_ruth", "Ruth A."], p_argye: ["p_james", "James O."] };
+  const patients = old.patients.map((p) => Object.assign({}, p, { id: rename[p.id][0], name: rename[p.id][1] })).concat([{ id: "p_mei", name: "Mei L.", side: "right", enabled: {} }, { id: "p_own", name: "Own P.", side: "left", enabled: {} }]);
+  const plans = { p_ruth: Object.assign({}, old.plans.p_bhuvan, { patientId: "p_ruth" }), p_james: Object.assign({}, old.plans.p_argye, { patientId: "p_james" }), p_mei: plan.emptyPlan("p_mei", "2026-10-17") };
+  const log = old.sessions.map((s) => Object.assign({}, s, { patientId: rename[s.patientId][0] })).concat([{ at: "2026-10-17T09:00:00.000Z", id: "sort", patientId: "p_mei", completed: true }]);
+  const st = memStore({ "mend.patients": JSON.stringify(patients), "mend.plans": JSON.stringify(plans), "mend.log": JSON.stringify(log), "mend.demo": JSON.stringify({ patientId: "p_james" }) });
+  const D = data.createData(st, NOW);
+  D.ensureSeed();
+  assert.deepEqual(D.patients().map((p) => [p.id, p.name]).sort(), [["p_argye", "Argye H."], ["p_bhuvan", "Bhuvan K."], ["p_own", "Own P."]]);
+  assert.equal(D.plan("p_bhuvan").patientId, "p_bhuvan");
+  assert.equal(D.plan("p_mei"), null);
+  assert.equal(D.sessions("p_bhuvan").length, old.sessions.filter((s) => s.patientId === "p_bhuvan").length);
+  assert.equal(D.sessions("p_mei").length, 0);
+  assert.equal(D.activePatientId(), "p_argye");
 });

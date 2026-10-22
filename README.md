@@ -16,12 +16,14 @@ with **Demo: Patient | Provider** at the top. Everything is saved in this browse
 
 - **Provider:** pick a patient (or add one), set a start date, and build the 30-day plan: choose a day, add
   exercises with their level and reps or time, mark rest days, and **Copy week 1 to all weeks**. Standing
-  exercises (Sit to Stand, Balance Hold) stay locked until you turn them on for that patient. The **Progress** tab
+  exercises (Sit to Stand, Balance Hold, Standing Weight Shift, Mini Squats, March in Place, Standing Reach) stay
+  locked until you turn them on for that patient. The **Progress** tab
   shows days done, extra sessions, a 30-day adherence strip and every session tagged Assigned, Extra or Before plan,
   with **Export CSV** and **Print report**.
 - **Patient:** the Today bar shows today's assigned exercises and starts the next one with the provider's settings.
   When they're all done it says so, and anything played after that counts as bonus practice.
-- The demo starts with three patients (Ruth is 11 days into a plan, James is behind, Mei has no plan yet).
+- The demo starts with two patients: Bhuvan K. is 11 days into a plan and Argye H. is behind on theirs. Add a
+  patient in the provider view to build a plan from scratch.
   **Reset demo data** in the provider sidebar puts them back.
 
 Real provider and patient accounts, a server and remote reports are the next step; the data model (patients,
@@ -37,14 +39,14 @@ plans, sessions tagged with `patientId` and `assigned`) is built so that move do
 No phone? Tick **Use the mouse instead of a phone** in the same panel: the pointer stands in for the tilt of the
 hand, holding the mouse button stands in for a push, and touch exercises work with the mouse or a touchscreen.
 
-## The 63 exercises
+## The 121 exercises
 
 | Section | Exercises |
 | --- | --- |
-| Arm & shoulder (8) | Lantern Lift, Side Raise, Reach Targets, Cup to Mouth, Push Away, Table Slide, Bowl Lift, Trace It |
-| Wrist & forearm (6) | Pour the Tea, Combination Lock, Tilt Maze, Wrist Bend, Wrist Wiper, Steady Cup |
-| Hand & fingers (12) | Finger Tap, Finger Rhythm, Dial a Number, Pinch & Place; guided Grip & Release, Putty Squeeze, Finger Curls, Thumb Touches, Clothespins, Coins, Buttons, Knife & Fork |
-| Trunk & legs (7) | Lean & Shift, Trunk Twist, Sit to Stand, Balance Hold, Seated March, Heel Raises, Ankle Pumps |
+| Arm & shoulder (30) | Lantern Lift, Side Raise, Reach Targets, Cup to Mouth, Push Away, Table Slide, Bowl Lift, Trace It, High Shelf, Hand to Head, Open the Curtains, Swing the Gate, Paint the Fence, Hammer the Nail, Hold the Torch, Follow the Moon, Stir the Pot, Pendulum Swing, Bean Bag Toss, Row the Boat, Pick the Apples, Pop the Balloons, Connect the Dots, Clean the Window, Fruit Catch, Fly the Kite, Quick Reach, Write Letters, Reach and Turn, Finger to Nose |
+| Wrist & forearm (17) | Pour the Tea, Combination Lock, Tilt Maze, Wrist Bend, Wrist Wiper, Steady Cup, Turn the Key, Turn the Pages, Flip the Pancake, Screwdriver, Wave Hello, Raise the Drawbridge, Steering Wheel, Tune the Radio, Flashlight Search, Wrist Circles, Water the Plants |
+| Hand & fingers (22) | Finger Tap, Finger Rhythm, Dial a Number, Pinch & Place, Whack-a-Mole, Piano Scales, Drum Roll, Tap the Beat, Number Hunt, Type the Word, Count the Taps, Peg Board, Shake the Bottle, Pinch & Hold; guided Grip & Release, Putty Squeeze, Finger Curls, Thumb Touches, Clothespins, Coins, Buttons, Knife & Fork |
+| Trunk & legs (22) | Lean & Shift, Trunk Twist, Sit to Stand, Balance Hold, Seated March, Reach to the Floor, Side Reach, Forward and Back, Trunk Circles, Knee Straighten, Knees Apart, Foot Lift, Ankle Trace, Toe Taps, Bridges, Heel Slides, Standing Weight Shift, Mini Squats, March in Place, Standing Reach; guided Heel Raises, Ankle Pumps |
 | Therapy sessions (2) | Mirror Therapy, Mental Practice |
 | Visual scanning (3) | Cancel It, Look Left Search, Find the Middle |
 | Attention (5) | Quick Catch, Go / No-Go, Night Watch, Two at Once, Trail Connect |
@@ -52,7 +54,9 @@ hand, holding the mouse button stands in for a push, and touch exercises work wi
 | Reasoning (8) | Sort It, Tower Puzzle, Errand Planner, What Comes Next, Turn the Shape, Make Change, Tell the Time, Rule Switch |
 | Language (5) | Name It, Word to Picture, Word Web, Finish the Sentence, Spell It |
 
-Every exercise has three levels and an assignable amount (reps, rounds or time). **About these exercises** in the
+The 58 in the motion library (everything after the first 63) are all measured by the phone: tilt, turn,
+acceleration or touch. None are follow-along. Every exercise has three levels and an assignable amount (reps,
+rounds or time). **About these exercises** in the
 app, and [`docs/exercise-catalog.md`](docs/exercise-catalog.md), list the programs and studies each one comes from.
 
 ## What gets measured
@@ -96,6 +100,7 @@ HIPAA-eligible backend.
 ```bash
 python3 -m http.server 8000            # then open http://localhost:8000
 node --test "tests/*.test.js"          # plan, storage and rep-counter unit tests
+python3 tests/engines_test.py          # plays every motion-library exercise to the end at all three levels
 python3 -m pip install playwright && python3 -m playwright install chromium
 python3 tests/smoke_test.py            # end to end: pairing, phone pad, all games, Today flow, provider, every exercise
 python3 tests/smoke_test.py --families memory,language   # just some exercise groups
