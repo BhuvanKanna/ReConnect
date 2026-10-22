@@ -78,7 +78,7 @@ Object.assign(RC, { show, goHome });
 // ---------------------------------------------------------------- boot
 renderEvidence(); renderSound();
 Input.mode = "mouse";
-Link.hosted = typeof window.Peer === "function" && /^https?:$/.test(location.protocol);
+Link.hosted = (typeof window.Peer === "function" || !!(window.MEND_RELAY_URL && window.MendRelay)) && /^https?:$/.test(location.protocol);
 $("pHosted").hidden = !Link.hosted; $("pArtifact").hidden = Link.hosted;
 if (Link.hosted) startPeer();
 renderConn();

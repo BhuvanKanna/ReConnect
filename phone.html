@@ -75,6 +75,8 @@ ol.tip { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap:
 @media (prefers-reduced-motion: reduce) { button { transition: none; } }
 </style>
 <script src="vendor/peerjs.min.js"></script>
+<script src="js/config.js"></script>
+<script src="js/relay.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -204,13 +206,36 @@ ol.tip { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap:
     history.replaceState(null, "", location.pathname);
   }
 
+  // With a relay configured (js/config.js) the phone tries it first: it works across any two
+  // networks. If the relay can't be reached, or has no computer on this code, it falls back to
+  // the direct link above.
+  const RELAY = window.MEND_RELAY_URL && window.MendRelay ? window.MEND_RELAY_URL : "";
+  let relaySkip = false, relayNoHost = false;
+  // Detach before closing, so the old connection's close event isn't taken for a lost link.
+  function hangUp() { const c = conn; conn = null; if (c) { try { c.close(); } catch (_) {} } }
+  function dialRelay() {
+    hangUp();
+    const c = window.MendRelay.dial(RELAY, code);
+    const fallback = (why) => { if (conn !== c) return; relaySkip = true; relayNoHost = why === "nohost"; connect(); };
+    c.on("fail", fallback);
+    wire(c, 6000, () => c.close()); // closing a connection that never opened emits "fail"
+  }
+
   function dial() {
     if (!peer || peer.destroyed || !peer.open) return;
-    if (conn) { try { conn.close(); } catch (_) {} }
-    const c = peer.connect(PEER_PREFIX + code, { serialization: "json", reliable: true });
+    hangUp();
+    wire(peer.connect(PEER_PREFIX + code, { serialization: "json", reliable: true }), 15000, null);
+  }
+
+  function wire(c, wait, onTimeout) {
     conn = c;
     clearTimeout(joinTimer);
-    joinTimer = setTimeout(() => { if (conn === c && !c.open) { if (paired) retry(); else badCode("Couldn't reach the computer. Check that ReConnect is open on it and both devices are online."); } }, 15000);
+    joinTimer = setTimeout(() => {
+      if (conn !== c || c.open) return;
+      if (onTimeout) onTimeout();
+      else if (paired) retry();
+      else badCode("Couldn't reach the computer. Check that ReConnect is open on it and both devices are online.");
+    }, wait);
     c.on("open", () => {
       clearTimeout(joinTimer);
       paired = true;
@@ -228,12 +253,21 @@ ol.tip { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap:
     };
     c.on("close", lost); c.on("error", lost);
   }
-  function retry() { clearTimeout(reconnectTimer); reconnectTimer = setTimeout(() => { if (peer && peer.open) dial(); else connect(); }, 2500); }
+  function retry() {
+    clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(() => { relaySkip = false; if (RELAY) dialRelay(); else if (peer && peer.open) dial(); else connect(); }, 2500);
+  }
 
   function connect() {
     clearTimeout(reconnectTimer);
     setPill("", "Connecting…");
-    if (typeof window.Peer !== "function") { badCode("The pairing library didn't load. Check the internet connection and reload."); return; }
+    if (RELAY && !relaySkip) { relayNoHost = false; dialRelay(); return; }
+    if (typeof window.Peer !== "function") {
+      if (relayNoHost) badCode("No computer is showing code " + code + ". Check the number on the screen.");
+      else if (paired) retry();
+      else badCode("The pairing library didn't load. Check the internet connection and reload.");
+      return;
+    }
     if (peer && !peer.destroyed && peer.open) { dial(); return; }
     if (peer) { try { peer.destroy(); } catch (_) {} }
     peer = new window.Peer(Object.assign({ debug: 0 }, window.MEND_PEER_OPTS || {}));
@@ -241,7 +275,10 @@ ol.tip { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap:
     peer.on("disconnected", () => { try { peer.reconnect(); } catch (_) {} });
     peer.on("error", (e) => {
       if (e.type === "peer-unavailable") { if (paired) retry(); else badCode("No computer is showing code " + code + ". Check the number on the screen."); }
-      else if (["network", "server-error", "socket-error", "socket-closed"].includes(e.type)) { setPill("bad", "Offline"); retry(); }
+      else if (["network", "server-error", "socket-error", "socket-closed"].includes(e.type)) {
+        if (relayNoHost && !paired) badCode("No computer is showing code " + code + ". Check the number on the screen.");
+        else { setPill("bad", "Offline"); retry(); }
+      }
     });
   }
 

@@ -73,6 +73,10 @@ The whole app is static files, which is why it can run on GitHub Pages.
   keypad, guided session) are in `js/kit.js`.
 - The computer registers a 6-digit code (`mend-rehab-<code>`) with the free [PeerJS](https://peerjs.com) broker and
   shows it as a QR code. `phone.html` connects by that code and the two talk over a WebRTC data channel.
+- If a relay is configured (`js/config.js`, see [`relay/README.md`](relay/README.md)), the computer also registers
+  the code with it, and the phone tries it first. The relay is a small Cloudflare Worker that passes the same
+  messages over WebSockets, so pairing works across any two networks (mobile data, school or clinic Wi-Fi). If
+  the relay can't be reached, the phone falls back to the direct PeerJS link.
 
 Messages are small JSON objects:
 
@@ -84,7 +88,7 @@ The computer treats 6 seconds without a message as a disconnect. A pad exercise 
 ### Privacy note
 
 Only angles and taps travel between the devices; nothing identifies the person. The PeerJS broker sees the
-pairing code. A real clinical version should run its own broker and TURN server and store data in a
+pairing code; so does the relay, if you use one (it only forwards messages and stores nothing). A real clinical version should run its own broker and TURN server and store data in a
 HIPAA-eligible backend.
 
 ## Develop and test
@@ -96,15 +100,16 @@ python3 -m pip install playwright && python3 -m playwright install chromium
 python3 tests/smoke_test.py            # end to end: pairing, phone pad, all games, Today flow, provider, every exercise
 python3 tests/smoke_test.py --families memory,language   # just some exercise groups
 python3 tests/smoke_test.py --site https://<user>.github.io/<repo>/
+(cd relay && npm install && npx wrangler dev)                          # local relay on :8787
+python3 tests/smoke_test.py --relay http://127.0.0.1:8787 --relay-only  # pair only through the relay
 ```
 
 The phone page needs https to read motion sensors, so test phone control on the deployed site or through a tunnel.
 
 ## Known limits
 
-- **Pairing on restrictive networks:** if the phone says "Couldn't reach the computer", the network is blocking
-  direct connections and PeerJS's free relay isn't answering. Same home Wi-Fi usually works; the fix is a TURN relay
-  (for example Metered Open Relay) configured through `window.MEND_PEER_OPTS`.
+- **Pairing across networks:** without the relay, the direct link usually only works when the phone and computer
+  share a network. Deploy the relay ([`relay/README.md`](relay/README.md)) and set its address in `js/config.js`.
 - iPhones don't vibrate from web pages, so haptic feedback works on Android only.
 - Pictures in the language exercises use the device's emoji font, so they look different on different systems.
 - Nothing here is clinically validated. Talk to the care team before using it with a patient.

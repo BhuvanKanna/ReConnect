@@ -12,8 +12,12 @@ const renderSetup = (...a) => RC.renderSetup(...a);
 // and the two talk peer-to-peer over WebRTC. No server of our own is needed, so the site can
 // be hosted as static files (GitHub Pages). PeerJS falls back to its public TURN relay when a
 // network blocks direct connections.
+// When MEND_RELAY_URL is set (js/config.js), the same code is also registered with our own
+// relay (relay/, js/relay.js), which works across any two networks. The phone tries the relay
+// first and falls back to the direct link; this side accepts whichever arrives.
 const PEER_PREFIX = "mend-rehab-";
-const Link = { hosted: false, peer: null, conn: null, code: null, retry: null, lastMsg: 0 };
+const RELAY = window.MEND_RELAY_URL || "";
+const Link = { hosted: false, peer: null, relay: null, relayUp: false, conn: null, code: null, retry: null, directRetry: null, lastMsg: 0 };
 const SILENT_MS = 6000; // the phone sends a heartbeat every 2 s
 function sendPhone(obj) { if (Link.conn && Link.conn.open && Input.phone) { try { Link.conn.send(obj); } catch (_) {} } }
 
@@ -56,34 +60,76 @@ function onPhoneMessage(m) {
   }
 }
 
+// Identifies this tab to the relay, so a reload or network change gets its own code back.
+// Kept per tab (sessionStorage): a second tab is a different computer and gets a new code.
+let tabKey = null;
+function relayKey() {
+  try { tabKey = tabKey || sessionStorage.getItem("mend.relayKey"); } catch (_) {}
+  if (!tabKey) {
+    tabKey = window.crypto && crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now();
+    try { sessionStorage.setItem("mend.relayKey", tabKey); } catch (_) {}
+  }
+  return tabKey;
+}
+
 function startPeer() {
   clearTimeout(Link.retry);
-  if (Link.peer) { try { Link.peer.destroy(); } catch (_) {} }
+  if (Link.relay) { Link.relay.close(); Link.relay = null; Link.relayUp = false; }
   const code = store.get("mend.code6", null) || String(Math.floor(100000 + Math.random() * 900000));
+  setPairStatus("Starting pairing…");
+  const ready = () => {
+    if (Link.code !== code) { Link.code = code; store.set("mend.code6", code); renderPairing(); }
+    if (!Link.conn) setPairStatus("Waiting for your phone. Phone and computer can be on any network.");
+  };
+  if (RELAY && window.MendRelay) {
+    Link.relay = window.MendRelay.host(RELAY, code, relayKey(), {
+      onOpen: () => { Link.relayUp = true; ready(); },
+      onDown: () => { Link.relayUp = false; if (!Link.conn && !(Link.peer && Link.peer.open)) setPairStatus("Reconnecting to the pairing service…"); },
+      onTaken: () => { store.set("mend.code6", null); Link.retry = setTimeout(startPeer, 300); },
+      onConnection: acceptConn,
+    });
+  }
+  startDirect(code, ready);
+}
+
+// The direct PeerJS link. With the relay running it only retries itself and keeps the code.
+function startDirect(code, ready) {
+  clearTimeout(Link.directRetry);
+  if (Link.peer) { try { Link.peer.destroy(); } catch (_) {} Link.peer = null; }
+  if (typeof window.Peer !== "function") return;
   const peer = new window.Peer(PEER_PREFIX + code, Object.assign({ debug: 0 }, window.MEND_PEER_OPTS || {}));
   Link.peer = peer;
-  setPairStatus("Starting pairing…");
-  peer.on("open", () => { Link.code = code; store.set("mend.code6", code); renderPairing(); setPairStatus("Waiting for your phone. Phone and computer can be on any network."); });
-  peer.on("disconnected", () => { setPairStatus("Reconnecting to the pairing service…"); try { peer.reconnect(); } catch (_) {} });
+  peer.on("open", ready);
+  peer.on("disconnected", () => { if (!Link.relayUp) setPairStatus("Reconnecting to the pairing service…"); try { peer.reconnect(); } catch (_) {} });
   peer.on("error", (e) => {
-    if (e.type === "unavailable-id") { store.set("mend.code6", null); Link.retry = setTimeout(startPeer, 300); return; }
+    if (Link.peer !== peer) return;
+    if (e.type === "unavailable-id") {
+      // Usually our own last session, still held by the broker for a minute: try again later.
+      if (Link.relay) { Link.directRetry = setTimeout(() => startDirect(code, ready), 10000); return; }
+      store.set("mend.code6", null); Link.retry = setTimeout(startPeer, 300); return;
+    }
     if (["network", "server-error", "socket-error", "socket-closed"].includes(e.type)) {
-      setPairStatus("Can't reach the pairing service. Check the internet connection; retrying…");
-      Link.retry = setTimeout(startPeer, 4000);
+      if (!Link.relayUp) setPairStatus("Can't reach the pairing service. Check the internet connection; retrying…");
+      Link.directRetry = setTimeout(() => startDirect(code, ready), 4000);
     }
   });
-  peer.on("connection", (conn) => {
-    conn.on("open", () => {
-      if (Link.conn && Link.conn !== conn) { try { Link.conn.send({ type: "replaced" }); Link.conn.close(); } catch (_) {} }
-      Link.conn = conn; Link.lastMsg = performance.now(); setPhone(true); chime("success"); pushStatus(true);
-      setPairStatus("Phone paired.");
-    });
-    conn.on("data", onPhoneMessage);
-    const gone = () => { if (Link.conn === conn) { Link.conn = null; setPhone(false); setPairStatus("Phone disconnected. Waiting for it to reconnect."); } };
-    conn.on("close", gone); conn.on("error", gone);
-  });
+  peer.on("connection", acceptConn);
 }
-window.addEventListener("beforeunload", () => { try { Link.peer && Link.peer.destroy(); } catch (_) {} });
+
+function acceptConn(conn) {
+  conn.on("open", () => {
+    if (Link.conn && Link.conn !== conn) { try { Link.conn.send({ type: "replaced" }); Link.conn.close(); } catch (_) {} }
+    Link.conn = conn; Link.lastMsg = performance.now(); setPhone(true); chime("success"); pushStatus(true);
+    setPairStatus("Phone paired.");
+  });
+  conn.on("data", onPhoneMessage);
+  const gone = () => { if (Link.conn === conn) { Link.conn = null; setPhone(false); setPairStatus("Phone disconnected. Waiting for it to reconnect."); } };
+  conn.on("close", gone); conn.on("error", gone);
+}
+window.addEventListener("beforeunload", () => {
+  try { Link.relay && Link.relay.close(); } catch (_) {}
+  try { Link.peer && Link.peer.destroy(); } catch (_) {}
+});
 function setPhone(on) {
   const was = Input.phone;
   Input.phone = on;

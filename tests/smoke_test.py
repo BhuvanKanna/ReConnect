@@ -9,6 +9,7 @@ Usage:
     python tests/smoke_test.py                                   # serves this folder locally, public PeerJS broker
     python tests/smoke_test.py --site https://USER.github.io/REPO/   # test the deployed site
     python tests/smoke_test.py --broker localhost:9000           # use a local broker (npx peerjs --port 9000)
+    python tests/smoke_test.py --relay http://127.0.0.1:8787 --relay-only   # pair only through the relay (cd relay && npx wrangler dev)
     python tests/smoke_test.py --no-phone                        # skip pairing (offline runs)
 
 Exit code 0 means every check passed.
@@ -19,6 +20,8 @@ from playwright.sync_api import sync_playwright
 ap = argparse.ArgumentParser()
 ap.add_argument("--site", help="Base URL of a deployed site. Default: serve this repo on localhost.")
 ap.add_argument("--broker", help="host:port of a local PeerJS server instead of the public one.")
+ap.add_argument("--relay", help="Relay URL to use (sets MEND_RELAY_URL), e.g. http://127.0.0.1:8787.")
+ap.add_argument("--relay-only", action="store_true", help="Block PeerJS so pairing must go through --relay (simulates different networks).")
 ap.add_argument("--skip-games", action="store_true", help="Only test phone pairing.")
 ap.add_argument("--no-phone", action="store_true", help="Skip the phone pairing section.")
 ap.add_argument("--quick", action="store_true", help="Skip the free-play run of every exercise (faster iteration).")
@@ -57,6 +60,8 @@ init = ""
 if args.broker:
     host, port = args.broker.split(":")
     init = "window.MEND_PEER_OPTS = " + json.dumps({"host": host, "port": int(port), "path": "/", "secure": False}) + ";"
+if args.relay:
+    init += "window.MEND_RELAY_URL = " + json.dumps(args.relay) + ";"
 
 AMP = 30
 errors = []
@@ -66,6 +71,8 @@ with sync_playwright() as p:
     desk = b.new_context(viewport={"width": 1366, "height": 900})
     if init:
         desk.add_init_script(init)
+    if args.relay_only:
+        desk.route("**/vendor/peerjs.min.js", lambda r: r.abort())
     con = desk.new_page()
     con.on("pageerror", lambda e: errors.append("computer: " + str(e)))
     con.goto(base)
@@ -87,6 +94,8 @@ with sync_playwright() as p:
                                        permissions=["accelerometer", "gyroscope", "magnetometer"])
         if init:
             mob.add_init_script(init)
+        if args.relay_only:
+            mob.route("**/vendor/peerjs.min.js", lambda r: r.abort())
         ph = mob.new_page()
         ph.on("pageerror", lambda e: errors.append("phone: " + str(e)))
         ph.goto(base + f"phone.html?c={code}")
