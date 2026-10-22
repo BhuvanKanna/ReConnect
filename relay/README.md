@@ -28,6 +28,7 @@ free plan, with no card needed.
 
 Optional: to stop other sites from using your free allowance, set `ALLOWED_ORIGINS` in
 `wrangler.jsonc` to your site's origin (for example `"https://yourname.github.io"`) and deploy again.
+`.dev.vars` turns that check off for `wrangler dev`, so local tests from localhost still work.
 
 ## Free plan limits
 

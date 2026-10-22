@@ -9,7 +9,7 @@
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }],
   "vars": {
     // e.g. "https://yourname.github.io" to stop other sites using your free quota. Empty = allow all.
-    "ALLOWED_ORIGINS": ""
+    "ALLOWED_ORIGINS": "https://bhuvankanna.github.io"
   },
   "observability": { "enabled": true }
 }
