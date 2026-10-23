@@ -1,5 +1,7 @@
 # ReConnect
 
+<img src="brand/reconnect-logo.svg" alt="ReConnect" width="360">
+
 Home stroke rehab with a provider plan. A therapist assigns a 30-day plan of exercises; the patient opens
 ReConnect on a computer, sees **today's goals** at the top, does them (using their phone as a motion controller
 or tap pad), and can practise anything else in the library as bonus work. The provider sees what was assigned,

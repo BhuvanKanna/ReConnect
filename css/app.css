@@ -88,8 +88,9 @@ select { padding: 10px 12px; min-height: 44px; border-radius: 12px; border: 1.5p
 
 /* ---------- header ---------- */
 .top { position: relative; display: flex; align-items: center; gap: 16px 20px; flex-wrap: wrap; justify-content: space-between; }
-.brand b { font-size: 28px; letter-spacing: -0.03em; }
-.brand b span { color: var(--primary); }
+.brand { display: flex; align-items: center; }
+.brand .logo { display: block; height: 46px; width: auto; color: var(--primary); }
+.brand .logo .ink { fill: var(--ink); }
 nav.tabs { display: flex; gap: 4px; background: var(--surface); border-radius: 999px; padding: 5px; box-shadow: var(--shadow); }
 nav.tabs button { border: 0; background: transparent; padding: 10px 18px; min-height: 44px; border-radius: 999px; font-weight: 700; color: var(--muted); }
 nav.tabs button[aria-selected="true"] { background: var(--ink); color: var(--surface); }
