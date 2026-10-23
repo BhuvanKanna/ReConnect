@@ -12,8 +12,11 @@ const ICON = {
   guided: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M10 2.5h4"/></svg>',
   check: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
 };
-const CONTROL = { tilt: ["phone", "Phone motion"], accel: ["phone", "Phone motion"], touch: ["touch", "Touch"], guided: ["guided", "Guided"] };
-let filter = "all";
+const CONTROL = { tilt: ["phone", "Phone motion"], accel: ["phone", "Phone motion"], touch: ["touch", "Touch"], guided: ["guided", "Follow along"] };
+// "How you play" filter: phone motion covers both tilt and acceleration exercises.
+const KINDS = [["motion", "Phone motion"], ["touch", "Touch"], ["guided", "Follow along"]];
+const kindOf = (d) => (d.control === "touch" ? "touch" : d.control === "guided" ? "guided" : "motion");
+let filter = "all", kind = "all";
 // What the bar showed last time, so changes since then can animate (and nothing else does).
 let prev = { who: null, done: [], pct: 0, state: null };
 
@@ -82,6 +85,10 @@ function renderLibrary(S) {
   const todayIds = new Map(items.map((i) => [i.exerciseId, i.done]));
   const sections = RC.SECTIONS.filter(([id]) => RC.EXERCISES.some((d) => d.section === id));
   if (filter !== "all" && !sections.some(([id]) => id === filter)) filter = "all";
+  // Area filter first (for the counts), then how-you-play.
+  const shown = RC.EXERCISES.filter((d) => filter === "all" || d.section === filter);
+  const groups = sections.filter(([id]) => filter === "all" || filter === id)
+    .map(([id, name]) => [id, name, shown.filter((d) => d.section === id && (kind === "all" || kindOf(d) === kind))]).filter((g) => g[2].length);
   const tile = (d) => {
     const [icon, label] = CONTROL[d.control] || CONTROL.tilt, locked = isLocked(d, pt);
     const tag = todayIds.has(d.id) ? `<span class="tile-tag${todayIds.get(d.id) ? " done" : ""}">${todayIds.get(d.id) ? "✓ Today" : "Today"}</span>` : "";
@@ -92,13 +99,18 @@ function renderLibrary(S) {
   };
   $("library").innerHTML = `
     <div class="libhead"><h2>All exercises</h2>
-      <div class="libtabs" id="libTabs" role="tablist" aria-label="Filter exercises">
+      <div class="libtabs" id="libTabs" role="tablist" aria-label="Filter exercises by area">
         <button data-section="all" aria-pressed="${filter === "all"}">All ${RC.EXERCISES.length}</button>
         ${sections.map(([id, name]) => `<button data-section="${id}" aria-pressed="${filter === id}">${esc(name)}</button>`).join("")}
+      </div>
+      <div class="libtabs kinds" id="kindTabs" role="group" aria-label="Filter exercises by how you play">
+        <span class="kinds-label">How you play</span>
+        <button data-kind="all" aria-pressed="${kind === "all"}">Any</button>
+        ${KINDS.map(([id, name]) => { const n = shown.filter((d) => kindOf(d) === id).length; return `<button data-kind="${id}" aria-pressed="${kind === id}"${n || kind === id ? "" : " disabled"}>${ICON[CONTROL[id === "motion" ? "tilt" : id][0]]}${esc(name)} <span class="num">${n}</span></button>`; }).join("")}
       </div></div>
-    ${sections.filter(([id]) => filter === "all" || filter === id).map(([id, name]) => `
+    ${groups.length ? groups.map(([id, name, list]) => `
       <section class="libsec"><h3>${esc(name)}</h3>
-        <div class="tiles">${RC.EXERCISES.filter((d) => d.section === id).map(tile).join("")}</div></section>`).join("")}`;
+        <div class="tiles">${list.map(tile).join("")}</div></section>`).join("") : `<p class="muted libempty">No exercises match. Try another filter.</p>`}`;
   RC.drawGlyphs && RC.drawGlyphs();
 }
 
@@ -125,6 +137,8 @@ function render() {
 document.addEventListener("click", (e) => {
   const tab = e.target.closest("#libTabs button[data-section]");
   if (tab) { filter = tab.dataset.section; renderLibrary(todayState()); return; }
+  const kt = e.target.closest("#kindTabs button[data-kind]");
+  if (kt) { kind = kt.dataset.kind; renderLibrary(todayState()); return; }
   if (e.target.closest("#toLog")) { RC.show("vLog"); return; }
   const t = e.target.closest("#library .tile[data-id]");
   if (!t || t.getAttribute("aria-disabled") === "true") return;

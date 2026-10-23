@@ -157,7 +157,7 @@ function Hold(S, spec) {
   };
   const sd = () => (n > 1 ? Math.sqrt(Math.max(0, sum2 / n - (sum / n) ** 2)) : 0);
   G.stats = () => [["Holds", `${G._reps} / ${S.reps}`], ["Longest steady hold", `${best.toFixed(1)} s`], ["Wobble while holding", `${sd().toFixed(1)}°`]];
-  G.debug = () => ({ kind: "value", target: state === "go" ? (band[0] + Math.min(band[1], band[0] + 40)) / 2 : (spec.restBelow ? spec.restBelow(S) - 10 : (band[0] + Math.min(band[1], band[0] + 40)) / 2), val, state });
+  G.debug = () => ({ kind: "value", target: state === "go" ? (band[0] + Math.min(band[1], band[0] + 40)) / 2 : (spec.restBelow ? spec.restBelow(S) * 0.5 : (band[0] + Math.min(band[1], band[0] + 40)) / 2), val, state });
   G.draw = function (g, W, H) {
     bg(g, W, H); dots(g, W, S.reps, this._reps);
     const top = 160, bottom = H - 70, x = W * 0.42, maxV = Math.max(10, Math.min(band[1], band[0] + 40) * 1.25, band[0] * 1.4);
@@ -743,5 +743,32 @@ function Path(S, spec) {
   return G;
 }
 
-RC.moves = { scene, Swing, Bursts, Hold, Track, Catch, Steer, Circles, Wave, Throw, Seq, Dial, Timed, Direction, Pop, Pick, Dots, Cover, Search, Path, icon, ring, lvl, avg, secs };
+// ---------------------------------------------------------------- tile pictures
+// A small library-tile picture for each engine, with the exercise's emoji in it.
+const E = (e, x, y, s = 15) => `<text x="${x}" y="${y}" font-size="${s}" text-anchor="middle" dominant-baseline="central">${e}</text>`;
+const ARTS = {
+  rise: (e) => `<path d="M20 14 H100" stroke="var(--a-hi)" stroke-width="2.5" stroke-dasharray="5 4"/><path d="M60 60 V40" stroke="var(--a-mute)" stroke-width="3" opacity=".45"/><circle cx="60" cy="32" r="12" fill="var(--a-bg)" stroke="var(--a-hi)" stroke-width="2.5"/>${E(e, 60, 33)}`,
+  slide: (e) => `<path d="M90 8 V56" stroke="var(--a-hi)" stroke-width="2.5" stroke-dasharray="5 4"/><path d="M20 32 H46" stroke="var(--a-mute)" stroke-width="3" opacity=".45"/><circle cx="58" cy="32" r="12" fill="var(--a-bg)" stroke="var(--a-hi)" stroke-width="2.5"/>${E(e, 58, 33)}`,
+  swing: (e) => `<path d="M22 32 H98" stroke="var(--a-mute)" stroke-width="8" stroke-linecap="round" opacity=".2"/><circle cx="26" cy="32" r="7" fill="var(--a-hi)"/><circle cx="94" cy="32" r="7" fill="var(--a-hi)" opacity=".35"/><circle cx="60" cy="32" r="12" fill="var(--a-bg)" stroke="var(--a-ink)" stroke-width="2"/>${E(e, 60, 33)}`,
+  swingv: (e) => `<path d="M60 6 V58" stroke="var(--a-mute)" stroke-width="8" stroke-linecap="round" opacity=".2"/><circle cx="60" cy="9" r="6" fill="var(--a-hi)"/><circle cx="60" cy="55" r="6" fill="var(--a-hi)" opacity=".35"/><circle cx="60" cy="32" r="12" fill="var(--a-bg)" stroke="var(--a-ink)" stroke-width="2"/>${E(e, 60, 33)}`,
+  hold: (e) => `<rect x="34" y="10" width="52" height="22" rx="6" fill="var(--a-go)" opacity=".18" stroke="var(--a-go)"/><circle cx="60" cy="21" r="11" fill="var(--a-bg)" stroke="var(--a-go)" stroke-width="2.5"/>${E(e, 60, 22, 13)}<rect x="96" y="10" width="8" height="46" rx="4" fill="var(--a-mute)" opacity=".2"/><rect x="96" y="30" width="8" height="26" rx="4" fill="var(--a-go)"/>`,
+  track: (e) => `<path d="M10 40 C30 10 46 10 62 30 S96 52 112 22" stroke="var(--a-hi)" stroke-width="6" stroke-opacity=".3" fill="none" stroke-linecap="round"/><circle cx="62" cy="30" r="10" fill="none" stroke="var(--a-hi)" stroke-width="2.5"/>${E(e, 88, 18, 13)}<circle cx="62" cy="31" r="3" fill="var(--a-ink)"/>`,
+  circles: (e) => `<circle cx="60" cy="32" r="22" fill="none" stroke="var(--a-hi)" stroke-width="7" opacity=".3"/><path d="M60 10 A22 22 0 0 1 82 32" stroke="var(--a-go)" stroke-width="4" fill="none" stroke-linecap="round"/>${E(e, 60, 33)}`,
+  wave: (e) => `<path d="M34 50 A30 30 0 0 1 86 50" stroke="var(--a-mute)" stroke-width="2" fill="none" stroke-dasharray="4 4"/><circle cx="34" cy="50" r="6" fill="var(--a-hi)"/><circle cx="86" cy="50" r="6" fill="var(--a-hi)" opacity=".35"/>${E(e, 60, 26, 20)}`,
+  bursts: (e) => `${E(e, 52, 32, 24)}<path d="M76 18 l14 -6 M78 32 h18 M76 46 l14 6" stroke="var(--a-hi)" stroke-width="3" stroke-linecap="round"/>`,
+  throw: (e) => `<path d="M20 50 Q58 -6 96 44" stroke="var(--a-mute)" stroke-width="2" fill="none" stroke-dasharray="3 4"/><rect x="84" y="46" width="26" height="8" rx="3" fill="var(--a-go)" opacity=".5"/>${E(e, 56, 16, 14)}`,
+  seq: (e) => `<rect x="14" y="16" width="26" height="30" rx="6" fill="var(--a-go)" opacity=".2"/><rect x="47" y="16" width="26" height="30" rx="6" fill="var(--a-hi)" opacity=".2" stroke="var(--a-hi)" stroke-width="2"/><rect x="80" y="16" width="26" height="30" rx="6" fill="var(--a-mute)" opacity=".12"/>${E(e, 60, 31, 14)}`,
+  dial: (e) => `<path d="M24 54 A36 36 0 0 1 96 54" stroke="var(--a-mute)" stroke-width="9" fill="none" opacity=".2"/><path d="M64 19 A36 36 0 0 1 80 26" stroke="var(--a-go)" stroke-width="9" fill="none"/><path d="M60 54 L72 24" stroke="var(--a-hi)" stroke-width="3" stroke-linecap="round"/>${E(e, 60, 44, 12)}`,
+  catch: (e) => `${E(e, 70, 14, 15)}<path d="M70 24 V34" stroke="var(--a-mute)" stroke-width="2" stroke-dasharray="2 3"/><path d="M52 42 h36 l-4 14 h-28z" fill="var(--a-hi)" opacity=".5"/>`,
+  steer: (e) => `<path d="M88 6 v14 M88 34 v24" stroke="var(--a-hi)" stroke-width="6" stroke-linecap="round"/>${E(e, 44, 28, 20)}<path d="M58 28 h20" stroke="var(--a-mute)" stroke-width="2" stroke-dasharray="3 3"/>`,
+  pick: (e) => `${E(e, 42, 18, 16)}<path d="M50 24 Q66 34 66 42" stroke="var(--a-mute)" stroke-width="2" fill="none" stroke-dasharray="3 3"/><rect x="50" y="42" width="40" height="16" rx="5" fill="var(--a-go)" opacity=".2" stroke="var(--a-go)" stroke-dasharray="4 3"/>`,
+  pop: (e) => `<circle cx="40" cy="26" r="13" fill="var(--a-hi)" opacity=".18" stroke="var(--a-hi)"/>${E(e, 40, 27, 14)}<circle cx="80" cy="36" r="11" fill="var(--a-hi)" opacity=".18" stroke="var(--a-hi)"/>${E(e, 80, 37, 12)}<circle cx="62" cy="50" r="3" fill="var(--a-ink)"/>`,
+  search: (e) => `<rect x="10" y="6" width="100" height="52" rx="6" fill="var(--a-ink)" opacity=".85"/><circle cx="58" cy="32" r="17" fill="var(--a-bg)"/>${E(e, 58, 33, 15)}`,
+  cover: (e) => `<rect x="20" y="8" width="80" height="48" rx="4" fill="var(--a-mute)" opacity=".3"/><path d="M20 8 h46 v48 h-46z" fill="var(--a-bg)"/>${E(e, 66, 32, 18)}`,
+  path: (e) => `<path d="M30 48 L50 14 L70 48 L90 14" stroke="var(--a-mute)" stroke-opacity=".3" stroke-width="8" fill="none" stroke-linejoin="round"/><path d="M30 48 L50 14 L60 31" stroke="var(--a-go)" stroke-width="3" fill="none"/>${E(e, 60, 31, 12)}`,
+  direction: (e) => `<circle cx="60" cy="32" r="22" fill="var(--a-mute)" opacity=".1"/><path d="M60 32 H82" stroke="var(--a-hi)" stroke-width="5" stroke-linecap="round"/><path d="M78 24 L88 32 L78 40" fill="var(--a-hi)"/>${E(e, 50, 32, 14)}`,
+};
+const art = (kind, emoji) => (ARTS[kind] || ARTS.rise)(emoji || "●");
+
+RC.moves = { scene, Swing, Bursts, Hold, Track, Catch, Steer, Circles, Wave, Throw, Seq, Dial, Timed, Direction, Pop, Pick, Dots, Cover, Search, Path, icon, ring, lvl, avg, secs, art };
 })();

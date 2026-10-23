@@ -1,7 +1,7 @@
 # Exercise catalog
 
 Exercises from home and clinic stroke-rehab systems that have been tested with stroke survivors, and the
-ReConnect activity that trains the same movement. Compiled October 2026 from public sources; extended for the full 121-exercise library. Some vendors publish
+ReConnect activity that trains the same movement. Compiled October 2026 from public sources; extended for the full 221-exercise library. Some vendors publish
 only part of their catalog; that's noted where it applies.
 
 ## mRehab (smartphone + 3D-printed household objects, University at Buffalo)
@@ -341,3 +341,112 @@ screen or the phone's touch pad.
 | Mini Squats | Standing knee bends | Tilt | Otago knee bends (standing, locked) |
 | March in Place | Standing stepping | Accel | Otago walking practice (standing, locked) |
 | Standing Reach | Standing forward reach | Tilt | Functional Reach Test (standing, locked) |
+
+## Phone-motion library, part 2 (added October 2026)
+
+100 more exercises, every one measured by the phone's motion: "tilt" uses the phone's angle or heading,
+"accel" a burst of acceleration, and "tilt pointer" steers an on-screen pointer by tilting. Each one adapts a known
+rehab exercise, assessment item or game.
+
+| Exercise | Movement | Measured by | Based on |
+| --- | --- | --- | --- |
+| Cane Lift | Two-arm shoulder flexion | Tilt | Wand (cane) exercises from GRASP and standard home shoulder programs. |
+| Wall Slide | Shoulder flexion · sustained | Tilt | Wall-slide exercise for shoulder flexion in post-stroke home programs. |
+| Draw the Sword | Diagonal reach · PNF D2 flexion | Tilt | Proprioceptive neuromuscular facilitation (PNF) D2 flexion pattern. |
+| Buckle Up | Diagonal reach · PNF D1 extension | Tilt | PNF D1 extension pattern; seatbelt fastening as an everyday task. |
+| Boxing Jab | Elbow extension · speed | Accel | Boxing games (Wii Sports) used in the EVREST and other stroke-rehab trials. |
+| Bowling | Shoulder swing · force control | Accel | Bowling (Wii Sports) in virtual-reality stroke-rehab trials such as EVREST. |
+| Darts | Elbow extension · precision | Accel | Dart throwing used as a graded precision task in arm rehab and VR games. |
+| Free Throw | Overhead push · force control | Accel | Ball-shooting games from Kinect and Wii stroke-rehab programs. |
+| Goalkeeper | Side-to-side reaching · reaction | Tilt | Goalkeeper games from robot-assisted and Kinect arm rehabilitation. |
+| Catch the Eggs | Side-to-side control · timing | Tilt | Catching games used in virtual-reality stroke rehab. |
+| Put Away Groceries | Reach, grasp and place | Tilt pointer | Kitchen and shopping reach tasks from robot-assisted arm therapy; WMFT reach-and-retrieve. |
+| Box and Block | Grasp, carry and release | Tilt pointer | Box and Block Test of manual dexterity, turned into practice. |
+| Find the Stars | Reaching with visual scanning | Tilt pointer | Reach-and-search tasks combining arm control with visual scanning. |
+| Paint Roller | Wide reaching · sweeping | Tilt pointer | Wall-painting tasks from occupational therapy and the RAPAEL painting game. |
+| Sanding Board | Push and pull · elbow and shoulder | Tilt | Bilateral sanding boards, a classic occupational-therapy arm exercise. |
+| Saw the Log | Forward and back · elbow | Accel | Tool-use task practice (sawing) from task-oriented arm training. |
+| Wave the Flag | Overhead shoulder movement | Tilt | Overhead arm-waving exercises from seated stroke exercise classes. |
+| Conduct the Orchestra | Smooth side-to-side arm sweeps | Tilt | Music-supported therapy and conducting movements for upper-limb rehab. |
+| Swimming Strokes | Shoulder circles · circumduction | Tilt | Arm circles and swimming movements from shoulder mobility programs. |
+| Bicep Curl | Elbow flexion | Tilt | Elbow flexion exercise from GRASP and FitMi home programs. |
+| Press Down | Elbow extension · triceps | Tilt | Triceps press-down exercise from resistance-band arm programs. |
+| Clock Reach | Reaching in many directions | Tilt | Clock-reach exercises for multi-directional shoulder control. |
+| Stack the Cups | Reach, lift and place | Tilt pointer | Cup stacking, a common occupational-therapy reach-and-place activity. |
+| Swat the Flies | Quick reaching · coordination | Tilt pointer | Target-hitting reach games from virtual-reality arm rehab. |
+| Trace the Shapes | Smooth arm control · drawing | Tilt pointer | Shape-tracing tasks from robot-assisted arm therapy and drawing practice. |
+| Aim the Spotlight | Precise shoulder control | Tilt | Precision aiming tasks for graded shoulder control. |
+| Band Row | Pulling · shoulder blade squeeze | Accel | Seated resistance-band rows from GRASP and home strength programs. |
+| Tennis Swing | Shoulder rotation · forehand and backhand | Tilt | Tennis (Wii Sports) in virtual-reality stroke-rehab trials such as EVREST. |
+| Golf Putt | Gentle swing · force control | Accel | Golf (Wii Sports) used in virtual-reality stroke rehab. |
+| Draw a Rainbow | Wide arcing reach | Tilt | Pursuit-tracking tasks from robot-assisted and VR arm therapy. |
+| Climb the Ladder | Graded shoulder flexion | Tilt | Shaping with graded targets (constraint-induced movement therapy); finger-ladder exercises. |
+| Ring the Bell | Overhead pull-down | Accel | Overhead pulley and pull-down exercises from shoulder rehab programs. |
+| Zip Your Jacket | Hand to chest · dressing | Tilt | Dressing practice (zipping a jacket) from task-oriented ADL training. |
+| Brush Your Teeth | Hand at mouth · small back-and-forth | Tilt | Grooming practice (tooth brushing) from task-oriented ADL training. |
+| Airplane Arms | Shoulder abduction · sustained | Tilt | Isometric shoulder abduction holds from post-stroke strength programs. |
+| Turn the Doorknob | Forearm rotation · supination and pronation | Tilt | Wolf Motor Function Test turning tasks; doorknob turning as everyday practice. |
+| Open the Jar | Repeated forearm twists | Tilt | Jar opening, a standard ADL task in hand and wrist therapy. |
+| Turn on the Tap | Forearm rotation · controlled | Tilt | Graded forearm-rotation control from hand and wrist therapy. |
+| Deal the Cards | Quick wrist flick | Accel | Wrist speed and timing practice from task-oriented hand training. |
+| Frisbee Flick | Wrist and forearm flick · force control | Accel | Throwing games from Kinect and virtual-reality arm rehab. |
+| Reel It In | Wrist circles | Tilt | Fishing games used in virtual-reality and robot-assisted wrist rehab. |
+| Cast the Line | Wrist and elbow flick · force control | Accel | Fishing games used in virtual-reality stroke rehab. |
+| Set the Thermostat | Wrist extension · precise | Tilt | Graded wrist-extension control from hand therapy. |
+| Scoop and Hold | Wrist flexion · sustained | Tilt | Isometric wrist flexion holds from hand-therapy programs. |
+| Hitchhiker | Radial and ulnar deviation | Tilt | Wrist radial and ulnar deviation from standard hand-therapy range-of-motion programs. |
+| Fill to the Line | Forearm rotation · steady pour | Tilt | Pouring tasks from ADL training and the mRehab slow-pour exercise. |
+| Spoon the Soup | Scoop, then lift to mouth | Tilt | Feeding practice (eating with a spoon) from task-oriented ADL training. |
+| Whisk the Eggs | Quick wrist side-to-side | Tilt | Kitchen tasks from occupational therapy; wrist speed practice. |
+| Shake the Salt | Small, quick wrist shakes | Accel | Everyday kitchen tasks from ADL training. |
+| Maracas | Rhythmic wrist shakes | Accel | Music therapy with hand-held instruments for upper-limb rehab. |
+| Press the Door Handle | Wrist and forearm push down | Tilt | Lever-handle opening, an everyday task used in hand therapy. |
+| Ping Pong | Forearm rotation · quick | Tilt | Table tennis (Wii Sports Resort) in virtual-reality stroke rehab. |
+| Steer the Bike | Forearm rotation · continuous control | Tilt | Steering games from smartphone and virtual-reality wrist rehab. |
+| Fly the Plane | Wrist up and down · continuous control | Tilt | Flight-steering games from smartphone wrist rehab. |
+| Sail the Boat | Smooth forearm rotation · tracking | Tilt | Pursuit-tracking tasks from robot-assisted wrist therapy. |
+| Turn the Hourglass | Full forearm rotation | Tilt | Supination and pronation range-of-motion exercises from hand therapy. |
+| Screw in the Bulb | Twisting with the arm raised | Tilt | Overhead reach with forearm rotation, from task-oriented ADL training. |
+| Lift and Place | Grasp, lift and release | Accel | Action Research Arm Test grasp items; Box and Block style grasp-and-release practice. |
+| Turn the Coin | Pinch grip with forearm rotation | Tilt | Action Research Arm Test pinch items; coin-turning practice from hand therapy. |
+| Pen Grip Drawing | Tripod grip · fine control | Tilt pointer | Handwriting retraining with a tripod (pen) grip from occupational therapy. |
+| Grip and Hold Up | Grip endurance | Tilt | Sustained grip practice from GRASP and hand-therapy programs. |
+| Flip the Card | Pinch grip with full turn | Tilt | Wolf Motor Function Test flip-cards item. |
+| Pass It Over | Hand-to-hand transfer · bilateral | Accel | Bilateral hand-to-hand transfer tasks from occupational therapy. |
+| Wring the Towel | Two-hand grip and twist | Tilt | Towel wringing, a classic occupational-therapy grip task. |
+| Tighten the Nut | Pinch with small, quick twists | Tilt | Pinch-and-twist tasks with nuts and bolts from hand therapy. |
+| Pelvic Tilts | Seated pelvic tilt · core control | Tilt | Seated pelvic tilts from core-stability programs after stroke. |
+| Lean Forward and Hold | Trunk flexion · sustained | Tilt | Forward weight shift practice before sit-to-stand training. |
+| Reach Across | Seated trunk rotation | Tilt | Seated trunk rotation from the Trunk Impairment Scale and trunk training programs. |
+| Look Behind You | Trunk and neck rotation | Tilt | Trunk rotation exercises; looking over the shoulder from driving and walking safety practice. |
+| Head Turns | Neck rotation | Tilt | Cervical range-of-motion exercises from physiotherapy home programs. |
+| Yes Nods | Neck flexion and extension | Tilt | Cervical range-of-motion exercises from physiotherapy home programs. |
+| Gaze Stabilization | Head turns with eyes fixed · balance | Tilt | Vestibular rehab gaze-stabilization (VOR x1) exercises, as in Cawthorne-Cooksey programs. |
+| Ear to Shoulder | Neck side bend | Tilt | Cervical range-of-motion exercises from physiotherapy home programs. |
+| Side Bend Hold | Trunk side flexion · sustained | Tilt | Lateral trunk flexion from the Trunk Impairment Scale and trunk training. |
+| Knee Lift Hold | Seated hip flexion · sustained | Tilt | Seated hip flexion holds from post-stroke leg strengthening programs. |
+| Penalty Kick | Knee extension · force control | Accel | Kicking games from Kinect-based lower-limb stroke rehab. |
+| Ankle Circles | Ankle circumduction | Tilt | Ankle circles from standard ankle range-of-motion programs. |
+| Ankle In and Out | Ankle inversion and eversion | Tilt | Ankle inversion and eversion from standard ankle range-of-motion programs. |
+| Gas Pedal | Ankle control · precise | Tilt | Ankle control training for driving after stroke. |
+| Seated Cycling | Alternating leg pedaling | Tilt | Cycling and pedal-exerciser training (such as MOTOmed) for lower-limb rehab. |
+| Step Ups | Standing stepping · strength and balance | Accel | Step-ups from the Otago programme; Berg Balance Scale stepping item. (standing, locked) |
+| Heel-to-Toe Stand | Standing balance · narrow base | Tilt | Tandem stance from the Berg Balance Scale and the Otago programme. (standing, locked) |
+| One-Leg Stand | Single-leg balance | Tilt | Single-leg stance from the Berg Balance Scale and the Otago programme. (standing, locked) |
+| Side Steps | Sideways stepping · balance | Accel | Sideways walking from the Otago programme. (standing, locked) |
+| Backward Steps | Backward stepping · balance | Accel | Backwards walking from the Otago programme. (standing, locked) |
+| Turn in Place | Standing turn · balance | Tilt | Berg Balance Scale item (turning 360 degrees). (standing, locked) |
+| Wall Sit | Standing knee bend · sustained | Tilt | Wall sits from post-stroke lower-limb strengthening programs. (standing, locked) |
+| Bridge Hold | Hip extension · sustained | Tilt | Bridging holds from post-stroke trunk and hip programs. |
+| Clamshells | Side-lying hip rotation | Tilt | Clamshell exercise for hip abduction and rotation strength. |
+| Straight Leg Raise | Hip flexion with straight knee | Tilt | Straight leg raise from lower-limb strengthening programs. |
+| Side-Lying Leg Lift | Hip abduction | Tilt | Side-lying hip abduction from lower-limb strengthening programs. |
+| Knee Rolls | Lower trunk rotation | Tilt | Lower trunk rotation from bed-based trunk programs after stroke. |
+| Ski Slalom | Standing weight shift · side to side | Tilt | Wii Fit ski slalom, used in balance-training studies after stroke. (standing, locked) |
+| Soccer Header | Standing weight shift · reaction | Tilt | Wii Fit soccer heading, used in balance-training studies after stroke. (standing, locked) |
+| Hip Circles | Seated pelvic circles | Tilt | Pelvic circles from seated core-stability programs; Wii Fit hula hoop. |
+| Follow the Sway | Standing weight shift · tracking | Tilt | Weight-shift tracking from balance platforms and Wii Fit balance games. (standing, locked) |
+| Heel-Toe Rock | Ankle dorsiflexion and plantarflexion | Tilt | Ankle range-of-motion exercises from FitMi and Otago programs. |
+| Sit Up Tall | Upper-back extension · posture | Tilt | Thoracic extension and posture exercises from trunk training programs. |
+| Cone Reach | Standing lean in many directions | Tilt | Star Excursion and limits-of-stability training from balance rehab. (standing, locked) |
+| Toes Up Hold | Ankle dorsiflexion · sustained | Tilt | Isometric dorsiflexion for foot drop, from post-stroke ankle programs. |

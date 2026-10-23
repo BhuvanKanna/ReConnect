@@ -191,6 +191,13 @@ nav.tabs button[aria-selected="true"] { background: var(--ink); color: var(--sur
 .libtabs { display: flex; gap: 6px; flex-wrap: wrap; }
 .libtabs button { border: 0; background: transparent; min-height: 44px; padding: 8px 14px; border-radius: 999px; font-weight: 700; font-size: 16px; color: var(--muted); box-shadow: inset 0 0 0 1.5px var(--line); }
 .libtabs button[aria-pressed="true"] { background: var(--ink); color: var(--surface); box-shadow: none; }
+.libtabs.kinds { align-items: center; }
+.kinds-label { font-size: 15px; font-weight: 700; color: var(--muted); margin-right: 4px; }
+.libtabs.kinds button { display: inline-flex; align-items: center; gap: 6px; }
+.libtabs.kinds button:disabled { opacity: 0.45; cursor: default; }
+.libtabs.kinds svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; }
+.libtabs .num { font-weight: 600; opacity: 0.75; }
+.libempty { padding: 24px 0; }
 .libsec { display: flex; flex-direction: column; gap: 12px; }
 .libsec h3 { font-size: 18px; color: var(--muted); }
 .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px; }

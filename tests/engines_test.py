@@ -18,6 +18,16 @@ NEW = """shelf comb curtains gate paint hammer torch moon stir pendulum toss row
 quickreach letters reachturn nose key pages pancake screw wave drawbridge wheel radio flashlight wristcircle water
 mole scales drum beat numhunt typeword tapcount pegboard shake pinchhold floor sidereach rock trunkcircle kneeext
 kneeout foottilt ankletrace toetap bridge heelslide standshift minisquat marchstand standreach""".split()
+# The third batch: phone motion only (tilt or acceleration), no touch and no follow-along.
+MOTION = """wandlift wallslide drawsword seatbelt jab bowling darts freethrow goalie eggs groceries blocks stars roller
+sanding saw flag conductor swim curl pressdown clockreach cupstack flies shapes spotlight bandrow tennis golf rainbow
+ladder ringbell zipper brushteeth airplane doorknob jar faucet flick frisbee reel cast thermostat scoophold hitchhike
+fill soup whisk salt maracas lever pingpong bike plane sail hourglass bulb liftplace cointurn pengrip griphold
+cardflip passhands wring boltpinch pelvictilt leanhold crossreach lookback neckturn nod gaze eartilt sidebendhold
+kneelift penalty anklecircles anklerock gaspedal cycling stepups tandem onelegstand sidesteps backsteps turnaround
+wallsit bridgehold clamshell slr sidelegs kneerolls slalom header hipcircles followsway heeltoe chestup conereach
+toeshold""".split()
+NEW = NEW + MOTION
 
 AUTOPILOT = r"""
 (args) => {
@@ -26,14 +36,15 @@ AUTOPILOT = r"""
   const p = def.params || {}, d0 = def.defaults || {};
   const S = { amp: RC.LEVEL_AMP[args.level], level: args.level, reps: d0.reps, durationS: d0.durationS, side: "right" };
   const inst = def.make(S); inst.S = S;
-  let v = 0, th = 0, pulse = 0, cool = 0, tapT = 0, t = 0;
+  let v = 0, th = 0, pulse = 0, cool = 0, tapT = 0, t = 0, gain = 1, pv = null, pval = 0;
   const errors = [];
   const step = () => {
     const d = inst.debug ? inst.debug() : {};
     const a = { pitch: 0, roll: 0, yaw: 0, acc: 0, demo: false };
     let kind = d.kind || (d.state ? "reach" : null);
     if (kind === "reach") kind = "value", d.target = d.state === "move" ? d.target * 1.05 : 0;
-    if (kind === "value") { v += Math.max(-6, Math.min(6, (d.target - d.val) * 0.5)); a.pitch = a.roll = a.yaw = v; }
+    // Some exercises score the opposite direction (pressing down) or a scaled tilt; follow the sign the reading has.
+    if (kind === "value") { if (pv != null && Math.abs(v - pv) > 0.5 && d.val !== pval) gain = Math.sign((d.val - pval) / (v - pv)) || gain; pv = v; pval = d.val; v += Math.max(-6, Math.min(6, (d.target - d.val) * 0.5 * gain)); a.pitch = a.roll = a.yaw = v; }
     else if (kind === "spikes") { pulse = (pulse + DT) % 0.8; a.acc = pulse < 0.15 ? d.thr * 1.6 : 0; }
     else if (kind === "circles") { th += d.dir * 2.5 * DT; a.roll = d.r * 1.6 * Math.cos(th); a.pitch = d.r * 1.6 * Math.sin(th); }
     else if (kind === "throw") { if (d.phase === "aim" && cool <= 0) { pulse = 0.5; cool = 1; } pulse -= DT; cool -= DT; a.acc = pulse > 0 ? d.thr + d.zone * (d.top - d.thr) : 0; }
@@ -90,6 +101,11 @@ def main():
             guided = pg.evaluate(f"{json.dumps(NEW)}.filter(id => RC.exercise(id) && RC.exercise(id).control === 'guided')")
             if guided:
                 fails.append(f"follow-along (guided) exercises in the new set: {guided}")
+            if len(MOTION) < 100:
+                fails.append("fewer than 100 exercises in the phone-motion batch")
+            other = pg.evaluate(f"{json.dumps(MOTION)}.filter(id => RC.exercise(id) && !['tilt', 'accel'].includes(RC.exercise(id).control))")
+            if other:
+                fails.append(f"not phone motion: {other}")
         for gid in [i for i in ids if i in have]:
             for level in (1, 2, 3):
                 r = pg.evaluate(AUTOPILOT, {"id": gid, "level": level, "limit": 900})

@@ -18,7 +18,7 @@ with **Demo: Patient | Provider** at the top. Everything is saved in this browse
 
 - **Provider:** pick a patient (or add one), set a start date, and build the 30-day plan: choose a day, add
   exercises with their level and reps or time, mark rest days, and **Copy week 1 to all weeks**. Standing
-  exercises (Sit to Stand, Balance Hold, Standing Weight Shift, Mini Squats, March in Place, Standing Reach) stay
+  exercises (17 of them, such as Sit to Stand, Balance Hold, Standing Weight Shift, Mini Squats and Cone Reach) stay
   locked until you turn them on for that patient. The **Progress** tab
   shows days done, extra sessions, a 30-day adherence strip and every session tagged Assigned, Extra or Before plan,
   with **Export CSV** and **Print report**.
@@ -41,14 +41,14 @@ plans, sessions tagged with `patientId` and `assigned`) is built so that move do
 No phone? Tick **Use the mouse instead of a phone** in the same panel: the pointer stands in for the tilt of the
 hand, holding the mouse button stands in for a push, and touch exercises work with the mouse or a touchscreen.
 
-## The 121 exercises
+## The 221 exercises
 
 | Section | Exercises |
 | --- | --- |
-| Arm & shoulder (30) | Lantern Lift, Side Raise, Reach Targets, Cup to Mouth, Push Away, Table Slide, Bowl Lift, Trace It, High Shelf, Hand to Head, Open the Curtains, Swing the Gate, Paint the Fence, Hammer the Nail, Hold the Torch, Follow the Moon, Stir the Pot, Pendulum Swing, Bean Bag Toss, Row the Boat, Pick the Apples, Pop the Balloons, Connect the Dots, Clean the Window, Fruit Catch, Fly the Kite, Quick Reach, Write Letters, Reach and Turn, Finger to Nose |
-| Wrist & forearm (17) | Pour the Tea, Combination Lock, Tilt Maze, Wrist Bend, Wrist Wiper, Steady Cup, Turn the Key, Turn the Pages, Flip the Pancake, Screwdriver, Wave Hello, Raise the Drawbridge, Steering Wheel, Tune the Radio, Flashlight Search, Wrist Circles, Water the Plants |
-| Hand & fingers (22) | Finger Tap, Finger Rhythm, Dial a Number, Pinch & Place, Whack-a-Mole, Piano Scales, Drum Roll, Tap the Beat, Number Hunt, Type the Word, Count the Taps, Peg Board, Shake the Bottle, Pinch & Hold; guided Grip & Release, Putty Squeeze, Finger Curls, Thumb Touches, Clothespins, Coins, Buttons, Knife & Fork |
-| Trunk & legs (22) | Lean & Shift, Trunk Twist, Sit to Stand, Balance Hold, Seated March, Reach to the Floor, Side Reach, Forward and Back, Trunk Circles, Knee Straighten, Knees Apart, Foot Lift, Ankle Trace, Toe Taps, Bridges, Heel Slides, Standing Weight Shift, Mini Squats, March in Place, Standing Reach; guided Heel Raises, Ankle Pumps |
+| Arm & shoulder (65) | Lantern Lift, Side Raise, Reach Targets, Cup to Mouth, Push Away, Table Slide, Bowl Lift, Trace It, High Shelf, Hand to Head, Open the Curtains, Swing the Gate, Paint the Fence, Hammer the Nail, Hold the Torch, Follow the Moon, Stir the Pot, Pendulum Swing, Bean Bag Toss, Row the Boat, Pick the Apples, Pop the Balloons, Connect the Dots, Clean the Window, Fruit Catch, Fly the Kite, Quick Reach, Write Letters, Reach and Turn, Finger to Nose, Cane Lift, Wall Slide, Draw the Sword, Buckle Up, Boxing Jab, Bowling, Darts, Free Throw, Goalkeeper, Catch the Eggs, Put Away Groceries, Box and Block, Find the Stars, Paint Roller, Sanding Board, Saw the Log, Wave the Flag, Conduct the Orchestra, Swimming Strokes, Bicep Curl, Press Down, Clock Reach, Stack the Cups, Swat the Flies, Trace the Shapes, Aim the Spotlight, Band Row, Tennis Swing, Golf Putt, Draw a Rainbow, Climb the Ladder, Ring the Bell, Zip Your Jacket, Brush Your Teeth, Airplane Arms |
+| Wrist & forearm (39) | Pour the Tea, Combination Lock, Tilt Maze, Wrist Bend, Wrist Wiper, Steady Cup, Turn the Key, Turn the Pages, Flip the Pancake, Screwdriver, Wave Hello, Raise the Drawbridge, Steering Wheel, Tune the Radio, Flashlight Search, Wrist Circles, Water the Plants, Turn the Doorknob, Open the Jar, Turn on the Tap, Deal the Cards, Frisbee Flick, Reel It In, Cast the Line, Set the Thermostat, Scoop and Hold, Hitchhiker, Fill to the Line, Spoon the Soup, Whisk the Eggs, Shake the Salt, Maracas, Press the Door Handle, Ping Pong, Steer the Bike, Fly the Plane, Sail the Boat, Turn the Hourglass, Screw in the Bulb |
+| Hand & fingers (30) | Finger Tap, Finger Rhythm, Dial a Number, Pinch & Place, Whack-a-Mole, Piano Scales, Drum Roll, Tap the Beat, Number Hunt, Type the Word, Count the Taps, Peg Board, Shake the Bottle, Pinch & Hold, Lift and Place, Turn the Coin, Pen Grip Drawing, Grip and Hold Up, Flip the Card, Pass It Over, Wring the Towel, Tighten the Nut; follow-along Grip & Release, Putty Squeeze, Finger Curls, Thumb Touches, Clothespins, Coins, Buttons, Knife & Fork |
+| Trunk & legs (57) | Lean & Shift, Trunk Twist, Sit to Stand, Balance Hold, Seated March, Reach to the Floor, Side Reach, Forward and Back, Trunk Circles, Knee Straighten, Knees Apart, Foot Lift, Ankle Trace, Toe Taps, Bridges, Heel Slides, Standing Weight Shift, Mini Squats, March in Place, Standing Reach, Pelvic Tilts, Lean Forward and Hold, Reach Across, Look Behind You, Head Turns, Yes Nods, Gaze Stabilization, Ear to Shoulder, Side Bend Hold, Knee Lift Hold, Penalty Kick, Ankle Circles, Ankle In and Out, Gas Pedal, Seated Cycling, Step Ups, Heel-to-Toe Stand, One-Leg Stand, Side Steps, Backward Steps, Turn in Place, Wall Sit, Bridge Hold, Clamshells, Straight Leg Raise, Side-Lying Leg Lift, Knee Rolls, Ski Slalom, Soccer Header, Hip Circles, Follow the Sway, Heel-Toe Rock, Sit Up Tall, Cone Reach, Toes Up Hold; follow-along Heel Raises, Ankle Pumps |
 | Therapy sessions (2) | Mirror Therapy, Mental Practice |
 | Visual scanning (3) | Cancel It, Look Left Search, Find the Middle |
 | Attention (5) | Quick Catch, Go / No-Go, Night Watch, Two at Once, Trail Connect |
@@ -56,8 +56,9 @@ hand, holding the mouse button stands in for a push, and touch exercises work wi
 | Reasoning (8) | Sort It, Tower Puzzle, Errand Planner, What Comes Next, Turn the Shape, Make Change, Tell the Time, Rule Switch |
 | Language (5) | Name It, Word to Picture, Word Web, Finish the Sentence, Spell It |
 
-The 58 in the motion library (everything after the first 63) are all measured by the phone: tilt, turn,
-acceleration or touch. None are follow-along. Every exercise has three levels and an assignable amount (reps,
+The motion library (everything after the first 63) has 158 exercises, all measured by the phone: tilt,
+turn, acceleration or touch. None are follow-along; the 100 added last are all phone motion (tilt or
+acceleration). In the library, **How you play** filters by Phone motion, Touch or Follow along. Every exercise has three levels and an assignable amount (reps,
 rounds or time). **About these exercises** in the
 app, and [`docs/exercise-catalog.md`](docs/exercise-catalog.md), list the programs and studies each one comes from.
 
