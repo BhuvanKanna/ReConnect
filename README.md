@@ -125,6 +125,6 @@ The phone page needs https to read motion sensors, so test phone control on the 
 
 - [PeerJS](https://github.com/peers/peerjs) 1.5.4, MIT license (`vendor/peerjs.LICENSE`)
 - [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) 1.4.4 by Kazuhiko Arase, MIT license (header of `vendor/qrcode.js`)
-- Font: Atkinson Hyperlegible (Braille Institute) via Google Fonts
+- Font: [Fredoka](https://fonts.google.com/specimen/Fredoka) via Google Fonts, SIL Open Font License (also used for the logo wordmark)
 
 ReConnect's own code is MIT licensed; see `LICENSE`.

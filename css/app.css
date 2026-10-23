@@ -1,7 +1,7 @@
 /* ReConnect, theme B "calm clinical".
    Soft grey-teal ground, white surfaces lifted by teal-tinted shadow (no outline boxes),
    deep teal for actions and success, warm amber reserved for in-game targets.
-   One typeface, Atkinson Hyperlegible, designed for low vision. Numbers use tabular figures. */
+   One typeface, Fredoka, the rounded face of the ReConnect logo. Numbers use tabular figures. */
 :root {
   --bg: #eef3f2;
   --surface: #ffffff;
@@ -22,7 +22,7 @@
   --paper: var(--bg);
   --shadow: 0 1px 0 rgba(14, 42, 43, .05), 0 10px 28px -16px rgba(14, 42, 43, .28);
   --shadow-lg: 0 2px 0 rgba(14, 42, 43, .04), 0 24px 60px -28px rgba(14, 42, 43, .45);
-  --font: "Atkinson Hyperlegible", "Verdana", "Segoe UI", sans-serif;
+  --font: "Fredoka", "Verdana", "Segoe UI", sans-serif;
   --display: var(--font); --body: var(--font); --mono: var(--font);
   --r-lg: 20px; --r: 14px; --r-sm: 10px;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
