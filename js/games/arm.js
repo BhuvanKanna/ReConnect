@@ -64,20 +64,6 @@ RC.register(Object.assign({ section: "arm" }, {
 // ================================================================ more arm & shoulder exercises
 const { Reach, Cursor, RepCounter, bg, dots, randInt, defineArt } = RC.kit;
 
-// A target band across the stage and a marker that rises with the measured angle.
-function drawBar(g, W, H, o, label, color) {
-  const top = 170, bottom = H - 70, x = W * 0.36, span = Math.max(20, Math.abs(o.target) * 1.4);
-  const yOf = (v) => lerp(bottom, top, clamp(Math.abs(v) / span, 0, 1.05));
-  const ty = yOf(o.target);
-  g.fillStyle = alpha(T.accent, 0.14); g.fillRect(40, ty - 14, W - 300, 28);
-  g.setLineDash([10, 8]); g.strokeStyle = T.accent; g.lineWidth = 3; g.beginPath(); g.moveTo(40, ty); g.lineTo(W - 260, ty); g.stroke(); g.setLineDash([]);
-  const y = yOf(o.val);
-  g.strokeStyle = alpha(T.ink, 0.2); g.lineWidth = 3; g.beginPath(); g.moveTo(x, bottom + 30); g.lineTo(x, y); g.stroke();
-  g.beginPath(); g.arc(x, y, 26, 0, TAU); g.fillStyle = color || T.accent; g.fill();
-  if (o.prog > 0) { g.strokeStyle = T.go; g.lineWidth = 6; g.lineCap = "round"; g.beginPath(); g.arc(x, y, 36, -Math.PI / 2, -Math.PI / 2 + TAU * o.prog); g.stroke(); g.lineCap = "butt"; }
-  txt(g, label, x, bottom + 50, 15, T.muted, { font: T.body, weight: 400 });
-}
-
 // ---- Side Raise: shoulder abduction (phone on the upper arm, measured as roll)
 function SideRaise(S) {
   return Reach(S, {
@@ -111,30 +97,6 @@ function CupToMouth(S) {
       if (o.prog > 0) { g.strokeStyle = T.go; g.lineWidth = 6; g.lineCap = "round"; g.beginPath(); g.arc(x, y, 48, -Math.PI / 2, -Math.PI / 2 + TAU * o.prog); g.stroke(); g.lineCap = "butt"; }
     },
   });
-}
-
-// ---- Bowl Lift: both hands hold the phone like a bowl; reps only count while it stays level
-function BowlLift(S) {
-  let levelT = 0, total = 0;
-  const G = Reach(S, {
-    signal: (a) => a.pitch, target: (S) => S.amp, rest: (S) => S.amp * 0.35, hold: 1.2, label: "Two-hand lift",
-    valid: (a) => Math.abs(a.roll) < 8,
-    title: "Lift the bowl with both hands", cue: "Keep it level so nothing spills.", restTitle: "Bowl down on the table",
-    stats: () => [["Kept level", total ? `${Math.round((levelT / total) * 100)}%` : "–"]],
-    draw: (g, W, H, o) => {
-      const x = W * 0.38, top = 180, bottom = H - 90, y = lerp(bottom, top, clamp(o.val / Math.max(1, o.target), 0, 1.05));
-      const tilt = clamp(o.a.roll, -30, 30) * Math.PI / 180, spill = Math.abs(o.a.roll) >= 8;
-      g.save(); g.translate(x, y); g.rotate(tilt);
-      g.fillStyle = spill ? alpha(T.accent, 0.8) : T.accent; g.beginPath(); g.ellipse(0, -6, 64, 12, 0, 0, TAU); g.fill();
-      g.fillStyle = T.surface; g.strokeStyle = T.ink; g.lineWidth = 3; g.beginPath(); g.moveTo(-70, -6); g.quadraticCurveTo(0, 70, 70, -6); g.closePath(); g.fill(); g.stroke();
-      g.restore();
-      txt(g, spill ? "Level it out" : "Level", x, y + 70, 16, spill ? T["accent-ink"] : T.go, { font: T.body });
-      if (o.prog > 0) { g.strokeStyle = T.go; g.lineWidth = 6; g.beginPath(); g.arc(x, y + 10, 84, Math.PI, Math.PI + Math.PI * o.prog); g.stroke(); }
-    },
-  });
-  const up = G.update;
-  G.update = function (dt, a) { total += dt; if (Math.abs(a.roll) < 8) levelT += dt; up.call(this, dt, a); };
-  return G;
 }
 
 // ---- Reach Targets: tilt-steer a cursor onto the lit target of a 3×3 board (GRASP target board)
@@ -200,32 +162,6 @@ function PushAway(S) {
   return G;
 }
 
-// ---- Table Slide: slide the phone out across the table and back (yaw swing, or two accel spikes)
-function TableSlide(S) {
-  const G = base(S, S.reps), rc = RepCounter({ target: S.amp * 0.7, rest: S.amp * 0.25, hold: 0.25, reps: S.reps });
-  let spikes = [], t = 0, yaw = 0;
-  G.update = function (dt, a) {
-    t += dt; yaw = a.yaw;
-    let rep = rc.update(dt, Math.abs(a.yaw)) === "rep";
-    if (!a.demo && a.acc > 2 && (!spikes.length || t - spikes[spikes.length - 1] > 0.4)) spikes.push(t);
-    spikes = spikes.filter((s) => t - s < 3);
-    if (spikes.length >= 2) { spikes = []; rep = true; }
-    if (rep) { this._reps++; this.events.push("success"); if (this._reps >= S.reps) this.done = true; }
-  };
-  G.status = () => ({ title: "Slide the phone out and back", text: "Keep your hand on it and glide along the table." });
-  G.stats = () => [["Slides", `${G._reps} / ${S.reps}`]];
-  G.debug = () => ({ yaw, state: rc.state });
-  G.draw = function (g, W, H) {
-    bg(g, W, H); dots(g, W, S.reps, this._reps);
-    const y = H * 0.55, cx = W / 2, span = W * 0.32, x = cx + clamp(yaw / (S.amp * 0.7), -1.2, 1.2) * span;
-    rr(g, cx - span - 40, y - 50, span * 2 + 80, 100, 24); g.fillStyle = alpha(T.ink, 0.05); g.fill();
-    g.setLineDash([8, 7]); g.strokeStyle = T.accent; g.lineWidth = 3;
-    for (const s of [-1, 1]) { g.beginPath(); g.moveTo(cx + s * span, y - 46); g.lineTo(cx + s * span, y + 46); g.stroke(); }
-    g.setLineDash([]); rr(g, x - 26, y - 40, 52, 80, 12); g.fillStyle = T.accent; g.fill();
-  };
-  return G;
-}
-
 // ---- Trace It: steer a cursor along a shape; score is how much of the path stayed on the line
 function TraceIt(S) {
   const shapesGoal = Math.max(1, Math.round(S.reps / 5)), G = base(S, shapesGoal), cur = Cursor({ amp: S.amp });
@@ -280,12 +216,6 @@ const ARM = [
   { id: "push", name: "Push Away", movement: "Elbow extension · forward push", control: "accel", pose: "handleArm", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up.",
     desc: "Push your hand forward in one smooth movement, then bring it back.", source: "FitMi straight push and forward punches.",
     how: ["Start with your elbow bent and your hand near your chest.", "Push your hand straight forward.", "Bring it back and hold still before the next push."], make: PushAway },
-  { id: "slide", name: "Table Slide", movement: "Horizontal reach across a table", control: "accel", pose: "table", mount: "Lay the phone flat on the table in front of you, screen up.",
-    desc: "Slide the phone out across the table and back again.", source: "mRehab horizontal bowl and mug.",
-    how: ["Rest your hand on the phone on the table.", "Sweep it out to one side in an arc, as far as is comfortable.", "Slide it back to the middle."], make: TableSlide },
-  { id: "bowl", name: "Bowl Lift", movement: "Two-handed lift · keeping level", control: "tilt", pose: "twoHands", mount: "Hold the phone flat between both hands, one on each side, screen up, top edge pointing away from you. Rest your elbows on the table.",
-    desc: "Lift the bowl with both hands and keep it level so nothing spills.", source: "mRehab vertical bowl; GRASP repetitions using both arms.",
-    how: ["Elbows on the table, hold the phone flat in both hands.", "Bend both elbows to lift it to the line, keeping it level side to side.", "Hold, then lower it to the table."], make: BowlLift },
   { id: "trace", name: "Trace It", movement: "Controlled multi-direction reaching", control: "tilt", pose: "handleArm", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Point it at the screen and move your whole arm to steer.",
     desc: "Steer the dot along a circle, a square or a figure-8.", source: "Penumbra REAL range-of-motion activities; RAPAEL house painting.",
     params: { reps: [5, 10, 15], level: [1, 2, 3], durationS: null }, defaults: { reps: 5, level: 1, durationS: null },
@@ -297,7 +227,5 @@ defineArt("sideraise", '<circle cx="48" cy="18" r="7" fill="var(--a-mute)" opaci
 defineArt("reach", Array.from({ length: 9 }, (_, i) => `<circle cx="${36 + (i % 3) * 24}" cy="${10 + Math.floor(i / 3) * 22}" r="7" fill="${i === 2 ? "var(--a-hi)" : "var(--a-mute)"}" opacity="${i === 2 ? 1 : 0.25}"/>`).join("") + '<circle cx="66" cy="36" r="4" fill="var(--a-ink)"/>');
 defineArt("cupmouth", '<ellipse cx="60" cy="14" rx="18" ry="11" fill="var(--a-mute)" opacity=".3"/><rect x="50" y="30" width="20" height="24" rx="4" fill="var(--a-bg)" stroke="var(--a-ink)" stroke-width="2"/><rect x="51" y="40" width="18" height="13" rx="3" fill="var(--a-hi)"/><path d="M60 28 V22" stroke="var(--a-go)" stroke-width="2" stroke-dasharray="3 3"/>');
 defineArt("push", '<rect x="18" y="38" width="84" height="6" rx="3" fill="var(--a-mute)" opacity=".25"/><circle cx="70" cy="41" r="11" fill="var(--a-hi)"/><path d="M34 41 H52" stroke="var(--a-ink)" stroke-width="2.5" stroke-linecap="round"/><path d="M48 36 L54 41 L48 46" fill="none" stroke="var(--a-ink)" stroke-width="2.5" stroke-linecap="round"/>');
-defineArt("slide", '<rect x="16" y="22" width="88" height="26" rx="10" fill="var(--a-mute)" opacity=".15"/><rect x="66" y="25" width="14" height="20" rx="3" fill="var(--a-hi)"/><path d="M24 22 V48 M96 22 V48" stroke="var(--a-hi)" stroke-width="2" stroke-dasharray="3 3"/><path d="M40 35 H58" stroke="var(--a-ink)" stroke-width="2.5" stroke-linecap="round"/>');
-defineArt("bowl", '<ellipse cx="60" cy="26" rx="26" ry="5" fill="var(--a-hi)"/><path d="M33 26 Q60 58 87 26 Z" fill="var(--a-bg)" stroke="var(--a-ink)" stroke-width="2"/><path d="M20 26 H100" stroke="var(--a-go)" stroke-width="1.5" stroke-dasharray="3 4"/>');
 defineArt("trace", '<path d="M30 32 C30 8 90 8 90 32 C90 56 30 56 30 32" fill="none" stroke="var(--a-mute)" stroke-opacity=".3" stroke-width="7"/><path d="M30 32 C30 8 90 8 90 32" fill="none" stroke="var(--a-go)" stroke-width="3"/><circle cx="90" cy="32" r="4" fill="var(--a-hi)"/>');
 })();

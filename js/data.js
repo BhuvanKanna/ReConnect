@@ -11,6 +11,26 @@
   const MAX_SESSIONS = 2000;
   const NAMES = { lift: "Lantern Lift", pour: "Pour the Tea", lock: "Combination Lock", maze: "Tilt Maze", sort: "Sort It", simon: "Memory Moves",
     pairs: "Card Pairs", wiper: "Wrist Wiper", trail: "Trail Connect", cancel: "Cancel It", reach: "Reach Targets" };
+  // Exercises removed in October 2026 because they repeated another's phone movement, and the one kept.
+  const REPLACED = {
+    shelf: "lift", comb: "lift", curl: "lift", zipper: "lift", bowl: "lift", wandlift: "lift", ladder: "lift",
+    lever: "pressdown", torch: "drawbridge", wallslide: "drawbridge", griphold: "drawbridge", curtains: "gate",
+    slide: "gate", cointurn: "key", doorknob: "key", pancake: "key", nose: "wristbend", hitchhike: "wristbend",
+    hammer: "paint", wave: "paint", cardflip: "pour", hourglass: "pour", pages: "pour", pingpong: "jar",
+    flag: "jar", screw: "jar", boltpinch: "jar", wring: "jar", brushteeth: "tennis", whisk: "tennis",
+    bulb: "tennis", rainbow: "moon", kite: "moon", plane: "moon", conductor: "fruit", eggs: "fruit",
+    goalie: "fruit", bike: "sail", thermostat: "spotlight", radio: "lock", faucet: "lock", apples: "reach",
+    blocks: "reach", cupstack: "reach", groceries: "reach", balloons: "reach", flies: "reach", dots: "reach",
+    window: "reach", roller: "reach", stars: "reach", flashlight: "reach", shapes: "trace", letters: "trace",
+    clockreach: "quickreach", swim: "wristcircle", reel: "wristcircle", seatbelt: "water", pinchhold: "steady",
+    darts: "bowling", freethrow: "bowling", toss: "bowling", cast: "bowling", frisbee: "bowling",
+    golf: "bowling", bandrow: "push", jab: "push", ringbell: "push", saw: "push", row: "push", sanding: "push",
+    passhands: "push", flick: "push", liftplace: "push", salt: "shake", maracas: "shake", standreach: "floor",
+    turnaround: "crossreach", pelvictilt: "rock", lookback: "twist", header: "slalom", followsway: "slalom",
+    hipcircles: "trunkcircle", conereach: "lean", onelegstand: "balance", tandem: "balance",
+    marchstand: "march", stepups: "march", sidesteps: "march", backsteps: "march", wallsit: "kneelift",
+    bridgehold: "kneelift", clamshell: "sidelegs", heelslide: "kneeext", slr: "kneeext",
+  };
   const OLD_DEMO = { p_ruth: { name: "Ruth A.", to: "p_bhuvan", rename: "Bhuvan K." }, p_james: { name: "James O.", to: "p_argye", rename: "Argye H." }, p_mei: { name: "Mei L.", to: null } };
   const item = (exerciseId, reps = 10, level = 2) => ({ exerciseId, reps, level, durationS: null });
 
@@ -76,9 +96,22 @@
     // Sessions recorded before plans existed belong to the demo patient as "before plan" history.
     function migrate() {
       renameDemo();
+      replaceRemoved();
       const l = log();
       if (!l.some((s) => !s.patientId)) return;
       set(K.log, l.map((s) => (s.patientId ? s : Object.assign({}, s, { patientId: "p_bhuvan", assigned: false, completed: true, legacy: true }))));
+    }
+    // Saved plans and sessions may name a removed exercise: point them at the one that replaced it,
+    // so assigned work stays assignable and past sessions still match their plan days.
+    function replaceRemoved() {
+      const pl = plans();
+      let plansChanged = false;
+      for (const p of Object.values(pl)) for (const d of (p && Array.isArray(p.days) ? p.days : [])) for (const it of (d && Array.isArray(d.items) ? d.items : [])) {
+        if (it && REPLACED[it.exerciseId]) { it.exerciseId = REPLACED[it.exerciseId]; plansChanged = true; }
+      }
+      if (plansChanged) set(K.plans, pl);
+      const l = log();
+      if (l.some((s) => s && REPLACED[s.id])) set(K.log, l.map((s) => (s && REPLACED[s.id] ? Object.assign({}, s, { id: REPLACED[s.id] }) : s)));
     }
     // The first demo had three patients (Ruth A., James O., Mei L.). Carry their plans and sessions
     // over to the current demo patients, and drop Mei's demo record.

@@ -53,10 +53,6 @@ const TRUNK = [
     desc: "Lying on your back, lift your hips off the bed, hold, and lower.", source: "Bridging exercises from post-stroke lower-limb and trunk programs.",
     how: ["Lie on your back with your knees bent and feet flat.", "Squeeze your buttocks and lift your hips.", "Hold, then lower slowly."],
     make: reach(absPitch, (S) => S.amp * 0.5, 3, "Lift your hips", "🌉", "Hips up") }, REPS),
-  Object.assign({ id: "heelslide", name: "Heel Slides", movement: "Knee and hip flexion · lying", control: "tilt", pose: "shin", mount: "Strap the phone to the front of your affected shin just below the knee, or tuck it into a long sock, screen facing out. Lie on your back with your legs straight.",
-    desc: "Lying down, slide your heel up toward you so the knee bends, then slide it back.", source: "Heel slides (supine knee flexion) from home leg programs.",
-    how: ["Lie on your back with your legs straight.", "Slide your heel along the bed toward your bottom.", "Hold, then slide it back down."],
-    make: reach(absPitch, (S) => cap(S.amp * 1.2, 60), 1, "Slide your heel up", "🦵", "Knee bend") }, REPS),
   Object.assign({ id: "standshift", name: "Standing Weight Shift", movement: "Standing balance · side to side", control: "tilt", safety: "standing", pose: "chest", mount: "Hold the phone flat against your breastbone (or tuck it upright in a shirt pocket), screen facing out, top edge up.",
     desc: "Standing at a counter, shift your weight onto one leg, then the other.", source: "Otago exercise programme and Berg Balance Scale weight-shifting tasks.",
     how: ["Only at a counter you can hold, with someone nearby.", "Shift your weight onto one foot, keeping both on the floor.", "Then shift across to the other foot."],
@@ -65,14 +61,6 @@ const TRUNK = [
     desc: "Holding a counter, bend your knees a little as if sitting back, then stand tall.", source: "Otago exercise programme (knee bends).",
     how: ["Only at a counter you can hold, with someone nearby.", "Bend your knees a little, keeping your heels down.", "Hold, then straighten up."],
     make: reach(absPitch, (S) => S.amp * 0.8, 1, "Bend your knees a little", "🧎", "Knee bend") }, REPS),
-  Object.assign({ id: "marchstand", name: "March in Place", movement: "Standing stepping", control: "accel", safety: "standing", pose: "pocket", mount: "Put the phone in the front trouser pocket on your affected side.",
-    desc: "Holding a counter, march on the spot, lifting each knee in turn.", source: "Otago exercise programme (walking practice); standing marching for gait.",
-    how: ["Only at a counter you can hold, with someone nearby.", "Lift one knee, then the other.", "Keep a steady, comfortable pace."],
-    make: (S) => M.Bursts(S, { thr: { 1: 1.5, 2: 2, 3: 2.5 }, gap: 0.45, cues: ["Lift one knee, then the other"], pics: ["🚶"] }) }, { params: { reps: [10, 20, 30], level: [1, 2, 3], durationS: null }, defaults: { reps: 10, level: 1, durationS: null } }),
-  Object.assign({ id: "standreach", name: "Standing Reach", movement: "Standing forward reach · balance", control: "tilt", safety: "standing", pose: "chest", mount: "Hold the phone flat against your breastbone (or tuck it upright in a shirt pocket), screen facing out, top edge up.",
-    desc: "Standing beside a counter, reach forward as far as you safely can, then stand tall.", source: "Functional Reach Test (forward reach while standing).",
-    how: ["Only beside a counter you can hold, with someone nearby.", "Reach forward with your arm, leaning from the ankles.", "Hold, then come back to standing tall."],
-    make: reach(pitch, (S) => S.amp * 0.5, 2, "Reach forward", "🙆", "Forward lean") }, { params: { reps: [5, 8, 10], level: [1, 2, 3], durationS: null }, defaults: { reps: 5, level: 1, durationS: null } }),
 ];
 TRUNK.forEach((d) => RC.register(Object.assign({ section: "trunk" }, d)));
 
@@ -86,9 +74,6 @@ defineArt("foottilt", '<path d="M30 54 H100" stroke="var(--a-mute)" stroke-width
 defineArt("ankletrace", '<path d="M30 40 L45 20 L60 40 L75 20 L90 40" stroke="var(--a-mute)" stroke-opacity=".3" stroke-width="7" fill="none" stroke-linejoin="round"/><path d="M30 40 L45 20 L54 32" stroke="var(--a-go)" stroke-width="3" fill="none"/><circle cx="54" cy="32" r="4" fill="var(--a-hi)"/>');
 defineArt("toetap", '<path d="M20 54 H100" stroke="var(--a-mute)" stroke-width="2"/><path d="M50 14 V44 L80 50" stroke="var(--a-hi)" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M88 40 q4 4 0 8" stroke="var(--a-ink)" stroke-width="2" fill="none"/>');
 defineArt("bridge", '<path d="M16 50 H104" stroke="var(--a-mute)" stroke-width="2"/><path d="M24 46 L58 28 L76 32 L84 50" stroke="var(--a-hi)" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/><circle cx="20" cy="44" r="5" fill="var(--a-hi)"/>');
-defineArt("heelslide", '<path d="M16 50 H104" stroke="var(--a-mute)" stroke-width="2"/><path d="M28 46 L64 46" stroke="var(--a-mute)" stroke-width="6" stroke-opacity=".35" stroke-linecap="round"/><path d="M28 46 L58 24 L82 46" stroke="var(--a-hi)" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>');
 defineArt("standshift", '<circle cx="60" cy="12" r="6" fill="var(--a-hi)"/><path d="M60 20 V40 M52 56 L60 40 L68 56" stroke="var(--a-hi)" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M36 32 h-10 M84 32 h10" stroke="var(--a-ink)" stroke-width="2.5" stroke-linecap="round"/>');
 defineArt("minisquat", '<circle cx="56" cy="12" r="6" fill="var(--a-hi)"/><path d="M56 20 L58 36 L46 44 L56 56" stroke="var(--a-hi)" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M84 18 V56" stroke="var(--a-mute)" stroke-width="4"/>');
-defineArt("marchstand", '<circle cx="56" cy="10" r="6" fill="var(--a-hi)"/><path d="M56 18 V38 L52 56 M56 38 L70 40 L70 52" stroke="var(--a-hi)" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>');
-defineArt("standreach", '<circle cx="48" cy="12" r="6" fill="var(--a-hi)"/><path d="M48 20 L52 40 L50 56 M50 26 L88 22" stroke="var(--a-hi)" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M94 14 v16" stroke="var(--a-go)" stroke-width="2" stroke-dasharray="3 3"/>');
 })();

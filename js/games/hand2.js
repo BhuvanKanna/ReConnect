@@ -297,11 +297,6 @@ const rounds = (r, d) => ({ params: { reps: r, level: [1, 2, 3], durationS: null
     desc: "Shake the bottle up and down to mix it. Every shake counts.", source: "Repetitive grip-and-shake task practice (FitMi-style speed exercises).",
     params: { reps: [20, 30, 40], level: [1, 2, 3], durationS: null }, defaults: { reps: 20, level: 1, durationS: null },
     how: ["Hold the phone tightly.", "Shake it up and down in short movements.", "Keep going until the bottle is mixed."], make: (S) => M.Bursts(S, { thr: { 1: 2, 2: 2.5, 3: 3 }, gap: 0.12, cues: ["Shake, shake, shake"], pics: ["🧴"] }) },
-  { id: "pinchhold", name: "Pinch & Hold", movement: "Pinch grip · steadiness", control: "tilt", pose: "pinch", mount: "Pinch the bottom edge of the phone between your thumb (on top) and fingers, so it points straight ahead, screen up. Rest your forearm on the table.",
-    desc: "Hold the phone level in a pinch grip for the whole count.", source: "Sustained pinch with stability (Fugl-Meyer grasp items; grip-control training).",
-    params: { reps: [3, 5, 8], level: [1, 2, 3], durationS: null }, defaults: { reps: 3, level: 1, durationS: null },
-    how: ["Pinch the phone, keeping it level.", "Hold it steady until the bar fills.", "Rest your hand, then pinch again."],
-    make: (S) => M.Hold(S, { signal: (a) => Math.hypot(a.pitch, a.roll), band: (S) => [0, lvl(S, { 1: 10, 2: 7, 3: 5 })], holdS: (S) => lvl(S, { 1: 5, 2: 8, 3: 12 }), breakS: 2, emoji: "🤏", cues: { in: "Steady. Keep it level.", above: "Level it out", below: "Level it out", rest: "Relax your fingers" } }) },
 ].forEach((d) => RC.register(Object.assign({ section: "hand" }, d)));
 
 defineArt("mole", Array.from({ length: 9 }, (_, i) => `<ellipse cx="${38 + (i % 3) * 22}" cy="${14 + Math.floor(i / 3) * 18}" rx="8" ry="3.5" fill="var(--a-mute)" opacity=".35"/>`).join("") + '<circle cx="60" cy="27" r="6" fill="var(--a-hi)"/>');
@@ -313,5 +308,4 @@ defineArt("typeword", '<rect x="26" y="12" width="68" height="16" rx="4" fill="v
 defineArt("tapcount", '<text x="60" y="30" font-size="22" text-anchor="middle" fill="var(--a-ink)" font-weight="700">4</text>' + [0, 1, 2, 3].map((i) => `<circle cx="${42 + i * 12}" cy="46" r="4" fill="var(--a-hi)" opacity="${i < 3 ? 1 : 0.3}"/>`).join(""));
 defineArt("pegboard", Array.from({ length: 9 }, (_, i) => `<circle cx="${70 + (i % 3) * 12}" cy="${18 + Math.floor(i / 3) * 12}" r="4" fill="${i < 4 ? "var(--a-go)" : "var(--a-mute)"}" opacity="${i < 4 ? 1 : 0.35}"/>`).join("") + '<circle cx="34" cy="30" r="5" fill="var(--a-hi)"/><circle cx="44" cy="42" r="5" fill="var(--a-hi)"/>');
 defineArt("shake", '<rect x="52" y="14" width="16" height="36" rx="5" fill="var(--a-hi)"/><rect x="56" y="8" width="8" height="8" rx="2" fill="var(--a-ink)"/><path d="M40 20 v24 M80 20 v24" stroke="var(--a-mute)" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="3 4"/>');
-defineArt("pinchhold", '<rect x="40" y="28" width="40" height="8" rx="3" fill="var(--a-hi)"/><path d="M36 20 q4 8 8 8 M84 44 q-4 -8 -8 -8" stroke="var(--a-ink)" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M24 50 H96" stroke="var(--a-go)" stroke-width="1.5" stroke-dasharray="3 4"/>');
 })();

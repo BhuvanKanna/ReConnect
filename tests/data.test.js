@@ -146,3 +146,19 @@ test("the first demo's patients carry over to the current demo names", () => {
   assert.equal(D.sessions("p_mei").length, 0);
   assert.equal(D.activePatientId(), "p_argye");
 });
+
+test("saved plans and sessions move from a removed exercise to the one that replaced it", () => {
+  const seeded = memStore();
+  const first = data.createData(seeded, NOW);
+  first.ensureSeed();
+  const pl = first.plan("p_bhuvan");
+  pl.days[0].items = [{ exerciseId: "shelf", reps: 6, level: 2, durationS: null }, { exerciseId: "pairs", reps: null, level: 1, durationS: null }];
+  first.savePlan(pl);
+  first.addSession({ at: Date.now(), id: "toss", name: "Bean Bag Toss", patientId: "p_bhuvan", completed: true });
+  const D = data.createData(seeded, NOW);
+  D.ensureSeed();
+  assert.deepEqual(D.plan("p_bhuvan").days[0].items.map((x) => x.exerciseId), ["lift", "pairs"]);
+  assert.equal(D.plan("p_bhuvan").days[0].items[0].reps, 6);
+  const moved = D.sessions("p_bhuvan").find((s) => s.name === "Bean Bag Toss");
+  assert.equal(moved.id, "bowling");
+});

@@ -464,7 +464,7 @@ with sync_playwright() as p:
     n_sys = con.locator("#evgrid .sys").count()
     tags = set(con.locator("#evgrid td.inmend .tag").all_inner_texts())
     names = set(con.evaluate("RC.EXERCISES.map(d => d.name)"))
-    expect = {"Dial a Number", "Finger Tap", "Grip & Release", "Trunk Twist", "Seated March", "Ankle Pumps", "Table Slide", "Bowl Lift",
+    expect = {"Dial a Number", "Finger Tap", "Grip & Release", "Trunk Twist", "Seated March", "Ankle Pumps", 
               "Finger Curls", "Thumb Touches", "Cancel It", "Name It", "Sit to Stand", "Balance Hold", "Mirror Therapy", "Number Span", "Spell It"}
     check(n_sys >= 13, f"About page lists {n_sys} programs (13 or more)")
     check(tags <= names and expect <= tags, "About rows point at real exercises, including the new ones" + ("" if expect <= tags else f" (missing {sorted(expect - tags)})"))

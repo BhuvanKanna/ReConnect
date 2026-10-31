@@ -14,19 +14,13 @@ import functools, http.server, json, os, socketserver, sys, threading
 from playwright.sync_api import sync_playwright
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-NEW = """shelf comb curtains gate paint hammer torch moon stir pendulum toss row apples balloons dots window fruit kite
-quickreach letters reachturn nose key pages pancake screw wave drawbridge wheel radio flashlight wristcircle water
-mole scales drum beat numhunt typeword tapcount pegboard shake pinchhold floor sidereach rock trunkcircle kneeext
-kneeout foottilt ankletrace toetap bridge heelslide standshift minisquat marchstand standreach""".split()
+NEW = """gate paint moon stir pendulum fruit quickreach reachturn key drawbridge wheel wristcircle water mole
+scales drum beat numhunt typeword tapcount pegboard shake floor sidereach rock trunkcircle kneeext
+kneeout foottilt ankletrace toetap bridge standshift minisquat""".split()
 # The third batch: phone motion only (tilt or acceleration), no touch and no follow-along.
-MOTION = """wandlift wallslide drawsword seatbelt jab bowling darts freethrow goalie eggs groceries blocks stars roller
-sanding saw flag conductor swim curl pressdown clockreach cupstack flies shapes spotlight bandrow tennis golf rainbow
-ladder ringbell zipper brushteeth airplane doorknob jar faucet flick frisbee reel cast thermostat scoophold hitchhike
-fill soup whisk salt maracas lever pingpong bike plane sail hourglass bulb liftplace cointurn pengrip griphold
-cardflip passhands wring boltpinch pelvictilt leanhold crossreach lookback neckturn nod gaze eartilt sidebendhold
-kneelift penalty anklecircles anklerock gaspedal cycling stepups tandem onelegstand sidesteps backsteps turnaround
-wallsit bridgehold clamshell slr sidelegs kneerolls slalom header hipcircles followsway heeltoe chestup conereach
-toeshold""".split()
+MOTION = """drawsword bowling pressdown spotlight tennis airplane jar scoophold fill soup sail pengrip leanhold
+crossreach neckturn nod gaze eartilt sidebendhold kneelift penalty anklecircles anklerock gaspedal
+cycling sidelegs kneerolls slalom heeltoe chestup toeshold""".split()
 NEW = NEW + MOTION
 
 AUTOPILOT = r"""
@@ -96,13 +90,13 @@ def main():
             fails.append(f"not registered: {missing}")
         if ids is NEW:
             print(f"{len(NEW)} new exercises registered; library has {len(have)} in total")
-            if len(NEW) < 50:
-                fails.append("fewer than 50 new exercises")
+            if len(NEW) < 65:
+                fails.append("fewer than 65 exercises in the motion library")
             guided = pg.evaluate(f"{json.dumps(NEW)}.filter(id => RC.exercise(id) && RC.exercise(id).control === 'guided')")
             if guided:
                 fails.append(f"follow-along (guided) exercises in the new set: {guided}")
-            if len(MOTION) < 100:
-                fails.append("fewer than 100 exercises in the phone-motion batch")
+            if len(MOTION) < 31:
+                fails.append("fewer than 31 exercises in the phone-motion batch")
             other = pg.evaluate(f"{json.dumps(MOTION)}.filter(id => RC.exercise(id) && !['tilt', 'accel'].includes(RC.exercise(id).control))")
             if other:
                 fails.append(f"not phone motion: {other}")

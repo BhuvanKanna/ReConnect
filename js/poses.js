@@ -140,37 +140,37 @@ const POSES = {
 
 // Which position each motion exercise uses. Touch-pad and follow-along exercises have none.
 const USE = {
-  handleTable: "pour lock maze key pages pancake screw radio water doorknob jar faucet bike sail hourglass reel hitchhike lever hammer griphold simon sort trail pairs tower rotate ruleswitch cancel",
-  handleArm: "lift shelf comb paint torch moon kite reachturn wallslide drawsword seatbelt curl spotlight rainbow ladder zipper gate curtains nose pressdown toss jab bowling darts freethrow saw flag conductor swim bandrow tennis ringbell brushteeth push reach trace apples balloons dots window fruit quickreach letters goalie eggs groceries blocks stars roller clockreach cupstack flies shapes flick frisbee cast whisk salt maracas pingpong bulb soup shake passhands",
+  handleTable: "pour lock maze key water jar sail simon sort trail pairs tower rotate ruleswitch cancel",
+  handleArm: "lift paint moon reachturn drawsword spotlight gate pressdown bowling tennis push reach trace fruit quickreach soup shake",
   handleHang: "sideraise pendulum airplane",
   palm: "steady",
   palmDown: "wiper",
-  edgeDown: "wristbend wave drawbridge flashlight wristcircle thermostat scoophold plane",
+  edgeDown: "wristbend drawbridge wristcircle scoophold",
   upright: "cupmouth fill stir pengrip",
-  pinch: "pinchhold cointurn cardflip boltpinch",
-  twoHands: "bowl golf wandlift sanding row",
-  towel: "wring",
+  pinch: "",
+  twoHands: "",
+  towel: "",
   wheel: "wheel",
-  table: "slide liftplace",
-  chest: "lean twist sit2stand balance floor sidereach rock trunkcircle standshift standreach leanhold crossreach lookback sidebendhold chestup tandem onelegstand slalom header followsway conereach turnaround",
+  table: "",
+  chest: "lean twist sit2stand balance floor sidereach rock trunkcircle standshift leanhold crossreach sidebendhold chestup slalom",
   head: "neckturn nod gaze eartilt",
-  belly: "pelvictilt hipcircles",
-  pocket: "march marchstand minisquat stepups sidesteps backsteps",
-  thigh: "kneeout kneelift cycling wallsit",
-  thighLying: "bridge bridgehold kneerolls",
-  shin: "kneeext penalty heelslide slr",
+  belly: "",
+  pocket: "march minisquat",
+  thigh: "kneeout kneelift cycling",
+  thighLying: "bridge kneerolls",
+  shin: "kneeext penalty",
   foot: "foottilt ankletrace toetap anklecircles anklerock gaspedal heeltoe toeshold",
-  sideLying: "clamshell sidelegs",
+  sideLying: "sidelegs",
 };
 const POSE_OF = {};
 for (const [p, ids] of Object.entries(USE)) for (const id of ids.split(/\s+/)) POSE_OF[id] = p;
 
 // Pointing exercises steer left and right by turning the phone (yaw) instead of tipping it
 // (roll), so the whole arm reaches, the way you would aim a torch or a remote.
-const POINT = new Set("reach trace apples balloons dots window fruit quickreach letters goalie eggs groceries blocks stars roller clockreach cupstack flies shapes swim flashlight wristcircle".split(" "));
+const POINT = new Set("reach trace fruit quickreach wristcircle".split(" "));
 // Exercises whose directions are anatomical (palm up, across the body, outer edge of the foot):
 // for a left affected side, roll and yaw are mirrored so the cue means the same movement.
-const MIRROR = new Set("drawsword seatbelt tennis pingpong pages hourglass cardflip anklerock".split(" "));
+const MIRROR = new Set("drawsword tennis anklerock".split(" "));
 
 function svg(id) {
   const p = POSES[id];
