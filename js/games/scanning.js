@@ -141,7 +141,7 @@ function FindMiddle(S) {
 
 const brain = { control: "touch", mount: "" };
 [
-  Object.assign({ id: "cancel", name: "Cancel It", movement: "Visual scanning · neglect", cursor: true,
+  Object.assign({ id: "cancel", pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table. Tilt it to steer the pointer, or use the mouse or touchscreen.", name: "Cancel It", movement: "Visual scanning · neglect", cursor: true,
     desc: "Tap every star on the page. Look all the way to the left edge.", source: "Star and letter cancellation tasks used for neglect; Behavioural Inattention Test.",
     params: { reps: [1, 2, 3], level: [1, 2, 3], durationS: null }, defaults: { reps: 1, level: 1, durationS: null },
     how: ["Start at the top left corner.", "Sweep across each row and tap every star.", "Tap 'I've found them all' when you're sure."], make: CancelIt }, brain),

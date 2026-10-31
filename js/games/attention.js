@@ -189,7 +189,7 @@ const TIMED = { params: { reps: null, level: [1, 2, 3], durationS: [60, 120, 180
   Object.assign({ id: "twoatonce", name: "Two at Once", movement: "Divided attention", pad: "keys",
     desc: "Tap even numbers on the left and switch off the lamp on the right, both at once.", source: "RehaCom divided attention; dual-task training after stroke.",
     how: ["Watch both halves of the screen.", "Tap the left side when an even number shows.", "Tap the right side when the lamp lights up."], make: TwoAtOnce }, brain, TIMED),
-  Object.assign({ id: "trail", name: "Trail Connect", movement: "Visual search · task switching", cursor: true,
+  Object.assign({ id: "trail", pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table. Tilt it to steer the pointer, or use the mouse or touchscreen.", name: "Trail Connect", movement: "Visual search · task switching", cursor: true,
     desc: "Connect the circles in order. Level 3 alternates numbers and letters.", source: "Trail Making Test A and B, used in stroke cognitive rehabilitation.",
     params: { reps: [1, 2, 3], level: [1, 2, 3], durationS: null }, defaults: { reps: 1, level: 1, durationS: null },
     how: ["Find circle 1 and tap it.", "Then tap 2, 3 and so on.", "On level 3, go 1, A, 2, B, 3, C…"], make: TrailConnect }, brain),

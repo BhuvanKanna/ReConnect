@@ -234,7 +234,7 @@ function NamesFaces(S) {
 
 const brain = { control: "touch", mount: "" };
 [
-  Object.assign({ id: "pairs", name: "Card Pairs", movement: "Visual memory", cursor: true,
+  Object.assign({ id: "pairs", pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table. Tilt it to steer the pointer, or use the mouse or touchscreen.", name: "Card Pairs", movement: "Visual memory", cursor: true,
     desc: "Flip two cards at a time and find all the matching pairs.", source: "RehaCom figural memory; concentration-style memory games in stroke cognitive training.",
     params: { reps: null, level: [1, 2, 3], durationS: null }, defaults: { reps: null, level: 1, durationS: null },
     how: ["Tap a card to turn it over.", "Tap a second card. If they match, they stay up.", "Remember where each picture was."], make: CardPairs }, brain),

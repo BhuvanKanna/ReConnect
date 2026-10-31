@@ -243,7 +243,7 @@ function TiltMaze(S) {
 
 RC.register(Object.assign({ section: "wrist" }, {
     id: "pour", name: "Pour the Tea", movement: "Forearm rotation · slow control", axes: "Roll",
-    brain: false, mount: "Hold the phone in your affected hand like a teapot handle, screen up, forearm resting on the table.",
+    brain: false, pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table.",
     desc: "Turn your forearm to tip the pot and fill each cup to the line. Pour too fast and it spills.",
     source: "mRehab Slow Pour and Quick Twist; RAPAEL Smart Glove pouring and supination–pronation games.",
     how: ["Keep your elbow on the table.", "Turn your palm to tip the pot toward the cup.", "Pour slowly. Return upright when the cup is full."],
@@ -251,24 +251,23 @@ RC.register(Object.assign({ section: "wrist" }, {
   }));
 RC.register(Object.assign({ section: "wrist" }, {
     id: "lock", name: "Combination Lock", movement: "Forearm rotation · working memory", axes: "Roll",
-    brain: true, mount: "Hold the phone in your affected hand, screen up, like a key you are about to turn.",
+    brain: true, pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table. Turn your hand as if turning a key.",
     desc: "Memorize the code, then turn your wrist to dial each number and hold it there.",
     source: "mRehab Unlock with Key and Turn Doorknob; Constant Therapy visual memory tasks.",
     how: ["Read the code while it is showing.", "Turn your wrist to move the pointer to each number.", "Hold still on a number to enter it."],
     make: (S) => ComboLock(S),
   }));
 RC.register(Object.assign({ section: "wrist" }, {
-    id: "maze", name: "Tilt Maze", movement: "Wrist flexion, extension, and deviation", axes: "Pitch + Roll",
-    brain: true, mount: "Hold the phone flat in your affected hand, screen up, like a tray.",
+    id: "maze", name: "Tilt Maze", movement: "Wrist tilt and forearm rotation", axes: "Pitch + Roll",
+    brain: true, pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table.",
     desc: "Tilt your hand like a tray to roll the ball to the flag without bumping the walls.",
     source: "RAPAEL Smart Glove wrist flexion/extension and radial/ulnar deviation games.",
-    how: ["Rest your forearm on the table so the wrist does the work.", "Tip your hand forward, back, left or right to roll the ball.", "Gentle tilts are enough. Bring your hand level to stop."],
+    how: ["Rest your forearm on the table so the wrist does the work.", "Tip the front of the phone down or up, or turn your hand left or right, to roll the ball.", "Gentle tilts are enough. Bring the phone level to stop."],
     make: (S) => TiltMaze(S),
   }));
 
 // ================================================================ more wrist & forearm exercises
 const { bg, dots, defineArt } = RC.kit;
-const mountTable = "Hold the phone flat in your affected hand, forearm resting on the table, wrist over the edge.";
 
 // Two targets in turn, each held briefly; reaching both is one rep. Used by Wrist Bend and Wrist Wiper.
 function Alternate(S, spec) {
@@ -309,8 +308,8 @@ function WristBend(S) {
 
 function WristWiper(S) {
   return Alternate(S, {
-    signal: (a) => a.roll, targets: (S) => [S.amp, -S.amp], hold: 0.4,
-    cues: ["Tilt your hand to the right", "Now tilt it to the left"], rangeLabels: ["Right", "Left"],
+    signal: (a) => a.yaw, targets: (S) => [S.amp, -S.amp], hold: 0.4,
+    cues: ["Sweep your hand to the right", "Now sweep it to the left"], rangeLabels: ["Right", "Left"],
     draw: (g, W, H, o) => {
       // a windscreen wiper sweeping an arc
       const cx = W / 2, cy = H - 70, R = Math.min(W * 0.36, H - 200);
@@ -349,13 +348,13 @@ function SteadyCup(S) {
 }
 
 [
-  { id: "wristbend", name: "Wrist Bend", movement: "Wrist flexion and extension", mount: mountTable,
+  { id: "wristbend", name: "Wrist Bend", movement: "Wrist flexion and extension", pose: "edgeDown", mount: "Rest your forearm on the table with your wrist just past the edge. Palm down, grip the phone flat against your palm: screen facing the floor, top edge toward your fingertips.",
     desc: "Bend your wrist up to the top line, then down to the bottom one.", source: "FitMi wrist bend; RAPAEL wrist flexion and extension.",
     how: ["Rest your forearm on the table with the wrist free.", "Bend your wrist up until the hand reaches the line.", "Then bend it down to the lower line."], make: WristBend },
-  { id: "wiper", name: "Wrist Wiper", movement: "Radial and ulnar deviation", mount: "Hold the phone flat in your affected hand, palm down, forearm on the table.",
+  { id: "wiper", name: "Wrist Wiper", movement: "Radial and ulnar deviation", pose: "palmDown", mount: "Put your hand on top of the phone, palm down, and grip its sides: screen facing the table, top edge toward your fingertips. Rest your forearm on the table.",
     desc: "Sweep your hand side to side like a windscreen wiper.", source: "RAPAEL radial and ulnar deviation; GRASP wrist range of motion.",
-    how: ["Keep your forearm still on the table.", "Tilt your hand toward the lit target on one side.", "Then sweep across to the other side."], make: WristWiper },
-  { id: "steady", name: "Steady Cup", movement: "Holding still · steadiness", mount: "Hold the phone flat in your affected hand like a full cup.",
+    how: ["Keep your forearm still on the table.", "Sweep your hand sideways toward the lit target, sliding on the table.", "Then sweep across to the other side."], make: WristWiper },
+  { id: "steady", name: "Steady Cup", movement: "Holding still · steadiness", pose: "palm", mount: "Lay the phone flat on your open palm, screen up, top edge toward your fingertips. Rest your forearm on the table.",
     desc: "Keep the dot inside the circle as it slowly gets smaller.", source: "mRehab Walk with Mug (keeping a cup level).",
     params: { reps: null, level: [1, 2, 3], durationS: [30, 60, 90] }, defaults: { reps: null, level: 2, durationS: 30 },
     how: ["Rest your forearm on the table, hand level.", "Keep the orange dot inside the green circle.", "Small, slow corrections are best."], make: SteadyCup },

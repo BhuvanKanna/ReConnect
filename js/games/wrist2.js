@@ -5,8 +5,6 @@ const RC = window.RC;
 const { clamp, TAU, T, alpha, rr, txt } = RC;
 const { Reach, defineArt } = RC.kit;
 const M = RC.moves, { scene, icon, lvl } = M;
-const table = "Hold the phone flat in your affected hand, forearm resting on the table, wrist over the edge.";
-const turnHold = "Hold the phone flat in your affected hand, palm down, elbow bent and resting on the table.";
 const cap = (v, m) => Math.min(v, m);
 
 // Screwdriver: the screw sinks as the turns add up
@@ -21,54 +19,54 @@ const screwDraw = (g, W, H, o) => {
 };
 
 const WRIST = [
-  { id: "key", name: "Turn the Key", movement: "Forearm supination · turning", mount: turnHold,
+  { id: "key", name: "Turn the Key", movement: "Forearm supination · turning", pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table.",
     desc: "Turn your hand as if turning a key in a lock, hold, then turn back.", source: "Wolf Motor Function Test (turning a key in a lock); mRehab unlock with key.",
-    how: ["Rest your elbow on the table, palm down.", "Turn your palm up as far as is comfortable.", "Hold, then turn it back down."],
+    how: ["Rest your forearm on the table, thumb up.", "Turn your palm up as far as is comfortable.", "Hold, then turn it back."],
     make: (S) => Reach(S, { signal: (a) => Math.abs(a.roll), target: (S) => cap(S.amp * 1.6, 80), rest: (S) => S.amp * 0.4, hold: 0.8, label: "Turn", title: "Turn the key", draw: scene.slide("🔑", "Turn it all the way") }) },
-  { id: "pages", name: "Turn the Pages", movement: "Pronation and supination", mount: turnHold,
+  { id: "pages", name: "Turn the Pages", movement: "Pronation and supination", pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table.",
     desc: "Turn your palm up to lift the page, then down to lay it flat, back and forth.", source: "Constraint-induced therapy shaping tasks (turning pages); Wolf Motor Function Test flipping cards.",
-    how: ["Rest your elbow on the table.", "Turn your palm up to the first target.", "Then turn it down to the other one."],
+    how: ["Rest your forearm on the table, thumb up.", "Turn your palm up to the first target.", "Then turn it down to the other one."],
     make: (S) => M.Swing(S, { signal: (a) => a.roll, targets: (S) => [cap(S.amp * 1.4, 75), -cap(S.amp * 1.4, 75)], hold: 0.3, cues: ["Turn your palm up", "Now turn it down"], labels: ["Palm up", "Palm down"], emoji: "📖" }) },
-  Object.assign({ id: "pancake", name: "Flip the Pancake", movement: "Quick forearm rotation · timing", mount: turnHold.replace("palm down", "like holding a frying pan"),
+  Object.assign({ id: "pancake", name: "Flip the Pancake", movement: "Quick forearm rotation · timing", pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table.",
     desc: "Wait while the pancake cooks. When it says now, flip it with a quick turn of your forearm.", source: "Quick forearm rotation (mRehab quick twist); cooking tasks from RAPAEL daily-activity games.",
     how: ["Hold the pan level and wait.", "When it says NOW, turn your forearm quickly to flip.", "Bring the pan back level for the next one."],
     make: (S) => M.Timed(S, { signal: (a) => a.roll, target: (S) => cap(S.amp * 1.5, 80), emoji: "🥞", wait: "Wait for it to cook", now: "Flip it now!", good: "Perfect flip", late: "It burnt" }) }, { params: { reps: [6, 10, 15], level: [1, 2, 3], durationS: null }, defaults: { reps: 6, level: 1, durationS: null } }),
-  { id: "screw", name: "Screwdriver", movement: "Repeated forearm rotation", mount: "Hold the phone in your affected hand like a screwdriver handle, elbow on the table.",
+  { id: "screw", name: "Screwdriver", movement: "Repeated forearm rotation", pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table.",
     desc: "Twist back and forth to drive the screw all the way in.", source: "Repetitive forearm rotation with a tool (task-specific practice).",
     params: { reps: [10, 20, 30], level: [1, 2, 3], durationS: null }, defaults: { reps: 20, level: 1, durationS: null },
     how: ["Rest your elbow on the table.", "Twist your hand one way, then the other.", "Keep going until the screw is in."],
     make: (S) => M.Wave(S, { signal: (a) => a.roll, thr: (S) => Math.max(8, S.amp * 0.4), cues: ["Twist one way", "Twist back"], draw: screwDraw }) },
-  { id: "wave", name: "Wave Hello", movement: "Wrist flexion and extension · speed", mount: table,
+  { id: "wave", name: "Wave Hello", movement: "Wrist flexion and extension · speed", pose: "edgeDown", mount: "Rest your forearm on the table with your wrist just past the edge. Palm down, grip the phone flat against your palm: screen facing the floor, top edge toward your fingertips.",
     desc: "Wave your hand up and down at the wrist, as many times as the count.", source: "Repetitive wrist flexion and extension (FitMi wrist exercises).",
     params: { reps: [10, 20, 30], level: [1, 2, 3], durationS: null }, defaults: { reps: 10, level: 1, durationS: null },
     how: ["Rest your forearm on the table, wrist over the edge.", "Bend the wrist up, then down.", "Keep the forearm still: only the wrist moves."],
     make: (S) => M.Wave(S, { signal: (a) => a.pitch, thr: (S) => S.amp * 0.5, emoji: "👋", cues: ["Wrist up", "Wrist down"] }) },
-  { id: "drawbridge", name: "Raise the Drawbridge", movement: "Wrist extension · sustained hold", mount: table,
+  { id: "drawbridge", name: "Raise the Drawbridge", movement: "Wrist extension · sustained hold", pose: "edgeDown", mount: "Rest your forearm on the table with your wrist just past the edge. Palm down, grip the phone flat against your palm: screen facing the floor, top edge toward your fingertips.",
     desc: "Lift your hand up at the wrist and hold it there while the count runs.", source: "Wrist-extension holds (Fugl-Meyer wrist stability; RAPAEL wrist extension).",
     params: { reps: [3, 5, 8], level: [1, 2, 3], durationS: null }, defaults: { reps: 3, level: 1, durationS: null },
     how: ["Rest your forearm on the table, wrist over the edge.", "Lift your hand up at the wrist into the green band.", "Hold until the bar fills, then relax."],
     make: (S) => M.Hold(S, { signal: (a) => a.pitch, band: (S) => [S.amp * 0.7, 90], holdS: (S) => lvl(S, { 1: 5, 2: 8, 3: 12 }), restBelow: (S) => S.amp * 0.3, emoji: "🏰", cues: { below: "Lift your hand at the wrist", above: "", in: "Hold the bridge up", rest: "Lower and relax" } }) },
-  Object.assign({ id: "wheel", name: "Steering Wheel", movement: "Two-handed forearm rotation", mount: "Hold the phone upright in both hands like a steering wheel.",
+  Object.assign({ id: "wheel", name: "Steering Wheel", movement: "Two-handed forearm rotation", pose: "wheel", mount: "Hold the phone upright (tall) in both hands, one on each side, screen facing you.",
     desc: "Turn the wheel to steer the car through each gap.", source: "Bilateral steering tasks (driving simulation in stroke rehab).",
     how: ["Hold the phone with both hands like a wheel.", "Turn it left or right to steer.", "Line up with each gap before you reach it."],
     make: (S) => M.Steer(S, { signal: (a) => a.roll, emoji: "🚗", cue: "Steer through the gaps" }) }, { params: { reps: [10, 15, 20], level: [1, 2, 3], durationS: null }, defaults: { reps: 10, level: 1, durationS: null } }),
-  { id: "radio", name: "Tune the Radio", movement: "Fine forearm control · precision", mount: turnHold,
+  { id: "radio", name: "Tune the Radio", movement: "Fine forearm control · precision", pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table.",
     desc: "Turn your hand slowly to tune the needle onto the station, and hold it there.", source: "Precision forearm-rotation games (RAPAEL fine-control tasks).",
     how: ["Rest your elbow on the table.", "Turn your hand slowly to move the needle onto the green station.", "Hold very still to lock it in."],
     make: (S) => M.Dial(S, { signal: (a) => a.roll, emoji: "📻", cue: "Tune into the station", more: "Turn a little to the right", less: "Turn a little to the left" }) },
-  { id: "flashlight", name: "Flashlight Search", movement: "Wrist control · visual search", mount: table,
+  { id: "flashlight", name: "Flashlight Search", movement: "Wrist control · visual search", pose: "edgeDown", mount: "Rest your forearm on the table with your wrist just past the edge. Palm down, grip the phone flat against your palm: screen facing the floor, top edge toward your fingertips.",
     desc: "Move the torch beam with your wrist to find the hidden things in the dark.", source: "Wrist range-of-motion practice combined with visual scanning.",
     params: { reps: [5, 8, 12], level: [1, 2, 3], durationS: null }, defaults: { reps: 5, level: 1, durationS: null },
     how: ["Rest your forearm on the table.", "Tilt your wrist to move the beam around.", "Hold the beam on each thing you find."],
     make: (S) => M.Search(S, { items: ["🐱", "🔑", "⭐", "🍪", "🦉", "🎁", "🧦", "🐟"], cue: "Find the hidden things" }) },
-  Object.assign({ id: "wristcircle", name: "Wrist Circles", movement: "Wrist circumduction", mount: table,
+  Object.assign({ id: "wristcircle", name: "Wrist Circles", movement: "Wrist circumduction", pose: "edgeDown", mount: "Rest your forearm on the table with your wrist just past the edge. Palm down, grip the phone flat against your palm: screen facing the floor, top edge toward your fingertips.",
     desc: "Make slow circles with your hand at the wrist, one way and then the other.", source: "Fugl-Meyer upper-extremity item (wrist circumduction).",
     how: ["Rest your forearm on the table, wrist over the edge.", "Tilt your hand out to the ring and circle round.", "Halfway through, circle the other way."],
     make: (S) => M.Circles(S, { emoji: "✋", cue: "Circle your hand at the wrist" }) }, { params: { reps: [4, 6, 10], level: [1, 2, 3], durationS: null }, defaults: { reps: 4, level: 1, durationS: null } }),
-  { id: "water", name: "Water the Plants", movement: "Aim, then pour", mount: "Hold the phone in your affected hand like a watering can, forearm on the table.",
+  { id: "water", name: "Water the Plants", movement: "Aim, then pour", pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table.",
     desc: "Turn toward each plant, then tip the can to water it.", source: "Daily-activity task practice (pouring); mRehab slow pour.",
-    how: ["Turn your hand toward the plant shown.", "Tip the can and hold it while the water pours.", "Bring it back to the middle for the next plant."],
-    make: (S) => M.Seq(S, { steps: (S, k) => { const s = k % 2 ? -1 : 1; return [{ axis: "yaw", target: s * S.amp, hold: 0.5, cue: `Turn toward the ${s > 0 ? "right" : "left"} plant`, short: "Aim", emoji: "🪴" }, { axis: "roll", target: S.amp, hold: 1.5, cue: "Tip the can to pour", short: "Pour", emoji: "💧" }]; }, restCue: "Back to the middle" }) },
+    how: ["Turn your hand toward the plant shown.", "Tip the front of the phone down and hold it while the water pours.", "Bring it back to the middle for the next plant."],
+    make: (S) => M.Seq(S, { steps: (S, k) => { const s = k % 2 ? -1 : 1; return [{ axis: "yaw", target: s * S.amp, hold: 0.5, cue: `Turn toward the ${s > 0 ? "right" : "left"} plant`, short: "Aim", emoji: "🪴" }, { axis: "pitch", target: -S.amp * 0.8, hold: 1.5, cue: "Tip the spout down to pour", short: "Pour", emoji: "💧" }]; }, restCue: "Back to the middle" }) },
 ];
 WRIST.forEach((d) => RC.register(Object.assign({ section: "wrist", control: "tilt" }, d)));
 

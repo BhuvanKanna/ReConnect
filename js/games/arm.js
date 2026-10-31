@@ -54,7 +54,7 @@ function LanternLift(S) {
 
 RC.register(Object.assign({ section: "arm" }, {
     id: "lift", name: "Lantern Lift", movement: "Shoulder flexion · arm raise", axes: "Pitch",
-    brain: false, mount: "Strap the phone to the forearm of your affected arm, screen up, top edge toward your hand. Or hold it flat in your palm.",
+    brain: false, pose: "handleArm", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Keep your elbow straight.",
     desc: "Raise your arm to lift the lantern to the line, hold it there, then lower slowly.",
     source: "FitMi and Flint arm raises; Penumbra REAL shoulder range-of-motion activities.",
     how: ["Sit tall with your arm resting on the table.", "Raise your arm forward until the lantern touches the line.", "Hold while the ring fills, then lower slowly to rest."],
@@ -63,7 +63,6 @@ RC.register(Object.assign({ section: "arm" }, {
 
 // ================================================================ more arm & shoulder exercises
 const { Reach, Cursor, RepCounter, bg, dots, randInt, defineArt } = RC.kit;
-const mountPalm = "Hold the phone flat in your affected hand, screen up.";
 
 // A target band across the stage and a marker that rises with the measured angle.
 function drawBar(g, W, H, o, label, color) {
@@ -269,28 +268,28 @@ function TraceIt(S) {
 }
 
 const ARM = [
-  { id: "sideraise", name: "Side Raise", movement: "Shoulder abduction", control: "tilt", mount: "Strap the phone to the outside of your affected upper arm, screen facing out.",
+  { id: "sideraise", name: "Side Raise", movement: "Shoulder abduction", control: "tilt", pose: "handleHang", mount: "Grip the bottom of the phone in your fist, thumb forward, and let your arm hang straight down at your side, so the phone points at the floor with the screen facing forward. Keep your elbow straight.",
     desc: "Lift your arm out to the side to the line, hold, then lower.", source: "FitMi side arm raise; GRASP arm strengthening.",
-    how: ["Sit tall with your arm by your side.", "Lift it out to the side until the arm reaches the dashed line.", "Hold while the ring fills, then lower slowly."], make: SideRaise },
-  { id: "reach", name: "Reach Targets", movement: "Diagonal reach · aiming", control: "tilt", mount: mountPalm,
+    how: ["Sit or stand tall with your arm hanging by your side.", "Lift it straight out to the side until the arm reaches the dashed line.", "Hold while the ring fills, then lower slowly."], make: SideRaise },
+  { id: "reach", name: "Reach Targets", movement: "Diagonal reach · aiming", control: "tilt", pose: "handleArm", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Point it at the screen and move your whole arm to steer.",
     desc: "Reach toward the lit circle on a 3×3 board and hold still on it.", source: "GRASP target board; FitMi diagonal reach.",
-    how: ["Rest your forearm on the table.", "Tilt toward the lit circle to move the dot there.", "Hold still until the ring fills; a new circle lights up."], make: ReachTargets },
-  { id: "cupmouth", name: "Cup to Mouth", movement: "Elbow flexion · drinking", control: "tilt", mount: "Hold the phone upright in your affected hand like a cup.",
+    how: ["Hold your arm out, pointing the phone at the screen.", "Point at the lit circle to move the dot there.", "Hold still until the ring fills; a new circle lights up."], make: ReachTargets },
+  { id: "cupmouth", name: "Cup to Mouth", movement: "Elbow flexion · drinking", control: "tilt", pose: "upright", mount: "Hold the phone upright in your fist, top edge up, screen facing you. Rest your forearm on the table.",
     desc: "Lift the cup to your mouth, hold for a sip, then lower it.", source: "mRehab Sip from Mug; FitMi bicep curl.",
-    how: ["Start with your forearm resting on the table.", "Bend your elbow to bring the phone toward your mouth.", "Hold for a sip while the ring fills, then lower."], make: CupToMouth },
-  { id: "push", name: "Push Away", movement: "Elbow extension · forward push", control: "accel", mount: "Hold the phone in your affected hand, arm bent, elbow at your side.",
+    how: ["Start with your forearm resting on the table.", "Bend your elbow to bring the phone to your mouth, tipping it toward you as if to sip.", "Hold for a sip while the ring fills, then lower."], make: CupToMouth },
+  { id: "push", name: "Push Away", movement: "Elbow extension · forward push", control: "accel", pose: "handleArm", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up.",
     desc: "Push your hand forward in one smooth movement, then bring it back.", source: "FitMi straight push and forward punches.",
     how: ["Start with your elbow bent and your hand near your chest.", "Push your hand straight forward.", "Bring it back and hold still before the next push."], make: PushAway },
-  { id: "slide", name: "Table Slide", movement: "Horizontal reach across a table", control: "accel", mount: "Put the phone flat on the table under your affected hand.",
+  { id: "slide", name: "Table Slide", movement: "Horizontal reach across a table", control: "accel", pose: "table", mount: "Lay the phone flat on the table in front of you, screen up.",
     desc: "Slide the phone out across the table and back again.", source: "mRehab horizontal bowl and mug.",
-    how: ["Rest your hand on the phone on the table.", "Slide it out to one side, as far as is comfortable.", "Slide it back to the middle."], make: TableSlide },
-  { id: "bowl", name: "Bowl Lift", movement: "Two-handed lift · keeping level", control: "tilt", mount: "Hold the phone flat between both hands like a bowl.",
+    how: ["Rest your hand on the phone on the table.", "Sweep it out to one side in an arc, as far as is comfortable.", "Slide it back to the middle."], make: TableSlide },
+  { id: "bowl", name: "Bowl Lift", movement: "Two-handed lift · keeping level", control: "tilt", pose: "twoHands", mount: "Hold the phone flat between both hands, one on each side, screen up, top edge pointing away from you. Rest your elbows on the table.",
     desc: "Lift the bowl with both hands and keep it level so nothing spills.", source: "mRehab vertical bowl; GRASP repetitions using both arms.",
-    how: ["Hold the phone flat in both hands.", "Lift it to the line, keeping it level.", "Hold, then lower it to the table."], make: BowlLift },
-  { id: "trace", name: "Trace It", movement: "Controlled multi-direction reaching", control: "tilt", mount: mountPalm,
+    how: ["Elbows on the table, hold the phone flat in both hands.", "Bend both elbows to lift it to the line, keeping it level side to side.", "Hold, then lower it to the table."], make: BowlLift },
+  { id: "trace", name: "Trace It", movement: "Controlled multi-direction reaching", control: "tilt", pose: "handleArm", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Point it at the screen and move your whole arm to steer.",
     desc: "Steer the dot along a circle, a square or a figure-8.", source: "Penumbra REAL range-of-motion activities; RAPAEL house painting.",
     params: { reps: [5, 10, 15], level: [1, 2, 3], durationS: null }, defaults: { reps: 5, level: 1, durationS: null },
-    how: ["Rest your forearm on the table.", "Tilt slowly to move the dot along the line.", "Finish the shape; level 2 is a square, level 3 a figure-8."], make: TraceIt },
+    how: ["Hold your arm out, pointing the phone at the screen.", "Point slowly to move the dot along the line.", "Finish the shape; level 2 is a square, level 3 a figure-8."], make: TraceIt },
 ];
 ARM.forEach((d) => RC.register(Object.assign({ section: "arm" }, d)));
 

@@ -55,7 +55,7 @@ function onPhoneMessage(m) {
   } else if (m.type === "tap") {
     if (Game.state === "play" && Game.inst && Game.inst.pad) Game.inst.pad({ type: "tap", key: String(m.key) });
   } else if (m.type === "recenter") {
-    Input.neutral = { b: Input.raw.b, g: Input.raw.g };
+    RC.setRest(Game.current ? RC.poseFlip(Game.current.def) : null);
     flash("Center reset", "Your current position is the new resting point.", "good");
   }
 }
@@ -143,7 +143,7 @@ function renderConn() {
   const c = $("conn");
   if (Input.phone && !settings.mouse) { c.className = "conn on"; $("connText").textContent = "Phone connected"; }
   else if (settings.mouse || !Link.hosted) { c.className = "conn demo-mode"; $("connText").textContent = "Mouse mode"; }
-  else { c.className = "conn"; $("connText").textContent = "No phone"; }
+  else { c.className = "conn"; $("connText").textContent = "Connect your device"; }
   $("pLive").hidden = !(Input.phone && !settings.mouse);
   $("useMouse").checked = !!settings.mouse || !Link.hosted;
   $("useMouse").disabled = !Link.hosted;
@@ -158,8 +158,9 @@ $("useMouse").addEventListener("change", (e) => {
 let lastStatus = "", lastStatusAt = 0;
 function pushStatus(force) {
   if (!force && performance.now() - lastStatusAt < 300) return;
-  const st = Game.current ? Game.statusText() : { title: "Choose an activity on your computer", text: "Keep this screen open while you play.", tone: "" };
-  const msg = { type: "status", task: Game.current ? Game.current.def.name : "Paired", title: st.title, text: st.text || "", tone: st.tone || "" };
+  const st = Game.current ? Game.statusText() : { title: "Your phone is ready to use", text: "Choose an activity on your computer to get started. Keep this screen open while you play.", tone: "good" };
+  const pose = Game.current && (Game.state === "setup" || Game.state === "calibrate") ? RC.poses.poseOf(Game.current.def) : null;
+  const msg = { type: "status", task: Game.current ? Game.current.def.name : "Ready", title: st.title, text: st.text || "", tone: st.tone || "", pose };
   const key = JSON.stringify(msg);
   if (!force && key === lastStatus) return;
   lastStatus = key; lastStatusAt = performance.now(); sendPhone(msg);

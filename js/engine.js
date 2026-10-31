@@ -60,7 +60,7 @@ function renderSetup() {
     <span class="eyebrow">${d.movement}</span>
     <h2>${d.name}</h2>
     <p>${d.desc}</p>
-    ${d.mount ? `<p class="muted"><b>Phone:</b> ${d.mount.replace("affected", sideTxt + " (affected)")}</p>` : ""}
+    ${d.mount ? `<div class="pose">${RC.poses.svg(RC.poses.poseOf(d))}<p class="muted"><b>Phone:</b> ${d.mount.replace("affected", sideTxt + " (affected)")}</p></div>` : ""}
     <ol class="howto">${d.how.map((h) => `<li>${h}</li>`).join("")}</ol>
     ${setupControls()}
     <p class="note">Sit in a sturdy chair. Stop if anything hurts.</p>
@@ -83,15 +83,14 @@ function renderSetup() {
 function startCalibration() {
   Game.state = "calibrate"; pushStatus(true);
   let n = 3; const samples = [];
-  $("sheet").innerHTML = `<span class="eyebrow">Calibrating</span><h2>Rest in your starting position and hold still</h2><div class="count num" id="cnt">3</div><p class="muted">This sets the zero point, so every target is measured from where your arm is comfortable.</p>`;
+  $("sheet").innerHTML = `<span class="eyebrow">Calibrating</span><h2>Rest in your starting position and hold still</h2>${RC.poses.svg(RC.poses.poseOf(Game.current.def))}<div class="count num" id="cnt">3</div><p class="muted">This sets the zero point, so every target is measured from where your arm is comfortable.</p>`;
   const iv = setInterval(() => {
-    samples.push({ b: Input.f.b, g: Input.f.g, a: Input.f.a });
+    samples.push(Input.q);
     if (samples.length % 10 === 0) { n--; const el = $("cnt"); if (el) el.textContent = Math.max(n, 1); chime("tick"); }
     if (samples.length >= 30) {
       clearInterval(iv);
-      const tail = samples.slice(-12);
-      const avg = (k) => tail.reduce((s, x) => s + x[k], 0) / tail.length;
-      Input.neutral = { b: avg("b"), g: avg("g"), a: Input.f.a };
+      Input.q = RC.Orient.average(samples.slice(-12));
+      RC.setRest(RC.poseFlip(Game.current.def));
       sendPhone({ type: "calibrated" });
       begin();
     }
@@ -225,8 +224,9 @@ function frame(now) {
     $("gP").textContent = (a.pitch >= 0 ? "+" : "") + Math.round(a.pitch) + "°";
     $("gR").textContent = (a.roll >= 0 ? "+" : "") + Math.round(a.roll) + "°";
     if (Game.state === "play" && Game.inst) {
-      Game.inst.update(dt, a);
-      Game.rec.push({ t: (now - Game.t0) / 1000, p: a.pitch, r: a.roll });
+      const ai = forExercise(a);
+      Game.inst.update(dt, ai);
+      Game.rec.push({ t: (now - Game.t0) / 1000, p: ai.pitch, r: ai.roll });
       if (Game.rec.length > 40000) Game.rec.splice(0, 1000);
       for (const e of Game.inst.events.splice(0)) fx(e);
       if (Game.inst.done) finish();
@@ -239,10 +239,21 @@ function frame(now) {
   requestAnimationFrame(frame);
 }
 
+// Phone angles as this exercise reads them: pointing exercises steer sideways by turning (yaw),
+// and anatomical directions are mirrored for a left affected side. Mouse mode is left as it is.
+function forExercise(a) {
+  if (Input.mode !== "phone" || !Game.current) return a;
+  const id = Game.current.def.id, P = RC.poses;
+  let b = a;
+  if (P.POINT.has(id)) b = Object.assign({}, b, { roll: b.yaw });
+  if (P.MIRROR.has(id) && patientSide() === "left") b = Object.assign({}, b, { roll: -b.roll, yaw: -b.yaw });
+  return b;
+}
+
 function draw(a, now) {
   g.setTransform(DPR, 0, 0, DPR, 0, 0);
   g.clearRect(0, 0, W, H);
-  if (Game.inst && (Game.state === "play" || Game.state === "paused" || Game.state === "results")) Game.inst.draw(g, W, H, a, now / 1000);
+  if (Game.inst && (Game.state === "play" || Game.state === "paused" || Game.state === "results")) Game.inst.draw(g, W, H, forExercise(a), now / 1000);
   else drawIdle(a, now / 1000);
   // live tilt cursor in the corner shows the input is alive (motion exercises only)
   const ctl = Game.current && Game.current.def.control;

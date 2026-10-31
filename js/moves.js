@@ -391,6 +391,7 @@ function Seq(S, spec) {
   const G = base(S, S.reps);
   let steps = spec.steps(S, 0), k = 0, dwell = 0, need = false, val = 0, restT = 0, t = 0, t0 = 0, times = [];
   const reached = (st, v) => (st.target >= 0 ? v >= st.target * 0.9 : v <= st.target * 0.9);
+  const stepVal = (st, a) => (st.abs ? Math.abs(a[st.axis]) : a[st.axis]); // abs: either direction counts
   G.update = function (dt, a) {
     t += dt;
     if (need) {
@@ -398,7 +399,7 @@ function Seq(S, spec) {
       if (Math.abs(a.pitch) < S.amp * 0.3 && Math.abs(a.roll) < S.amp * 0.3 && Math.abs(a.yaw) < S.amp * 0.4) { restT += dt; if (restT >= 0.4) { need = false; k = 0; steps = spec.steps(S, G._reps); t0 = t; } } else restT = 0;
       return;
     }
-    const st = steps[k]; val = a[st.axis];
+    const st = steps[k]; val = stepVal(st, a);
     if (reached(st, val)) {
       dwell += dt;
       if (dwell >= (st.hold || 0.5)) {
@@ -423,7 +424,7 @@ function Seq(S, spec) {
       txt(g, st.short || st.cue, x + w / 2, y + 76, 14, T.ink, { font: T.body, weight: on ? 700 : 400 });
     });
     if (!need) {
-      const st = steps[k], v = a[st.axis], p = clamp(Math.abs(v) / Math.abs(st.target), 0, 1.05) * (Math.sign(v) === Math.sign(st.target) ? 1 : 0);
+      const st = steps[k], v = stepVal(st, a), p = clamp(Math.abs(v) / Math.abs(st.target), 0, 1.05) * (Math.sign(v) === Math.sign(st.target) ? 1 : 0);
       const bx = W * 0.2, bw = W * 0.6, by = H - 110;
       rr(g, bx, by, bw, 22, 11); g.fillStyle = alpha(T.ink, 0.08); g.fill();
       rr(g, bx, by, bw * Math.min(1, p), 22, 11); g.fillStyle = p >= 0.9 ? T.go : T.accent; g.fill();

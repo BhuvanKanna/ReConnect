@@ -4,7 +4,6 @@
 const RC = window.RC;
 const { clamp, lerp, TAU, T, alpha, txt, rr, fmtTime } = RC;
 const { base, bg, dots, Guided, defineArt } = RC.kit;
-const pocket = "Put the phone upright in a shirt pocket or hold it flat against your chest.";
 
 // ---- Lean & Shift: seated weight shift to the left, right and forward
 function LeanShift(S) {
@@ -119,20 +118,20 @@ function BalanceHold(S) {
 
 const REPS = { params: { reps: [10, 20, 30], level: [1, 2, 3], durationS: null }, defaults: { reps: 10, level: 1, durationS: null } };
 [
-  { id: "lean", name: "Lean & Shift", movement: "Seated weight shift", control: "tilt", mount: pocket,
+  { id: "lean", name: "Lean & Shift", movement: "Seated weight shift", control: "tilt", pose: "chest", mount: "Hold the phone flat against your breastbone (or tuck it upright in a shirt pocket), screen facing out, top edge up.",
     desc: "Lean to the left, to the right and forward, holding each lean for two seconds.", source: "Home weight-transfer programs after stroke; FitMi oblique work.",
     how: ["Sit on a firm chair with your feet flat.", "Lean toward the lit target and hold.", "Come back to the middle before the next one."], make: LeanShift },
-  { id: "twist", name: "Trunk Twist", movement: "Seated trunk rotation", control: "tilt", mount: pocket,
+  { id: "twist", name: "Trunk Twist", movement: "Seated trunk rotation", control: "tilt", pose: "chest", mount: "Hold the phone flat against your breastbone (or tuck it upright in a shirt pocket), screen facing out, top edge up.",
     desc: "Turn your shoulders to the right and then to the left while your hips stay facing forward.", source: "FitMi seated twists and trunk rotation; GRASP trunk control.",
     how: ["Sit tall with your feet flat.", "Turn your shoulders toward the lit target.", "Hold for a moment, then turn the other way."], make: TrunkTwist },
-  Object.assign({ id: "sit2stand", name: "Sit to Stand", movement: "Standing up from a chair", control: "accel", safety: "standing", mount: pocket,
+  Object.assign({ id: "sit2stand", name: "Sit to Stand", movement: "Standing up from a chair", control: "accel", safety: "standing", pose: "chest", mount: "Hold the phone flat against your breastbone (or tuck it upright in a shirt pocket), screen facing out, top edge up.",
     desc: "Stand up from a chair and sit down again, slowly and with control.", source: "Otago exercise programme (sit to stand), used in stroke balance trials.",
     how: ["Only with a sturdy chair behind you and someone nearby.", "Feet back, lean forward, and stand up.", "Sit down slowly, reaching back for the chair."], make: SitToStand }, { params: { reps: [5, 8, 10], level: [1, 2, 3], durationS: null }, defaults: { reps: 5, level: 1, durationS: null } }),
-  { id: "balance", name: "Balance Hold", movement: "Standing balance", control: "tilt", safety: "standing", mount: pocket,
+  { id: "balance", name: "Balance Hold", movement: "Standing balance", control: "tilt", safety: "standing", pose: "chest", mount: "Hold the phone flat against your breastbone (or tuck it upright in a shirt pocket), screen facing out, top edge up.",
     desc: "Stand still for the whole time. Your sway is measured.", source: "Otago balance exercises (standing, tandem and one-leg stance).",
     params: { reps: null, level: [1, 2, 3], durationS: [20, 30, 60] }, defaults: { reps: null, level: 1, durationS: 20 },
     how: ["Stand next to a counter you can hold, with someone nearby.", "Feet apart on level 1, together on level 2, one in front on level 3.", "Stand tall and keep the dot in the middle."], make: BalanceHold },
-  Object.assign({ id: "march", name: "Seated March", movement: "Hip flexion · seated stepping", control: "accel", mount: "Put the phone in your trouser pocket on the affected side.",
+  Object.assign({ id: "march", name: "Seated March", movement: "Hip flexion · seated stepping", control: "accel", pose: "pocket", mount: "Put the phone in the front trouser pocket on your affected side.",
     desc: "March in your chair, lifting one knee and then the other.", source: "FitMi seated marching.",
     how: ["Sit tall with your feet flat.", "Lift your knee as high as is comfortable.", "Lower it and lift the other one."], make: SeatedMarch }, REPS),
   Object.assign({ id: "heelraise", name: "Heel Raises", movement: "Calf strength · ankle", control: "guided", pad: "done", mount: "",

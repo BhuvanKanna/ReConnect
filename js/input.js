@@ -5,24 +5,28 @@ const { $, clamp, Game } = RC;
 // ---------------------------------------------------------------- input
 // Phone: tilt (b = pitch, g = roll), compass heading (a = yaw) and acceleration magnitude (mag;
 // `lin` says whether gravity is already removed). Mouse mode stands in for all of them.
+// q is the smoothed phone rotation; frame is the calibrated resting pose (see orient.js).
 const Input = {
-  phone: false, raw: { b: 0, g: 0, a: 0, mag: 0, lin: true }, f: { b: 0, g: 0, a: 0 }, neutral: { b: 0, g: 0, a: 0 }, lastAt: 0,
+  phone: false, raw: { b: 0, g: 0, a: 0, mag: 0, lin: true }, q: [1, 0, 0, 0], frame: null, lastAt: 0,
   mouse: { p: 0, r: 0, acc: 0 }, mf: { p: 0, r: 0 }, mode: "mouse",
 };
+const Orient = RC.Orient;
+const rawQuat = () => Orient.quat(Input.raw.a, Input.raw.b, Input.raw.g);
+// Before calibration, angles are measured from the phone lying flat.
+const restFrame = () => Input.frame || Orient.frame(Orient.quat(Input.raw.a, 0, 0));
+function setRest(flip) { Input.frame = Orient.frame(Input.q, flip); }
 function wrap180(d) { return ((d + 540) % 360) - 180; }
 function angles() {
   if (Input.mode === "phone") {
     const acc = Input.raw.lin ? Input.raw.mag : Math.abs(Input.raw.mag - 9.81);
-    return { pitch: Input.f.b - Input.neutral.b, roll: wrap180(Input.f.g - Input.neutral.g), yaw: wrap180(Input.f.a - Input.neutral.a), acc, demo: false };
+    return Object.assign(Orient.angles(Input.q, restFrame()), { acc, demo: false });
   }
   // Mouse mode: horizontal position doubles as yaw; holding the button or Space is a push/lift spike.
   return { pitch: Input.mf.p, roll: Input.mf.r, yaw: Input.mf.r, acc: Input.mouse.acc, demo: true };
 }
 function smoothInput(dt) {
   const k = 1 - Math.exp(-dt * 14);
-  Input.f.b += (Input.raw.b - Input.f.b) * k;
-  Input.f.g += wrap180(Input.raw.g - Input.f.g) * k;
-  Input.f.a += wrap180(Input.raw.a - Input.f.a) * k;
+  if (Input.phone) Input.q = Orient.nlerp(Input.q, rawQuat(), k);
   Input.mf.p += (Input.mouse.p - Input.mf.p) * k;
   Input.mf.r += (Input.mouse.r - Input.mf.r) * k;
 }
@@ -64,5 +68,5 @@ window.addEventListener("keydown", (e) => {
   e.preventDefault();
 });
 window.addEventListener("keyup", (e) => { if (e.key === " ") Input.mouse.acc = 0; });
-Object.assign(RC, { Input, angles, smoothInput, wrap180 });
+Object.assign(RC, { Input, angles, smoothInput, wrap180, setRest });
 })();

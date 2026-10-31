@@ -227,7 +227,7 @@ function RuleSwitch(S) {
 const brain = { control: "touch", mount: "" };
 const ROUNDS = { params: { reps: [6, 10, 15], level: [1, 2, 3], durationS: null }, defaults: { reps: 10, level: 1, durationS: null } };
 [
-  Object.assign({ id: "tower", name: "Tower Puzzle", movement: "Planning · problem solving", cursor: true,
+  Object.assign({ id: "tower", pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table. Tilt it to steer the pointer, or use the mouse or touchscreen.", name: "Tower Puzzle", movement: "Planning · problem solving", cursor: true,
     desc: "Move the stack of discs to the right peg, one at a time, never a big disc on a small one.", source: "Tower of Hanoi/London planning tasks; RehaCom executive functions.",
     params: { reps: null, level: [1, 2, 3], durationS: null }, defaults: { reps: null, level: 1, durationS: null },
     how: ["Tap a peg to pick up its top disc.", "Tap another peg to put it down.", "Get the whole stack onto the right-hand peg."], make: Tower }, brain),
@@ -238,7 +238,7 @@ const ROUNDS = { params: { reps: [6, 10, 15], level: [1, 2, 3], durationS: null 
   Object.assign({ id: "next", name: "What Comes Next", movement: "Pattern reasoning",
     desc: "Find the number or shape that continues the pattern.", source: "RehaCom logical reasoning; Constant Therapy analytical reasoning.",
     how: ["Look at the sequence.", "Work out the pattern.", "Tap the answer that comes next."], make: (S) => Quiz(S, { round: () => nextRound(S) }) }, brain, ROUNDS),
-  Object.assign({ id: "rotate", name: "Turn the Shape", movement: "Mental rotation · visuospatial", cursor: true,
+  Object.assign({ id: "rotate", pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table. Tilt it to steer the pointer, or use the mouse or touchscreen.", name: "Turn the Shape", movement: "Mental rotation · visuospatial", cursor: true,
     desc: "Decide whether the shape on the right is the same one turned, or a mirror image.", source: "Mental rotation tasks; Constant Therapy visuospatial processing.",
     how: ["Look at both shapes.", "Imagine turning the left one.", "Tap Same shape or Mirror image."], make: (S) => Quiz(S, { round: () => rotateRound(S), cursor: true }) }, brain, ROUNDS),
   Object.assign({ id: "change", name: "Make Change", movement: "Money handling · arithmetic",
@@ -248,7 +248,7 @@ const ROUNDS = { params: { reps: [6, 10, 15], level: [1, 2, 3], durationS: null 
   Object.assign({ id: "clock", name: "Tell the Time", movement: "Reading a clock · time",
     desc: "Read the analog clock and pick the right time.", source: "Daily-living time tasks in cognitive rehabilitation.",
     how: ["Look at the short hand for the hour.", "Look at the long hand for the minutes.", "Tap the matching time."], make: (S) => Quiz(S, { round: () => clockRound(S) }) }, brain, ROUNDS),
-  Object.assign({ id: "ruleswitch", name: "Rule Switch", movement: "Flexible thinking · rule switching", cursor: true,
+  Object.assign({ id: "ruleswitch", pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table. Tilt it to steer the pointer, or use the mouse or touchscreen.", name: "Rule Switch", movement: "Flexible thinking · rule switching", cursor: true,
     desc: "Match each card to one of four by colour, shape or number. The rule changes without warning.", source: "Wisconsin Card Sorting-style set-shifting tasks.",
     params: { reps: [20, 30, 40], level: [1, 2, 3], durationS: null }, defaults: { reps: 20, level: 1, durationS: null },
     how: ["Tap the top card that the bottom card goes with.", "Use the right/wrong feedback to find the rule.", "When it starts saying 'Not that one', the rule has changed."], make: RuleSwitch }, brain),

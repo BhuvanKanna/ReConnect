@@ -76,11 +76,20 @@ ol.tip { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap:
 .pad.fingers button { min-height: 46vh; font-size: 24px; }
 .pad.done button { min-height: 38vh; font-size: 36px; background: var(--primary); color: var(--primary-ink); }
 .pad-on .level, .pad-on .readout { display: none; }
+/* How-to-hold picture, shown while getting into position and calibrating. */
+.pose { background: var(--sunk); border-radius: 14px; padding: 8px; }
+.pose-art { display: block; width: 100%; height: auto; max-height: 34vh; }
+.pz-b { stroke: var(--muted); stroke-linecap: round; opacity: .55; } .pz-f { fill: var(--muted); opacity: .55; }
+.pz-g { stroke: var(--line); stroke-width: 2; } .pz-p { fill: var(--ink); } .pz-s, .pz-scr { fill: var(--primary); } .pz-top { fill: var(--accent); }
+.pz-t { font: 500 9px var(--font); fill: var(--muted); }
+.posing .level, .posing .readout { display: none; }
 @media (prefers-reduced-motion: reduce) { button { transition: none; } }
 </style>
 <script src="vendor/peerjs.min.js"></script>
 <script src="js/config.js"></script>
 <script src="js/relay.js"></script>
+<script src="js/orient.js"></script>
+<script src="js/poses.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -105,8 +114,8 @@ ol.tip { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap:
       <h1>Let ReConnect read your phone's tilt</h1>
       <p>Your phone becomes the controller. ReConnect only reads which way the phone is tilted. Nothing is recorded on the phone.</p>
       <ol class="tip">
-        <li>Sit in a sturdy chair with your forearm resting on a table.</li>
-        <li>Hold the phone flat in your affected hand, screen up, or strap it to your forearm.</li>
+        <li>Sit in a sturdy chair near a table.</li>
+        <li>Each exercise shows a picture of how to hold the phone before it starts.</li>
       </ol>
       <p id="motionErr" class="err" hidden></p>
       <button id="btnMotion" class="primary">Start motion</button>
@@ -115,10 +124,11 @@ ol.tip { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap:
 
   <!-- Step 3: live controller -->
   <section id="vLive" hidden style="display:flex;flex-direction:column;gap:18px">
-    <div id="statusCard" class="card status" aria-live="polite">
-      <div class="task" id="stTask">Paired</div>
-      <h2 id="stTitle">Choose an activity on your computer</h2>
-      <p id="stText">Keep this screen open. It stays awake while you play.</p>
+    <div id="statusCard" class="card status good" aria-live="polite">
+      <div class="task" id="stTask">Ready</div>
+      <h2 id="stTitle">Your phone is ready to use</h2>
+      <p id="stText">Choose an activity on your computer to get started. Keep this screen open while you play.</p>
+      <div id="stPose" class="pose" hidden></div>
     </div>
     <div id="pad" class="pad" hidden></div>
     <div class="level" aria-hidden="true"><div class="ring"></div><div class="bubble" id="bubble"></div></div>
@@ -139,7 +149,7 @@ ol.tip { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap:
   let code = (new URLSearchParams(location.search).get("c") || location.hash.replace("#", "") || "").replace(/\D/g, "").slice(0, 6);
   let peer = null, conn = null, paired = false, joinTimer = null, motionOn = false, lastSample = 0, wakeLock = null, reconnectTimer = null;
   const ori = { b: 0, g: 0, a: 0, mag: 0, t: 0 };
-  let center = { b: 0, g: 0 };
+  let center = null; // rest pose for the bubble level (orient.js frame); null = take the next reading
 
   function setPill(state, text) {
     $("pill").className = "pill " + (state || "");
@@ -191,7 +201,7 @@ ol.tip { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap:
   function onMessage(m) {
     if (!m || typeof m !== "object") return;
     if (m.type === "status") setStatus(m);
-    else if (m.type === "calibrated") center = { b: ori.b, g: ori.g };
+    else if (m.type === "calibrated") center = null;
     else if (m.type === "pad") renderPad(m.layout, m.labels);
     else if (m.type === "haptic") { try { navigator.vibrate && navigator.vibrate(m.pattern || 60); } catch (_) {} }
     else if (m.type === "replaced") {
@@ -291,6 +301,9 @@ ol.tip { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap:
     $("stTitle").textContent = m.title || "";
     $("stText").textContent = m.text || "";
     $("statusCard").className = "card status " + (m.tone || "");
+    const art = m.pose && window.RC && RC.poses ? RC.poses.svg(m.pose) : "";
+    $("stPose").innerHTML = art; $("stPose").hidden = !art;
+    $("vLive").classList.toggle("posing", !!art);
   }
 
   // ---------- motion ----------
@@ -353,7 +366,9 @@ ol.tip { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap:
   // Bubble level (pure display, relative to the phone's own center).
   function draw() {
     if (motionOn && ori.t) {
-      const p = ori.b - center.b, r = ori.g - center.g;
+      const q = RC.Orient.quat(ori.a, ori.b, ori.g);
+      if (!center) center = RC.Orient.frame(q);
+      const { pitch: p, roll: r } = RC.Orient.angles(q, center);
       const clamp = (v) => Math.max(-45, Math.min(45, v));
       const x = clamp(r) / 45 * 150, y = -clamp(p) / 45 * 150; // percent of bubble size
       $("bubble").style.transform = `translate(${x}%, ${y}%)`;
@@ -366,7 +381,7 @@ ol.tip { margin: 0; padding-left: 20px; color: var(--muted); display: grid; gap:
 
   $("btnMotion").addEventListener("click", startMotion);
   $("btnRecenter").addEventListener("click", () => {
-    center = { b: ori.b, g: ori.g };
+    center = null;
     send({ type: "recenter" });
   });
   $("btnLeave").addEventListener("click", () => {
