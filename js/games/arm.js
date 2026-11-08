@@ -13,6 +13,7 @@ function LanternLift(S) {
   const rc = RC.kit.RepCounter({ target: newTarget(), rest: amp * 0.35, hold: HOLD, reps: S.reps });
   const peaks = rc.peaks, NAMES = { rest: "rest", move: "raise", return: "lower" };
   let state = "rest", hold = 0, target = rc.target, sparkle = [], flare = 0, idle = 0, lastT = null, world = null, lastPitch = 0;
+  const quality = RC.Scene3D ? RC.Scene3D.quality() : { sample: () => 2 };
   const L3 = RC.Lift3D; if (L3) L3.ensure();
   G.update = function (dt, a) {
     const before = rc.state;
@@ -33,12 +34,14 @@ function LanternLift(S) {
     return { title: "Good! Now lower it slowly", text: lit(), tone: "good" };
   };
   G.stats = () => [["Best lift", peaks.length ? `${Math.round(Math.max(...peaks))}°` : "–"], ["Average lift", peaks.length ? `${Math.round(peaks.reduce((s, x) => s + x, 0) / peaks.length)}°` : "–"]];
-  G.debug = () => ({ state: rc.state, target: rc.target, val: lastPitch, view: world ? "3d" : "2d" });
+  G.debug = () => ({ state: rc.state, target: rc.target, val: lastPitch, view: world ? "3d" : "2d", quality: quality.level });
   G.draw = function (g, W, H, a, t) {
-    const dt = lastT == null ? 0 : Math.min(0.05, Math.max(0, t - lastT)); lastT = t;
-    if (!world && L3 && L3.ready()) world = L3.create({ side: S.side, count: S.reps, calm: reduceMotion });
+    const raw = lastT == null ? 0 : t - lastT, dt = Math.min(0.05, Math.max(0, raw)); lastT = t;
+    const q = world ? quality.sample(raw) : 0;
+    if (q >= 2 && world) { world.dispose(); world = null; RC.Scene3D.off = true; }
+    if (!world && !RC.Scene3D.off && L3 && L3.ready()) world = L3.create({ side: S.side, count: S.reps, calm: reduceMotion });
     if (!world) return drawFlat(g, W, H, a);
-    const pr = g.getTransform ? g.getTransform().a : 1;
+    const pr = (g.getTransform ? g.getTransform().a : 1) * (q >= 1 ? 0.6 : 1);
     const holdP = state === "raise" ? clamp(hold / HOLD, 0, 1) : 0;
     const cv = world.frame(W, H, pr, { f: a.pitch / amp, goalF: target / amp, holdP, lit: G._reps, flare, showGoal: state !== "lower" || flare > 0 }, t, dt);
     g.drawImage(cv, 0, 0, W, H);

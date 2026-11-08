@@ -259,6 +259,7 @@ P3.create = function (opts) {
 
       return S3.renderTo(R, scene, cam, W, H, pr);
     },
+    lowQuality(on) { if (sun.castShadow === on) sun.castShadow = !on; },
     toScreen(p, W, H) { return S3.toScreen(cam, p, W, H); },
     dispose() { if (stream) stream.geometry.dispose(); S3.dispose(scene, [glowTex, wood]); },
   };

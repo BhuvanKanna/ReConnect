@@ -10,6 +10,7 @@ function PourTea(S) {
   const thr = amp * 0.55, vmax = { 1: 55, 2: 70, 3: 85 }[S.level];
   let cup = 0, fill = 0, state = "pour", prevR = 0, vel = 0, spills = 0, overT = 0, drops = [], spillFlash = 0, pourTime = 0;
   let world = null, lastT = null, tipNow = 0, idle = 0;
+  const quality = RC.Scene3D ? RC.Scene3D.quality() : { sample: () => 2 };
   const P3 = RC.Pour3D; if (P3) P3.ensure();
   const dir = () => (cup % 2 === 0 ? 1 : -1);
   G.update = function (dt, a) {
@@ -46,12 +47,15 @@ function PourTea(S) {
     return { title: `Turn your hand to the ${side} to pour`, text: n };
   };
   G.stats = () => [["Spills", String(spills)], ["Pour time", `${pourTime.toFixed(1)} s`]];
-  G.debug = () => ({ state, val: prevR, fill, cup, view: world ? "3d" : "2d" });
+  G.debug = () => ({ state, val: prevR, fill, cup, view: world ? "3d" : "2d", quality: quality.level });
   G.draw = function (g, W, H, a, t) {
-    const dt = lastT == null ? 0 : Math.min(0.05, Math.max(0, t - lastT)); lastT = t;
-    if (!world && P3 && P3.ready()) world = P3.create({ count: S.reps, dir: dir(), calm: reduceMotion });
+    const raw = lastT == null ? 0 : t - lastT, dt = Math.min(0.05, Math.max(0, raw)); lastT = t;
+    const q = world ? quality.sample(raw) : 0;
+    if (q >= 2 && world) { world.dispose(); world = null; RC.Scene3D.off = true; }
+    if (!world && !RC.Scene3D.off && P3 && P3.ready()) world = P3.create({ count: S.reps, dir: dir(), calm: reduceMotion });
     if (!world) { drawFlat(g, W, H, a, t); drawSpeed(g, W, H, 1); return; }
-    const pr = g.getTransform ? g.getTransform().a : 1, tip = a.roll * dir();
+    world.lowQuality(q >= 1);
+    const pr = (g.getTransform ? g.getTransform().a : 1) * (q >= 1 ? 0.6 : 1), tip = a.roll * dir();
     const st = { roll: a.roll, dir: dir(), cup: G._reps, fill, pouring: pouring(), rate: clamp((tip - thr) / (amp * 0.5), 0.15, 1), full: state === "return", spills, overflow: overflowing() };
     g.drawImage(world.frame(W, H, pr, st, t, dt), 0, 0, W, H);
     const unit = Math.min(W, H) / 600;
