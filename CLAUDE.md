@@ -1,145 +1,61 @@
-# CLAUDE.md: publish ReConnect to GitHub Pages
+# ReConnect
 
-This folder is a finished static web app (ReConnect, a phone-controlled stroke rehab prototype).
-Your job is to put it in a GitHub repository and turn on GitHub Pages so it runs at
-`https://<owner>.github.io/<repo>/`. No build step is needed: the files are served as they are.
+Phone-controlled home stroke rehab prototype (Sling Health neuroscience team, UT Austin). A provider assigns a
+30-day plan; the patient plays exercises on a computer using their phone as a motion controller or tap pad.
+Not a medical device.
 
-Do not rewrite or "improve" the app code. Only change files if a check below fails, and say what you changed.
+- **Live site:** https://bhuvankanna.github.io/ReConnect/ (GitHub Pages, `main` branch, repo root)
+- **Repo:** https://github.com/BhuvanKanna/ReConnect
+- Static files only, no build step. A push to `main` deploys automatically.
 
-## What's here
+`README.md` is the full description of the app (features, the 126 exercises, phone⇄computer message format,
+privacy, known limits). Read it before larger changes.
+
+## Layout
 
 | Path | Purpose |
 | --- | --- |
-| `index.html` | The computer app: activity library, QR pairing panel, six motion games, session log, evidence library |
-| `phone.html` | The phone controller page the QR code opens |
-| `vendor/peerjs.min.js` | PeerJS 1.5.4 (MIT), pairs phone and computer peer-to-peer over WebRTC |
-| `vendor/qrcode.js` | qrcode-generator 1.4.4 by Kazuhiko Arase (MIT), draws the QR code |
-| `vendor/peerjs.LICENSE` | PeerJS license text |
-| `.nojekyll` | Tells GitHub Pages to serve files as-is (keep it) |
-| `tests/smoke_test.py` | Headless end-to-end test (Playwright) |
-| `docs/exercise-catalog.md` | Exercises from published rehab systems, with sources |
-| `README.md`, `LICENSE`, `.gitignore` | Repo docs |
+| `index.html` | Computer app shell: library, Today bar, provider/patient demo, pairing panel |
+| `phone.html` | Phone controller page opened from the QR code |
+| `css/app.css` | Theme (Fredoka font throughout, matches the logo) |
+| `js/` | Plain scripts sharing a `window.RC` namespace; no modules, no bundler |
+| `js/plan.js`, `js/data.js` | Pure plan rules and storage/demo seed, unit-tested in Node |
+| `js/kit.js` | Shared building blocks: rep counter, tilt cursor, answer cards, keypad, guided session |
+| `js/games/*.js` | One file per library section (arm, wrist, hand, trunk, memory, ...) |
+| `js/link.js`, `js/relay.js`, `js/config.js` | Pairing: PeerJS (WebRTC) plus optional Cloudflare relay |
+| `relay/` | Cloudflare Worker relay (see `relay/README.md`) |
+| `vendor/` | PeerJS 1.5.4 and qrcode-generator 1.4.4 (MIT). Loaded by relative path; don't move them |
+| `brand/` | Logo, icon and favicons |
+| `docs/exercise-catalog.md` | Sources for every exercise |
+| `docs/superpowers/` | Design spec and implementation plan from the Oct 2026 plans/library redesign |
+| `tests/` | Node unit tests, engine test, Playwright end-to-end smoke test |
 
-## Steps
-
-### 1. Ask the user before touching GitHub
-
-Ask, in one message:
-- their GitHub username, and
-- the repo name to use (suggest `ReConnect`), and whether it already exists.
-
-Free GitHub Pages requires a **public** repo. Tell the user the repo will be public and get a yes.
-If they name an existing repo that already has files, stop and ask whether to use a different name or
-put this in a subfolder. Never overwrite or force-push someone's existing history.
-
-### 2. Check the tools
+## Develop and test
 
 ```bash
-git --version
-gh --version && gh auth status
+python -m http.server 8000             # open http://localhost:8000
+node --test "tests/*.test.js"          # plan, storage, rep-counter unit tests
+python tests/engines_test.py           # plays every motion exercise at all three levels
+python tests/smoke_test.py             # end to end (needs: pip install playwright && python -m playwright install chromium)
 ```
 
-If `gh` is missing, tell the user to install it (macOS: `brew install gh`; Windows: `winget install GitHub.cli`).
-If it's not logged in, ask the user to run `gh auth login` themselves (it opens a browser), then continue.
-If `gh` can't be used at all, fall back to having the user create the empty public repo on github.com,
-then add it as `origin` and push with plain git.
+Phone motion sensors need https, so test real phone control on the live site.
 
-### 3. Commit
+## Conventions
 
-From this folder:
+- Keep it static: no frameworks, bundlers or build steps (GitHub Pages serves files as-is; keep `.nojekyll`).
+- Each exercise has three levels and an assignable amount (reps, rounds or time). Motion exercises should each be
+  a distinct phone movement in a distinct phone position (duplicates were removed in Oct 2026).
+- Run the unit tests (and the smoke test for UI/pairing changes) before committing.
+- Never commit tokens or credentials; never force-push.
 
-```bash
-git init -b main
-git add -A
-git commit -m "ReConnect: phone-controlled stroke rehab prototype"
-```
+## Working from more than one computer
 
-If git has no identity configured, ask the user for the name and email to use rather than inventing one.
+This repo is edited from two computers, with Claude Code and Cursor. GitHub is the only thing they share.
 
-### 4. Create the repo and push
+1. `git pull` before starting any work.
+2. Make changes, run the tests above.
+3. Commit with a clear message and `git push` before switching computers.
 
-New repo:
-
-```bash
-gh repo create <owner>/<repo> --public --source=. --remote=origin --push --description "Phone-controlled stroke rehab activities: pair a phone by QR code and play with motion controls"
-```
-
-Existing empty repo:
-
-```bash
-git remote add origin https://github.com/<owner>/<repo>.git
-git push -u origin main
-```
-
-### 5. Turn on GitHub Pages (main branch, root folder)
-
-```bash
-gh api -X POST repos/<owner>/<repo>/pages -f "source[branch]=main" -f "source[path]=/"
-```
-
-If that returns 409 (Pages already on), update it instead:
-
-```bash
-gh api -X PUT repos/<owner>/<repo>/pages -f "source[branch]=main" -f "source[path]=/"
-```
-
-### 6. Wait for the first deploy
-
-Poll every 15 seconds, for up to about 5 minutes:
-
-```bash
-gh api repos/<owner>/<repo>/pages/builds/latest --jq .status
-```
-
-Continue when it says `built`. If it says `errored`, show the user the error from
-`gh api repos/<owner>/<repo>/pages/builds/latest` and stop.
-
-The site URL is `https://<owner-lowercase>.github.io/<repo>/`.
-You can confirm it with `gh api repos/<owner>/<repo>/pages --jq .html_url`.
-
-### 7. Verify it's live
-
-Each of these should return HTTP 200 (the first request can take a minute after the build finishes):
-
-```bash
-curl -sI https://<owner>.github.io/<repo>/ | head -1
-curl -sI https://<owner>.github.io/<repo>/phone.html | head -1
-curl -sI https://<owner>.github.io/<repo>/vendor/peerjs.min.js | head -1
-```
-
-Optional but recommended: run the end-to-end test against the live site. It pairs a simulated phone
-through the public PeerJS service and plays all six activities (about 5 minutes):
-
-```bash
-python3 -m pip install playwright && python3 -m playwright install chromium
-python3 tests/smoke_test.py --site https://<owner>.github.io/<repo>/
-```
-
-It prints PASS/FAIL per check and exits 0 when everything passes. If pairing fails here but the
-pages load, the network may block WebRTC or `0.peerjs.com`; report that to the user rather than
-changing the code.
-
-### 8. Put the live link in the README
-
-In `README.md`, replace the line `**Live site:** _not deployed yet_` with
-`**Live site:** https://<owner>.github.io/<repo>/`, then:
-
-```bash
-git commit -am "Add live site link" && git push
-```
-
-### 9. Tell the user
-
-Give them the URL and these steps:
-
-1. Open the URL on the computer.
-2. Scan the QR code with the phone camera. The page opens; tap **Start motion** (iPhone asks to allow motion; tap **Allow**).
-3. Pick an activity on the computer and press **Start with phone**.
-
-The phone and computer don't need to be on the same Wi-Fi; both just need internet.
-
-## Rules
-
-- Don't change app files unless a check fails; never force-push; never commit tokens or credentials.
-- Keep `.nojekyll` and the `vendor/` files: the app loads them by relative path.
-- If anything needs a decision (repo name clash, private repo, failed build), ask the user instead of guessing.
+Claude's memory folder (`~/.claude/...`) is per machine and does not sync. Put anything future sessions need to
+know in this file instead. `AGENTS.md` points Cursor and other agents here.
