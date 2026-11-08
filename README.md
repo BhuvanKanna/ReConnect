@@ -24,7 +24,7 @@ with **Demo: Patient | Provider** at the top. Everything is saved in this browse
   with **Export CSV** and **Print report**.
 - **Patient:** the Today bar shows today's assigned exercises and starts the next one with the provider's settings.
   When they're all done it says so, and anything played after that counts as bonus practice.
-- The demo starts with two patients: Bhuvan K. is 11 days into a plan and Argye H. is behind on theirs. Add a
+- The demo starts with two patients: Bhuvan K. is 11 days into a plan and Basant K. is behind on theirs. Add a
   patient in the provider view to build a plan from scratch.
   **Reset demo data** in the provider sidebar puts them back.
 

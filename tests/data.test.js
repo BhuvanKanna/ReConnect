@@ -18,7 +18,7 @@ function memStore(init = {}) {
 test("corrupt or missing storage falls back to the seed", () => {
   const D = data.createData(memStore({ "mend.patients": "{not json" }), NOW);
   D.ensureSeed();
-  assert.deepEqual(D.patients().map((p) => p.name), ["Bhuvan K.", "Argye H."]);
+  assert.deepEqual(D.patients().map((p) => p.name), ["Bhuvan K.", "Basant K."]);
   assert.equal(D.plan("p_bhuvan").start, "2026-10-06"); // 11 days before today
   assert.equal(D.plan("p_argye").start, "2026-10-13");
 });
@@ -139,12 +139,20 @@ test("the first demo's patients carry over to the current demo names", () => {
   const st = memStore({ "mend.patients": JSON.stringify(patients), "mend.plans": JSON.stringify(plans), "mend.log": JSON.stringify(log), "mend.demo": JSON.stringify({ patientId: "p_james" }) });
   const D = data.createData(st, NOW);
   D.ensureSeed();
-  assert.deepEqual(D.patients().map((p) => [p.id, p.name]).sort(), [["p_argye", "Argye H."], ["p_bhuvan", "Bhuvan K."], ["p_own", "Own P."]]);
+  assert.deepEqual(D.patients().map((p) => [p.id, p.name]).sort(), [["p_argye", "Basant K."], ["p_bhuvan", "Bhuvan K."], ["p_own", "Own P."]]);
   assert.equal(D.plan("p_bhuvan").patientId, "p_bhuvan");
   assert.equal(D.plan("p_mei"), null);
   assert.equal(D.sessions("p_bhuvan").length, old.sessions.filter((s) => s.patientId === "p_bhuvan").length);
   assert.equal(D.sessions("p_mei").length, 0);
   assert.equal(D.activePatientId(), "p_argye");
+});
+
+test("a saved demo patient named Argye H. is renamed Basant K.", () => {
+  const old = data.seedData(NOW());
+  const patients = old.patients.map((p) => (p.id === "p_argye" ? Object.assign({}, p, { name: "Argye H." }) : p));
+  const D = data.createData(memStore({ "mend.patients": JSON.stringify(patients), "mend.plans": JSON.stringify(old.plans), "mend.log": JSON.stringify(old.sessions) }), NOW);
+  D.ensureSeed();
+  assert.deepEqual(D.patients().map((p) => p.name), ["Bhuvan K.", "Basant K."]);
 });
 
 test("saved plans and sessions move from a removed exercise to the one that replaced it", () => {

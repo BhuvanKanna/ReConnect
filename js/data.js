@@ -31,7 +31,7 @@
     marchstand: "march", stepups: "march", sidesteps: "march", backsteps: "march", wallsit: "kneelift",
     bridgehold: "kneelift", clamshell: "sidelegs", heelslide: "kneeext", slr: "kneeext",
   };
-  const OLD_DEMO = { p_ruth: { name: "Ruth A.", to: "p_bhuvan", rename: "Bhuvan K." }, p_james: { name: "James O.", to: "p_argye", rename: "Argye H." }, p_mei: { name: "Mei L.", to: null } };
+  const OLD_DEMO = { p_ruth: { name: "Ruth A.", to: "p_bhuvan", rename: "Bhuvan K." }, p_james: { name: "James O.", to: "p_argye", rename: "Basant K." }, p_mei: { name: "Mei L.", to: null } };
   const item = (exerciseId, reps = 10, level = 2) => ({ exerciseId, reps, level, durationS: null });
 
   // Small deterministic random so the demo looks the same every time.
@@ -41,7 +41,7 @@
     const today = plan.dateKey(now), rand = rng(7);
     const patients = [
       { id: "p_bhuvan", name: "Bhuvan K.", side: "right", enabled: { sit2stand: false, balance: false } },
-      { id: "p_argye", name: "Argye H.", side: "left", enabled: { sit2stand: false, balance: false } },
+      { id: "p_argye", name: "Basant K.", side: "left", enabled: { sit2stand: false, balance: false } },
     ];
     // A week mixing arm, wrist and brain work; brain exercises are assigned by level only (no reps).
     const week = [[item("lift"), item("pairs", null, 1)], [item("pour"), item("trail", 1, 1)], [item("reach"), item("wiper")], [item("lift"), item("cancel", 1, 1)], [item("pour"), item("pairs", null, 1), item("wiper")], "rest", "rest"];
@@ -96,6 +96,7 @@
     // Sessions recorded before plans existed belong to the demo patient as "before plan" history.
     function migrate() {
       renameDemo();
+      renameArgye();
       replaceRemoved();
       const l = log();
       if (!l.some((s) => !s.patientId)) return;
@@ -112,6 +113,13 @@
       if (plansChanged) set(K.plans, pl);
       const l = log();
       if (l.some((s) => s && REPLACED[s.id])) set(K.log, l.map((s) => (s && REPLACED[s.id] ? Object.assign({}, s, { id: REPLACED[s.id] }) : s)));
+    }
+    // The second demo patient was first called "Argye H."; browsers that saved that name get the new one.
+    function renameArgye() {
+      const list = get(K.patients, null);
+      if (Array.isArray(list) && list.some((p) => p && p.id === "p_argye" && p.name === "Argye H.")) {
+        set(K.patients, list.map((p) => (p && p.id === "p_argye" && p.name === "Argye H." ? Object.assign({}, p, { name: "Basant K." }) : p)));
+      }
     }
     // The first demo had three patients (Ruth A., James O., Mei L.). Carry their plans and sessions
     // over to the current demo patients, and drop Mei's demo record.
