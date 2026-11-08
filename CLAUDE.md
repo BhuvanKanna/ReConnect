@@ -56,20 +56,23 @@ This repo is edited from two computers, with Claude Code and Cursor. GitHub is t
 1. Start by syncing: run `/sync-repo` in Claude Code (or ask any agent to "sync repo"). It pulls the latest
    `main` safely; the steps are in `.claude/skills/sync-repo/SKILL.md`.
 2. Make changes, run the tests above.
-3. Commit app changes with a clear message and `git push` before switching computers.
+3. Changes are pushed automatically (below).
 
-### Context files sync automatically
+### Every change is pushed automatically
 
-Context files are: `CLAUDE.md`, `AGENTS.md`, everything in `.claude/` (settings, hooks, skills) and `.cursor/`.
-
-- **Rule:** any change to a context file must be committed and pushed to GitHub right after the response that
-  made it, so the other computer gets it.
+- **Rule:** every change, app code and context files alike, is committed and pushed to GitHub right after
+  the response that made it, so the other computer always has the latest version.
 - **Claude Code does this automatically.** `.claude/settings.json` has a Stop hook that runs
-  `.claude/hooks/sync-context.sh` after every response. The script commits only the context files that changed
-  (never app code), pulls with rebase, and pushes. It prints a one-line "Context sync" message saying what it
+  `.claude/hooks/auto-sync.sh` after every response. The script commits all changes (respecting
+  `.gitignore`), pulls with rebase, and pushes. It prints a one-line "Auto-sync" message saying what it
   pushed or what failed. A new or changed hook only loads after restarting Claude Code (or opening `/hooks`).
-- **Other agents (Cursor, Codex):** after changing a context file, run `bash .claude/hooks/sync-context.sh`
-  yourself.
+- **Safety:** files that look like secrets (`.env*`, `.dev.vars`, `*.pem`, `*.key`, names containing
+  `secret` or `credential`) and files over 50 MB are never auto-committed; they are reported instead. It
+  skips the run if a merge or rebase is in progress, and never force-pushes.
+- **Pushing to `main` deploys the live site** (GitHub Pages), so run the tests before ending a response that
+  changed app code, and don't leave half-finished app changes at the end of a response.
+- **Other agents (Cursor, Codex):** after making changes, run `bash .claude/hooks/auto-sync.sh` yourself at
+  the end of each response.
 - Keep durable knowledge here, not in Claude's memory folder (`~/.claude/...`), which is per machine and
   does not sync. `.claude/settings.local.json` is for per-machine settings and is git-ignored.
 - `.gitattributes` keeps `.sh` files on LF line endings so the hook runs on Windows.

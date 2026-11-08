@@ -14,9 +14,8 @@ Bring this checkout up to date with GitHub without losing local work.
    git log --oneline HEAD..@{u}     # commits on GitHub not here yet
    git log --oneline @{u}..HEAD     # local commits not pushed yet
    ```
-2. If there are uncommitted changes, tell the user which files. Context files (CLAUDE.md, AGENTS.md,
-   `.claude/`, `.cursor/`) can just be committed. For other files, ask whether to commit them first or keep
-   them as uncommitted changes (`--autostash` keeps them either way).
+2. If there are uncommitted changes, tell the user which files. This repo auto-pushes all changes
+   (`.claude/hooks/auto-sync.sh`), so normally commit them; `--autostash` keeps them safe either way.
 3. Pull:
    ```bash
    git pull --rebase --autostash

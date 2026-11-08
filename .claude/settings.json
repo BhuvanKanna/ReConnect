@@ -5,9 +5,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/sync-context.sh\"",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/auto-sync.sh\"",
             "timeout": 60,
-            "statusMessage": "Syncing context files to GitHub"
+            "statusMessage": "Pushing changes to GitHub"
           }
         ]
       }
