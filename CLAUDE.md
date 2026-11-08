@@ -51,7 +51,11 @@ Phone motion sensors need https, so test real phone control on the live site.
 
 ## Working from more than one computer
 
-This repo is edited from two computers, with Claude Code and Cursor. GitHub is the only thing they share.
+Two people edit this repo from separate computers, with Claude Code and Cursor: Bhuvan (GitHub `BhuvanKanna`,
+the repo owner) and Basant (GitHub `BasantKanna`, a collaborator with push access). GitHub is the only thing
+the computers share. Each person commits under their own git identity; the repo and live site stay under
+`BhuvanKanna`. Because two people may work at the same time, always sync first, and keep each response's
+changes small so auto-sync rebases cleanly.
 
 1. Start by syncing: run `/sync-repo` in Claude Code (or ask any agent to "sync repo"). It pulls the latest
    `main` safely; the steps are in `.claude/skills/sync-repo/SKILL.md`.
