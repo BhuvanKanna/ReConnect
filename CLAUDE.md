@@ -53,9 +53,23 @@ Phone motion sensors need https, so test real phone control on the live site.
 
 This repo is edited from two computers, with Claude Code and Cursor. GitHub is the only thing they share.
 
-1. `git pull` before starting any work.
+1. Start by syncing: run `/sync-repo` in Claude Code (or ask any agent to "sync repo"). It pulls the latest
+   `main` safely; the steps are in `.claude/skills/sync-repo/SKILL.md`.
 2. Make changes, run the tests above.
-3. Commit with a clear message and `git push` before switching computers.
+3. Commit app changes with a clear message and `git push` before switching computers.
 
-Claude's memory folder (`~/.claude/...`) is per machine and does not sync. Put anything future sessions need to
-know in this file instead. `AGENTS.md` points Cursor and other agents here.
+### Context files sync automatically
+
+Context files are: `CLAUDE.md`, `AGENTS.md`, everything in `.claude/` (settings, hooks, skills) and `.cursor/`.
+
+- **Rule:** any change to a context file must be committed and pushed to GitHub right after the response that
+  made it, so the other computer gets it.
+- **Claude Code does this automatically.** `.claude/settings.json` has a Stop hook that runs
+  `.claude/hooks/sync-context.sh` after every response. The script commits only the context files that changed
+  (never app code), pulls with rebase, and pushes. It prints a one-line "Context sync" message saying what it
+  pushed or what failed. A new or changed hook only loads after restarting Claude Code (or opening `/hooks`).
+- **Other agents (Cursor, Codex):** after changing a context file, run `bash .claude/hooks/sync-context.sh`
+  yourself.
+- Keep durable knowledge here, not in Claude's memory folder (`~/.claude/...`), which is per machine and
+  does not sync. `.claude/settings.local.json` is for per-machine settings and is git-ignored.
+- `.gitattributes` keeps `.sh` files on LF line endings so the hook runs on Windows.
