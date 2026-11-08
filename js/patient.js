@@ -16,7 +16,17 @@ const CONTROL = { tilt: ["phone", "Phone motion"], accel: ["phone", "Phone motio
 // "How you play" filter: phone motion covers both tilt and acceleration exercises.
 const KINDS = [["motion", "Phone motion"], ["touch", "Touch"], ["guided", "Follow along"]];
 const kindOf = (d) => (d.control === "touch" ? "touch" : d.control === "guided" ? "guided" : "motion");
-let filter = "all", kind = "all";
+let filter = "all", kind = "all", query = "";
+// Search: every word typed must appear in the exercise's name, movement, description or area (any order).
+const norm = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ");
+const hay = new Map();
+const matches = (d) => {
+  const words = norm(query).split(" ").filter(Boolean);
+  if (!words.length) return true;
+  if (!hay.has(d.id)) { const sec = (RC.SECTIONS.find(([id]) => id === d.section) || [])[1]; hay.set(d.id, " " + norm([d.name, d.movement, d.desc, sec, (d.how || []).join(" ")].join(" "))); }
+  const h = hay.get(d.id);
+  return words.every((w) => h.includes(" " + w) || (w.length > 2 && h.includes(w)));
+};
 // What the bar showed last time, so changes since then can animate (and nothing else does).
 let prev = { who: null, done: [], pct: 0, state: null };
 
@@ -86,7 +96,7 @@ function renderLibrary(S) {
   const sections = RC.SECTIONS.filter(([id]) => RC.EXERCISES.some((d) => d.section === id));
   if (filter !== "all" && !sections.some(([id]) => id === filter)) filter = "all";
   // Area filter first (for the counts), then how-you-play.
-  const shown = RC.EXERCISES.filter((d) => filter === "all" || d.section === filter);
+  const shown = RC.EXERCISES.filter((d) => (filter === "all" || d.section === filter) && matches(d));
   const groups = sections.filter(([id]) => filter === "all" || filter === id)
     .map(([id, name]) => [id, name, shown.filter((d) => d.section === id && (kind === "all" || kindOf(d) === kind))]).filter((g) => g[2].length);
   const tile = (d) => {
@@ -97,8 +107,18 @@ function renderLibrary(S) {
       <span class="tile-name">${esc(d.name)}</span>
       <span class="tile-meta">${locked ? "Your therapist turns this on" : `${ICON[icon]}${label}`}</span>${tag}</button>`;
   };
-  $("library").innerHTML = `
-    <div class="libhead"><h2>All exercises</h2>
+  // The search box is built once and kept, so typing never loses focus when the list below re-renders.
+  if (!$("libSearch")) {
+    $("library").innerHTML = `<div class="libtop"><h2>All exercises</h2>
+      <div class="libsearch" role="search"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
+        <input type="search" id="libSearch" placeholder="Search exercises, like “wrist” or “memory”" aria-label="Search exercises" autocomplete="off" spellcheck="false">
+        <button type="button" id="libClear" aria-label="Clear search" hidden>×</button></div></div>
+      <div id="libBody" class="library"></div>`;
+  }
+  $("libClear").hidden = !query;
+  const filtered = filter !== "all" || kind !== "all";
+  $("libBody").innerHTML = `
+    <div class="libhead">
       <div class="libtabs" id="libTabs" role="tablist" aria-label="Filter exercises by area">
         <button data-section="all" aria-pressed="${filter === "all"}">All ${RC.EXERCISES.length}</button>
         ${sections.map(([id, name]) => `<button data-section="${id}" aria-pressed="${filter === id}">${esc(name)}</button>`).join("")}
@@ -107,10 +127,11 @@ function renderLibrary(S) {
         <span class="kinds-label">How you play</span>
         <button data-kind="all" aria-pressed="${kind === "all"}">Any</button>
         ${KINDS.map(([id, name]) => { const n = shown.filter((d) => kindOf(d) === id).length; return `<button data-kind="${id}" aria-pressed="${kind === id}"${n || kind === id ? "" : " disabled"}>${ICON[CONTROL[id === "motion" ? "tilt" : id][0]]}${esc(name)} <span class="num">${n}</span></button>`; }).join("")}
-      </div></div>
+      </div>${query && groups.length ? `<p class="muted libcount" aria-live="polite">${groups.reduce((n, g) => n + g[2].length, 0)} found</p>` : ""}</div>
     ${groups.length ? groups.map(([id, name, list]) => `
       <section class="libsec"><h3>${esc(name)}</h3>
-        <div class="tiles">${list.map(tile).join("")}</div></section>`).join("") : `<p class="muted libempty">No exercises match. Try another filter.</p>`}`;
+        <div class="tiles">${list.map(tile).join("")}</div></section>`).join("") : `<div class="libempty"><p class="muted">${query ? `No exercises match “${esc(query.trim())}”${filtered ? " with these filters" : ""}.` : "No exercises match. Try another filter."}</p>
+        ${query && filtered ? `<button class="btn alt" id="libAll">Search all exercises</button>` : query ? `<button class="btn alt" id="libReset">Clear search</button>` : ""}</div>`}`;
   RC.drawGlyphs && RC.drawGlyphs();
 }
 
@@ -139,6 +160,8 @@ document.addEventListener("click", (e) => {
   if (tab) { filter = tab.dataset.section; renderLibrary(todayState()); return; }
   const kt = e.target.closest("#kindTabs button[data-kind]");
   if (kt) { kind = kt.dataset.kind; renderLibrary(todayState()); return; }
+  if (e.target.closest("#libClear, #libReset")) { query = ""; $("libSearch").value = ""; renderLibrary(todayState()); $("libSearch").focus(); return; }
+  if (e.target.closest("#libAll")) { filter = "all"; kind = "all"; renderLibrary(todayState()); return; }
   if (e.target.closest("#toLog")) { RC.show("vLog"); return; }
   const t = e.target.closest("#library .tile[data-id]");
   if (!t || t.getAttribute("aria-disabled") === "true") return;
@@ -146,6 +169,14 @@ document.addEventListener("click", (e) => {
   // An outstanding assigned item opened from the library still counts, so it uses the assigned settings.
   const item = S.items.find((i) => i.exerciseId === def.id && !i.done);
   RC.openActivity(def, item ? { item } : {});
+});
+
+document.addEventListener("input", (e) => {
+  if (e.target.id !== "libSearch") return;
+  query = e.target.value; renderLibrary(todayState());
+});
+document.addEventListener("keydown", (e) => {
+  if (e.target.id === "libSearch" && e.key === "Escape" && query) { e.preventDefault(); query = ""; e.target.value = ""; renderLibrary(todayState()); }
 });
 
 RC.patient = { render };

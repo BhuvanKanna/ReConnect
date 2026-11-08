@@ -57,7 +57,7 @@ hand, holding the mouse button stands in for a push, and touch exercises work wi
 | Language (5) | Name It, Word to Picture, Word Web, Finish the Sentence, Spell It |
 
 The 169 motion-tracked exercises were cut to 74 in October 2026: each one left is a distinct phone movement
-in a distinct phone position, and the rest were the same movement under a different name. In the library, **How you play** filters by Phone motion, Touch or Follow along. Every exercise has three levels and an assignable amount (reps,
+in a distinct phone position, and the rest were the same movement under a different name. In the library, a search box finds exercises by name, movement, body area or description (every word typed must match), and **How you play** filters by Phone motion, Touch or Follow along. Every exercise has three levels and an assignable amount (reps,
 rounds or time). **About these exercises** in the
 app, and [`docs/exercise-catalog.md`](docs/exercise-catalog.md), list the programs and studies each one comes from.
 

@@ -194,6 +194,14 @@ nav.tabs button[aria-selected="true"] { background: var(--ink); color: var(--sur
 @media (max-width: 980px) { .phome { grid-template-columns: minmax(0, 1fr); } .phome .side { position: static; } }
 .library { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
 .libhead { display: flex; flex-direction: column; gap: 12px; }
+.libtop { display: flex; flex-direction: column; gap: 12px; }
+.libsearch { position: relative; display: flex; align-items: center; max-width: 560px; }
+.libsearch svg { position: absolute; left: 16px; width: 22px; height: 22px; fill: none; stroke: var(--muted); stroke-width: 2.4; stroke-linecap: round; pointer-events: none; }
+.libsearch input[type="search"] { width: 100%; min-height: 52px; padding: 10px 52px 10px 50px; border-radius: 999px; font: inherit; font-size: 18px; color: var(--ink); }
+.libsearch input[type="search"]::-webkit-search-cancel-button { display: none; }
+.libsearch input[type="search"]:focus-visible { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-soft); }
+.libsearch button { position: absolute; right: 8px; width: 40px; height: 40px; border: 0; border-radius: 999px; background: var(--sunk); color: var(--ink); font-size: 24px; line-height: 1; }
+.libcount { font-size: 15px; }
 .libtabs { display: flex; gap: 6px; flex-wrap: wrap; }
 .libtabs button { border: 0; background: transparent; min-height: 44px; padding: 8px 14px; border-radius: 999px; font-weight: 700; font-size: 16px; color: var(--muted); box-shadow: inset 0 0 0 1.5px var(--line); }
 .libtabs button[aria-pressed="true"] { background: var(--ink); color: var(--surface); box-shadow: none; }
