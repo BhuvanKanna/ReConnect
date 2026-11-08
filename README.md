@@ -77,8 +77,9 @@ The whole app is static files, which is why it can run on GitHub Pages.
   namespace. `js/plan.js` (plan rules) and `js/data.js` (storage and demo seed) are pure and unit-tested in Node.
   Each library section is one file in `js/games/`; shared building blocks (rep counter, tilt cursor, answer cards,
   keypad, guided session) are in `js/kit.js`.
-- Two exercises are 3D scenes, built on three.js loaded on demand by `js/scene3d.js` (each falls back to a flat
-  2D view if WebGL isn't available):
+- Two exercises are 3D scenes, built on three.js loaded on demand by `js/scene3d.js`. Each falls back to a flat
+  2D view if WebGL isn't available, and steps down on a slow computer (lower resolution and no shadows first,
+  then the 2D view if it still runs under about 22 frames a second):
   - **Lantern Lift** (`js/lift3d.js`), first person: the patient's own arm lifts a lantern into a gold ring,
     and each rep lights a lantern in the garden.
   - **Pour the Tea** (`js/pour3d.js`): a teapot over a kitchen table tips with the forearm and pours a real
