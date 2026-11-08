@@ -57,8 +57,15 @@ the computers share. Each person commits under their own git identity; the repo 
 `BhuvanKanna`. Because two people may work at the same time, always sync first, and keep each response's
 changes small so auto-sync rebases cleanly.
 
-1. Start by syncing: run `/sync-repo` in Claude Code (or ask any agent to "sync repo"). It pulls the latest
-   `main` safely; the steps are in `.claude/skills/sync-repo/SKILL.md`.
+1. Start by syncing. **Claude Code does this automatically:** a SessionStart hook runs
+   `.claude/hooks/auto-pull.sh` when a session starts (also on resume and `/clear`), fetches GitHub and pulls
+   `main` if this computer is behind (`--rebase --autostash`, never discards local work). It prints a one-line
+   "Auto-pull" message. On a conflict it backs out and says to run `/sync-repo`. Other agents (Cursor, Codex)
+   should run `bash .claude/hooks/auto-pull.sh` at the start of a session, or follow
+   `.claude/skills/sync-repo/SKILL.md` when asked to "sync repo".
+   - **Open Claude Code in the repo root** (the folder containing this file and `.claude/`). Project skills
+     like `/sync-repo` and these hooks only load from the folder Claude Code was started in; starting it in a
+     parent folder means none of them appear.
 2. Make changes, run the tests above.
 3. Changes are pushed automatically (below).
 

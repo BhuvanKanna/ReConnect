@@ -49,7 +49,7 @@ git commit -q -m "Auto-sync: $changed
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" || { say "Auto-sync: commit failed.$note"; exit 0; }
 
-if ! git pull -q --rebase --autostash 2>/dev/null; then
+if ! git pull -q --rebase --autostash >/dev/null 2>&1; then
   git rebase --abort 2>/dev/null
   say "Auto-sync: committed locally but pull failed (conflict?). Run /sync-repo to resolve, then push.$note"
   exit 0
