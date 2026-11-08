@@ -13,6 +13,108 @@ const timed = { params: { reps: null, level: [1, 2, 3], durationS: [30, 60, 90] 
 const steady = (S) => lvl(S, { 1: 8, 2: 5, 3: 3 });
 const STEP = { 1: 1.2, 2: 1.5, 3: 2 };
 
+// ---- Ear to Shoulder: a balance game (3D scene in js/tilt3d.js)
+// The picture slowly tips to one side, tipping the board so the beach ball starts to roll. Tip your head
+// the other way to bring the picture back level, and hold it there. Then the picture eases back and tips
+// the other way. One side and then the other is one repetition. Draws a flat version until 3D is ready.
+function EarBalance(S) {
+  const { base, bg } = RC.kit, { clamp, TAU, T, alpha, rr } = RC;
+  const G = base(S, S.reps), amp = S.amp, D = amp * 0.6, HOLD = 1.5, TOL = Math.max(4, amp * 0.18);
+  const RATE = D / 3.5, ROLLK = { 1: 1.3, 2: 1.8, 3: 2.2 }[S.level] || 1.8;
+  const B = RC.Tilt3D, quality = RC.Scene3D ? RC.Scene3D.quality() : { sample: () => 2 };
+  if (B) B.ensure();
+  let k = 0, phase = "tip", drift = 0, roll = 0, net = 0, hold = 0, ballX = 0, ballV = 0, fallT = -1, fallSide = 1, spawnT = 9, falls = 0;
+  let levelT = 0, total = 0, ext = [0, 0], lastT = null, world = null, sparkle = [], cheer = 0;
+  const dir = () => (k % 2 === 0 ? 1 : -1); // +1: the picture turns clockwise, so the head tips left to fix it
+  G.update = function (dt, a) {
+    roll = a.roll; ext = [Math.min(ext[0], roll), Math.max(ext[1], roll)];
+    const goal = phase === "back" ? 0 : dir() * D;
+    drift += clamp(goal - drift, -RATE * dt * (phase === "back" ? 1.6 : 1), RATE * dt * (phase === "back" ? 1.6 : 1));
+    if (phase === "tip" && Math.abs(drift - goal) < 0.01) phase = "hold";
+    if (phase === "back" && Math.abs(drift) < 0.01) phase = "tip";
+    net = drift + roll; total += dt;
+    const level = Math.abs(net) < TOL; if (level) levelT += dt;
+    if (phase === "hold") {
+      if (level && fallT < 0) hold += dt; else hold = Math.max(0, hold - dt);
+      if (hold >= HOLD) {
+        hold = 0; k++; phase = "back"; cheer = 1; burst();
+        if (k % 2 === 0) { this._reps++; this.events.push("success"); if (this._reps >= S.reps) this.done = true; } else this.events.push("tick");
+      }
+    } else hold = 0;
+    // the ball rolls toward the low end of the board; a slight dip in the middle settles it back
+    spawnT += dt; cheer = Math.max(0, cheer - dt);
+    if (fallT < 0) {
+      ballV += (ROLLK * Math.sin(net * Math.PI / 180) - 0.4 * ballX) * dt; ballV *= 1 - Math.min(1, 1.3 * dt); ballX += ballV * dt;
+      if (Math.abs(ballX) > 1) { fallT = 0; fallSide = Math.sign(ballX); falls++; hold = 0; this.events.push("error"); }
+    } else if ((fallT += dt) > 1.6) { fallT = -1; ballX = 0; ballV = 0; spawnT = 0; }
+  };
+  G.status = function () {
+    if (fallT >= 0) return { title: "Oops! The ball rolled off", text: "Here comes another one", tone: "warn" };
+    if (phase === "back") return { title: "Good! Now lift your head up straight", text: `${G._reps} of ${S.reps} done`, tone: "good" };
+    const need = dir() > 0 ? "left" : "right";
+    if (phase === "hold" && Math.abs(net) < TOL) return { title: "Level! Hold it there", text: "Keep the ball on the board", tone: "good" };
+    if (Math.sign(net) === -dir() && Math.abs(net) >= TOL) return { title: "A little less", text: "Ease your head back a bit" };
+    return { title: `Tip your head to the ${need}`, text: "Make the picture level again" };
+  };
+  G.stats = () => [["Head tipped left", `${Math.round(-ext[0])}°`], ["Head tipped right", `${Math.round(ext[1])}°`], ["Time level", `${Math.round(100 * levelT / Math.max(1, total))}%`], ["Balls dropped", String(falls)]];
+  G.dispose = () => { if (world) { world.dispose(); world = null; } };
+  G.debug = () => ({ kind: "value", target: -drift, val: roll, phase, net, ballX, view: world ? "3d" : "2d", quality: quality.level });
+  G.draw = function (g, W, H, a, t) {
+    const raw = lastT == null ? 0 : t - lastT, dt = Math.min(0.05, Math.max(0, raw)); lastT = t;
+    const q = world ? quality.sample() : 0;
+    if (q >= 2 && world) { world.dispose(); world = null; RC.Scene3D.off = true; }
+    if (!world && !RC.Scene3D.off && B && B.ready()) world = B.create({ calm: RC.reduceMotion });
+    const unit = Math.min(W, H) / 600;
+    let bx = W / 2, by = H * 0.55;
+    if (world) {
+      world.lowQuality(q >= 1);
+      const pr = (g.getTransform ? g.getTransform().a : 1) * (q >= 1 ? 0.6 : 1);
+      g.drawImage(world.frame(W, H, pr, { net, ballX, fallT, fallSide, spawnT }, t, dt), 0, 0, W, H);
+      const p = world.ballScreen(W, H); bx = p.x; by = p.y;
+    } else drawFlat(g, W, H);
+    level(g, W, H, unit, t);
+    sparkle = sparkle.filter((s) => (s.life -= dt) > 0); sparkle.forEach((s) => { s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 70 * dt; });
+    g.fillStyle = "#ffd27a"; sparkle.forEach((s) => { g.globalAlpha = clamp(s.life / 0.9, 0, 1); g.beginPath(); g.arc(bx + s.x * unit, by + s.y * unit, 5 * unit, 0, TAU); g.fill(); }); g.globalAlpha = 1;
+  };
+  function burst() { if (RC.reduceMotion) return; for (let i = 0; i < 24; i++) { const ang = Math.random() * TAU, v = 60 + Math.random() * 120; sparkle.push({ x: 0, y: 0, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v - 50, life: 0.9 }); } }
+  // A spirit level fixed to the screen: the bubble shows how tipped the picture is; middle = level.
+  // A curved arrow beside it shows which way to tip your head.
+  function level(g, W, H, unit, t) {
+    const w = Math.min(W * 0.5, 420 * unit), h = 46 * unit, x = W / 2 - w / 2, y = H - h - 26 * unit, ok = Math.abs(net) < TOL;
+    g.save();
+    g.fillStyle = "rgba(20,24,40,0.55)"; rr(g, x - 10 * unit, y - 10 * unit, w + 20 * unit, h + 20 * unit, (h + 20 * unit) / 2); g.fill();
+    g.fillStyle = ok ? "rgba(140,240,180,0.9)" : "rgba(230,240,170,0.9)"; rr(g, x, y, w, h, h / 2); g.fill();
+    const zw = (TOL / (D * 1.6)) * w;
+    g.strokeStyle = "rgba(20,40,30,0.7)"; g.lineWidth = 3 * unit; g.beginPath(); g.moveTo(W / 2 - zw, y + 6 * unit); g.lineTo(W / 2 - zw, y + h - 6 * unit); g.moveTo(W / 2 + zw, y + 6 * unit); g.lineTo(W / 2 + zw, y + h - 6 * unit); g.stroke();
+    const bxp = W / 2 + clamp(-net / (D * 1.6), -0.5, 0.5) * (w - h);
+    g.fillStyle = "rgba(255,255,255,0.95)"; g.beginPath(); g.ellipse(bxp, y + h / 2, h * 0.62, h * 0.36, 0, 0, TAU); g.fill();
+    if (phase === "hold" && hold > 0) { g.strokeStyle = "#2fbf72"; g.lineWidth = 7 * unit; g.lineCap = "round"; g.beginPath(); g.arc(W / 2, y + h / 2, h * 0.9, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(hold / HOLD, 0, 1)); g.stroke(); }
+    g.restore();
+    // turn arrow: shows the way to tip the head (counter-clockwise = left)
+    if (phase !== "back" && !ok && fallT < 0) {
+      const sgn = Math.sign(net), cx = W / 2, cy = H * 0.7, R = Math.min(W, H) * 0.34, a0 = -Math.PI / 2 + sgn * 0.35, a1 = -Math.PI / 2 - sgn * 0.35;
+      g.save(); g.lineCap = "round"; g.globalAlpha = 0.6 + 0.3 * Math.sin(t * 4);
+      for (const [lw, c] of [[18 * unit, "rgba(20,16,40,0.6)"], [10 * unit, "#ffd27a"]]) {
+        g.lineWidth = lw; g.strokeStyle = c; g.beginPath(); g.arc(cx, cy, R, Math.min(a0, a1), Math.max(a0, a1)); g.stroke();
+        const ex = cx + Math.cos(a1) * R, ey = cy + Math.sin(a1) * R, tx = -Math.sin(a1) * -sgn, ty = Math.cos(a1) * -sgn, s = 26 * unit;
+        g.beginPath(); g.moveTo(ex - tx * s - ty * s * 0.7, ey - ty * s + tx * s * 0.7); g.lineTo(ex + tx * s * 0.2, ey + ty * s * 0.2); g.lineTo(ex - tx * s + ty * s * 0.7, ey - ty * s - tx * s * 0.7); g.stroke();
+      }
+      g.restore();
+    }
+  }
+  function drawFlat(g, W, H) {
+    bg(g, W, H);
+    g.save(); g.translate(W / 2, H * 0.55); g.rotate(net * Math.PI / 180);
+    g.fillStyle = "#9fd0f0"; g.fillRect(-W * 1.5, -H * 1.5, W * 3, H * 1.5); g.fillStyle = "#3a7ab0"; g.fillRect(-W * 1.5, 0, W * 3, H * 1.5);
+    const L = Math.min(W * 0.32, 260);
+    g.fillStyle = "#c89858"; rr(g, -L, 40, L * 2, 18, 6); g.fill(); g.fillStyle = "#6a4a30"; g.fillRect(-8, 58, 16, 60);
+    const x = fallT >= 0 ? fallSide * (L + 30) : ballX * L;
+    g.fillStyle = "#e63a3a"; g.beginPath(); g.arc(x, 40 - 26, 26, 0, TAU); g.fill(); g.fillStyle = "#fff"; g.beginPath(); g.arc(x, 14, 26, -0.5, 0.5); g.lineTo(x, 14); g.fill();
+    g.restore();
+  }
+  return G;
+}
+
 const TRUNK = [
   Object.assign({ id: "leanhold", name: "Lean Forward and Hold", movement: "Trunk flexion · sustained", control: "tilt", pose: "chest", mount: "Hold the phone flat against your breastbone (or tuck it upright in a shirt pocket), screen facing out, top edge up.", art: ["hold", "🙇"],
     desc: "Lean forward from your hips, as if getting ready to stand, and hold.", source: "Forward weight shift practice before sit-to-stand training.",
@@ -35,9 +137,9 @@ const TRUNK = [
     how: ["Look at the eye in the middle of the computer screen.", "Keep your eyes on it as you turn your head left.", "Then right. Small, steady turns."],
     make: (S) => M.Wave(S, { signal: (a) => a.yaw, thr: (S) => S.amp * 0.3, emoji: "👁️", cues: ["Turn your head one way", "Now the other way"] }) }, reps([10, 20, 30], 10)),
   { id: "eartilt", name: "Ear to Shoulder", movement: "Neck side bend", control: "tilt", pose: "head", mount: "Hold the phone flat on top of your head with one hand, screen up, top edge pointing forward.", art: ["swing", "🙂"],
-    desc: "Tip your head to bring your ear toward your shoulder, then to the other side.", source: "Cervical range-of-motion exercises from physiotherapy home programs.",
-    how: ["Sit tall with the phone on your head.", "Tip your head toward one shoulder.", "Then toward the other."],
-    make: (S) => M.Swing(S, { signal: (a) => a.roll, targets: (S) => [S.amp * 0.6, -S.amp * 0.6], hold: 0.4, cues: ["Ear to one shoulder", "Ear to the other"], labels: ["One side", "Other side"], emoji: "🙂" }) },
+    desc: "The picture tips. Tip your head the other way to level it and keep the ball on the board.", source: "Cervical range-of-motion exercises from physiotherapy home programs.",
+    how: ["Sit tall with the phone on your head.", "When the picture tips, tip your head the other way.", "Hold it level. Keep the ball on the board."],
+    make: EarBalance },
   Object.assign({ id: "sidebendhold", name: "Side Bend Hold", movement: "Trunk side flexion · sustained", control: "tilt", pose: "chest", mount: "Hold the phone flat against your breastbone (or tuck it upright in a shirt pocket), screen facing out, top edge up.", art: ["hold", "🧍"],
     desc: "Lean your upper body to one side and hold it in the band.", source: "Lateral trunk flexion from the Trunk Impairment Scale and trunk training.",
     how: ["Sit tall with your feet flat.", "Lean sideways into the green band.", "Hold, then sit back up straight."],

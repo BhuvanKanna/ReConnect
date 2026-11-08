@@ -16,12 +16,12 @@ function show(id) {
 }
 function goHome() {
   RC.endPad();
-  Game.state = "idle"; Game.current = null; Game.inst = null;
+  if (Game.release) Game.release(); Game.state = "idle"; Game.current = null; Game.inst = null;
   const provider = db.role() === "provider";
   if (provider) RC.provider.render(); else RC.patient.render();
   show(provider ? "vProvider" : "vPatient"); pushStatus(true);
 }
-document.querySelectorAll("nav.tabs button").forEach((b) => b.addEventListener("click", () => { if (b.dataset.view === "vPatient") goHome(); else { Game.state = "idle"; Game.current = null; Game.inst = null; show(b.dataset.view); pushStatus(true); } }));
+document.querySelectorAll("nav.tabs button").forEach((b) => b.addEventListener("click", () => { if (b.dataset.view === "vPatient") goHome(); else { if (Game.release) Game.release(); Game.state = "idle"; Game.current = null; Game.inst = null; show(b.dataset.view); pushStatus(true); } }));
 $("btnBack").addEventListener("click", goHome);
 $("btnSound").addEventListener("click", () => { settings.sound = !settings.sound; saveSettings(); renderSound(); });
 function renderSound() { $("btnSound").textContent = settings.sound ? "Sound on" : "Sound off"; $("btnSound").setAttribute("aria-pressed", String(settings.sound)); }

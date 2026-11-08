@@ -14,7 +14,7 @@ import functools, http.server, json, os, socketserver, sys, threading
 from playwright.sync_api import sync_playwright
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-NEW = """lift gate paint moon stir pendulum fruit quickreach reachturn key drawbridge wheel wristcircle water mole
+NEW = """lift twist gate paint moon stir pendulum fruit quickreach reachturn key drawbridge wheel wristcircle water mole
 scales drum beat numhunt typeword tapcount pegboard shake floor sidereach rock trunkcircle kneeext
 kneeout foottilt ankletrace toetap bridge standshift minisquat""".split()
 # The third batch: phone motion only (tilt or acceleration), no touch and no follow-along.
@@ -61,6 +61,7 @@ AUTOPILOT = r"""
       if (Math.round(t / DT) % 30 === 0) { const s = inst.status(); if (!s || !s.title) errors.push("empty status at " + t.toFixed(1)); }
     }
   } catch (e) { return { ok: false, why: String(e && e.stack || e) }; }
+  if (inst.dispose) inst.dispose();
   const stats = inst.stats(), text = JSON.stringify(stats);
   if (/NaN|undefined|Infinity/.test(text)) errors.push("bad stats " + text);
   return { ok: inst.done && inst.reps() >= inst.goal() && !errors.length, done: inst.done, reps: inst.reps(), goal: inst.goal(), t: +t.toFixed(1), stats, errors };

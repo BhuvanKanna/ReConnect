@@ -47,10 +47,11 @@ function PourTea(S) {
     return { title: `Turn your hand to the ${side} to pour`, text: n };
   };
   G.stats = () => [["Spills", String(spills)], ["Pour time", `${pourTime.toFixed(1)} s`]];
+  G.dispose = () => { if (world) { world.dispose(); world = null; } };
   G.debug = () => ({ state, val: prevR, fill, cup, view: world ? "3d" : "2d", quality: quality.level });
   G.draw = function (g, W, H, a, t) {
     const raw = lastT == null ? 0 : t - lastT, dt = Math.min(0.05, Math.max(0, raw)); lastT = t;
-    const q = world ? quality.sample(raw) : 0;
+    const q = world ? quality.sample() : 0;
     if (q >= 2 && world) { world.dispose(); world = null; RC.Scene3D.off = true; }
     if (!world && !RC.Scene3D.off && P3 && P3.ready()) world = P3.create({ count: S.reps, dir: dir(), calm: reduceMotion });
     if (!world) { drawFlat(g, W, H, a, t); drawSpeed(g, W, H, 1); return; }

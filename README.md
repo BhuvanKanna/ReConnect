@@ -77,7 +77,7 @@ The whole app is static files, which is why it can run on GitHub Pages.
   namespace. `js/plan.js` (plan rules) and `js/data.js` (storage and demo seed) are pure and unit-tested in Node.
   Each library section is one file in `js/games/`; shared building blocks (rep counter, tilt cursor, answer cards,
   keypad, guided session) are in `js/kit.js`.
-- Two exercises are 3D scenes, built on three.js loaded on demand by `js/scene3d.js`. Each falls back to a flat
+- Four exercises are 3D scenes, built on three.js loaded on demand by `js/scene3d.js`. Each falls back to a flat
   2D view if WebGL isn't available, and steps down on a slow computer (lower resolution and no shadows first,
   then the 2D view if it still runs under about 22 frames a second):
   - **Lantern Lift** (`js/lift3d.js`), first person: the patient's own arm lifts a lantern into a gold ring,
@@ -85,6 +85,14 @@ The whole app is static files, which is why it can run on GitHub Pages.
   - **Pour the Tea** (`js/pour3d.js`): a teapot over a kitchen table tips with the forearm and pours a real
     stream into a glass cup with a green fill line. Too fast splashes tea onto the table, pouring past the
     line overflows the cup, and full cups slide to a row at the back. A speed meter and turn arrows sit on top.
+  - **Trunk Twist** (`js/twist3d.js`, `js/twist-scenes.js`, `js/twist-animals.js`): turning the shoulders looks
+    around a full 3D world, picked on the setup screen from nine: Jungle, Dinosaur Valley, Outer Space, Coral
+    Reef, Farm, Snowy North, Tropical Island, Blossom Garden and Desert Pyramids. An animal (or rocket, or
+    balloon) appears on one side; holding still on it finds it, then the next one appears on the other side.
+    Every scene is built from code (no image or model files) with the same seeded shape kit.
+  - **Ear to Shoulder** (`js/tilt3d.js`): a balance game on a pier at sunset. The whole picture slowly tips,
+    tipping the board so a beach ball starts to roll; tipping the head the other way levels the picture. A
+    spirit level at the bottom shows how close to level it is. Hold it level, then it tips the other way.
 - The computer registers a 6-digit code (`mend-rehab-<code>`) with the free [PeerJS](https://peerjs.com) broker and
   shows it as a QR code. `phone.html` connects by that code and the two talk over a WebRTC data channel.
 - If a relay is configured (`js/config.js`, see [`relay/README.md`](relay/README.md)), the computer also registers

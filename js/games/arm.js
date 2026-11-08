@@ -34,10 +34,11 @@ function LanternLift(S) {
     return { title: "Good! Now lower it slowly", text: lit(), tone: "good" };
   };
   G.stats = () => [["Best lift", peaks.length ? `${Math.round(Math.max(...peaks))}°` : "–"], ["Average lift", peaks.length ? `${Math.round(peaks.reduce((s, x) => s + x, 0) / peaks.length)}°` : "–"]];
+  G.dispose = () => { if (world) { world.dispose(); world = null; } };
   G.debug = () => ({ state: rc.state, target: rc.target, val: lastPitch, view: world ? "3d" : "2d", quality: quality.level });
   G.draw = function (g, W, H, a, t) {
     const raw = lastT == null ? 0 : t - lastT, dt = Math.min(0.05, Math.max(0, raw)); lastT = t;
-    const q = world ? quality.sample(raw) : 0;
+    const q = world ? quality.sample() : 0;
     if (q >= 2 && world) { world.dispose(); world = null; RC.Scene3D.off = true; }
     if (!world && !RC.Scene3D.off && L3 && L3.ready()) world = L3.create({ side: S.side, count: S.reps, calm: reduceMotion });
     if (!world) return drawFlat(g, W, H, a);

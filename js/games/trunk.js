@@ -35,27 +35,92 @@ function LeanShift(S) {
 }
 
 // ---- Trunk Twist: rotate the upper body left and right (yaw)
+// A 3D world you look around in (js/twist3d.js, scene picked on the setup screen): turning your shoulders
+// turns the view, and an animal waits on one side to be found. Hold still on it for a moment, then turn
+// to the other side for the next one. Right then left is one repetition. Draws flat until 3D is ready.
 function TrunkTwist(S) {
-  const G = base(S, S.reps), tgt = { 1: 20, 2: 30, 3: 40 }[S.level] || 30;
-  let side = 0, dwell = 0, yaw = 0, range = [0, 0];
+  const G = base(S, S.reps), tgt = { 1: 20, 2: 30, 3: 40 }[S.level] || 30, GAIN = 2.4, HOLD = 1;
+  const TW = RC.Twist3D, scn = TW ? TW.sceneOf(S.scene) : { id: "jungle", name: "Jungle" };
+  const quality = RC.Scene3D ? RC.Scene3D.quality() : { sample: () => 2 };
+  if (TW) TW.ensure();
+  let side = 0, dwell = 0, yaw = 0, range = [0, 0], found = 0, view = 0, lastT = null, world = null, shown = -1, sparkle = [], pop = 0;
   G.update = function (dt, a) {
     yaw = a.yaw; range = [Math.min(range[0], yaw), Math.max(range[1], yaw)];
     const want = side === 0 ? tgt : -tgt;
-    if ((want > 0 ? yaw >= want * 0.9 : yaw <= want * 0.9)) { dwell += dt; if (dwell >= 1) { dwell = 0; if (side === 1) { this._reps++; this.events.push("success"); if (this._reps >= S.reps) this.done = true; } else this.events.push("tick"); side = 1 - side; } }
-    else dwell = Math.max(0, dwell - dt * 2);
+    if ((want > 0 ? yaw >= want * 0.9 : yaw <= want * 0.9)) {
+      dwell += dt;
+      if (dwell >= HOLD) {
+        const n = name(); dwell = 0; found++; pop = 1;
+        if (n && RC.flash && !this.done) RC.flash(`You found the ${n}!`, side === 0 ? "Now turn to the left" : "Now turn to the right", "good");
+        if (side === 1) { this._reps++; this.events.push("success"); if (this._reps >= S.reps) this.done = true; } else this.events.push("tick");
+        side = 1 - side;
+      }
+    } else dwell = Math.max(0, dwell - dt * 2);
   };
-  G.status = () => ({ title: side === 0 ? "Turn your shoulders to the right" : "Now turn to the left", text: "Keep your hips facing forward." });
-  G.stats = () => [["Turned left", `${Math.round(-range[0])}°`], ["Turned right", `${Math.round(range[1])}°`]];
-  G.debug = () => ({ side, yaw });
-  G.draw = function (g, W, H) {
-    bg(g, W, H); dots(g, W, S.reps, this._reps);
+  const name = () => (world ? world.name(found) : "");
+  // Short words: which way to turn, and what you're looking for.
+  G.status = function () {
+    const n = name(), dir = side === 0 ? "right" : "left";
+    if (dwell > 0.05) return { title: n ? `Keep looking at the ${n}` : "Hold it there", text: "Hold still", tone: "good" };
+    const done = G._reps ? `${G._reps} of ${S.reps} done` : "";
+    return { title: `Turn to the ${dir}`, text: n ? `Find the ${n}` + (done ? ` · ${done}` : "") : done || "Keep your hips facing forward" };
+  };
+  G.stats = () => [["Turned left", `${Math.round(-range[0])}°`], ["Turned right", `${Math.round(range[1])}°`], ["Scene", scn.name]];
+  G.dispose = () => { if (world) { world.dispose(); world = null; } };
+  G.debug = () => ({ kind: "value", target: side === 0 ? tgt : -tgt, val: yaw, side, view: world ? "3d" : "2d", quality: quality.level, found, name: name() });
+  G.draw = function (g, W, H, a, t) {
+    const raw = lastT == null ? 0 : t - lastT, dt = Math.min(0.05, Math.max(0, raw)); lastT = t;
+    const q = world ? quality.sample() : 0;
+    if (q >= 2 && world) { world.dispose(); world = null; RC.Scene3D.off = true; }
+    if (!world && !RC.Scene3D.off && TW && TW.ready()) { world = TW.create({ scene: scn.id, bearing: tgt * GAIN, calm: RC.reduceMotion }); shown = -1; }
+    if (!world) return drawFlat(g, W, H);
+    if (shown !== found) { if (shown >= 0) world.cheer(); world.show(found, (side === 0 ? 1 : -1) * tgt * GAIN); shown = found; if (pop) burst(); }
+    view += (clamp(yaw * GAIN, -160, 160) - view) * Math.min(1, dt * 9);
+    world.lowQuality(q >= 1);
+    const pr = (g.getTransform ? g.getTransform().a : 1) * (q >= 1 ? 0.6 : 1);
+    g.drawImage(world.frame(W, H, pr, { view }, t, dt), 0, 0, W, H);
+    pop = Math.max(0, pop - dt);
+    const unit = Math.min(W, H) / 600, sp = world.spotScreen(W, H, view);
+    sparkle = sparkle.filter((s) => (s.life -= dt) > 0); sparkle.forEach((s) => { s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 60 * dt; });
+    g.fillStyle = "#ffd27a"; sparkle.forEach((s) => { g.globalAlpha = clamp(s.life / 0.9, 0, 1); g.beginPath(); g.arc(W / 2 + s.x * unit, H * 0.5 + s.y * unit, 5 * unit, 0, TAU); g.fill(); }); g.globalAlpha = 1;
+    if (!sp) return;
+    if (sp.front && Math.abs(sp.off) < 30) {
+      const r = sp.r * (1 + (RC.reduceMotion ? 0 : Math.sin(t * 4) * 0.04));
+      g.save(); g.lineWidth = 6 * unit; g.strokeStyle = "rgba(255,255,255,0.8)"; g.setLineDash([14 * unit, 10 * unit]); g.beginPath(); g.arc(sp.x, sp.y, r, 0, TAU); g.stroke(); g.setLineDash([]);
+      if (dwell > 0) { g.lineCap = "round"; g.lineWidth = 11 * unit; g.strokeStyle = "#5ee0a0"; g.beginPath(); g.arc(sp.x, sp.y, r, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(dwell / HOLD, 0, 1)); g.stroke(); }
+      g.restore();
+      label(g, sp.name.charAt(0).toUpperCase() + sp.name.slice(1), sp.x, Math.max(30 * unit, sp.y - r - 26 * unit), unit);
+    }
+    if (!sp.front || Math.abs(sp.off) > 14) arrow(g, W, H, sp.off > 0 ? 1 : -1, t, unit);
+  };
+  function burst() { if (RC.reduceMotion) return; for (let i = 0; i < 26; i++) { const ang = Math.random() * TAU, v = 60 + Math.random() * 140; sparkle.push({ x: 0, y: 0, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v - 40, life: 0.9 }); } }
+  function label(g, s, x, y, unit) {
+    g.save(); g.font = `700 ${Math.round(22 * unit)}px ${T.display || "sans-serif"}`;
+    const w = g.measureText(s).width + 28 * unit, h = 38 * unit;
+    g.fillStyle = "rgba(20,24,40,0.72)"; rr(g, x - w / 2, y - h / 2, w, h, h / 2); g.fill();
+    g.fillStyle = "#fff"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(s, x, y + 1); g.restore();
+  }
+  // Big chevrons near the screen edge pointing the way to turn, with the words underneath
+  function arrow(g, W, H, dir, t, unit) {
+    const x0 = dir > 0 ? W - 150 * unit : 150 * unit, y = H * 0.52, n = 3, ph = RC.reduceMotion ? 0.5 : (t * 0.9) % 1, sz = 30 * unit;
+    g.save(); g.lineJoin = "round"; g.lineCap = "round";
+    for (let i = 0; i < n; i++) {
+      const u = (i + ph) / n, x = x0 + dir * (u - 0.5) * 120 * unit;
+      g.globalAlpha = clamp(0.3 + Math.sin(u * Math.PI) * 0.7, 0, 1);
+      g.beginPath(); g.moveTo(x - dir * sz * 0.55, y - sz); g.lineTo(x + dir * sz * 0.45, y); g.lineTo(x - dir * sz * 0.55, y + sz);
+      g.lineWidth = 18 * unit; g.strokeStyle = "rgba(20,16,40,0.7)"; g.stroke(); g.lineWidth = 10 * unit; g.strokeStyle = "#ffd27a"; g.stroke();
+    }
+    g.globalAlpha = 1; g.restore(); label(g, dir > 0 ? "Turn right" : "Turn left", x0, y + 64 * unit, unit);
+  }
+  function drawFlat(g, W, H) {
+    bg(g, W, H); dots(g, W, S.reps, G._reps);
     const cx = W / 2, cy = H * 0.6, R = Math.min(W * 0.32, H * 0.36);
     g.fillStyle = alpha(T.ink, 0.06); g.beginPath(); g.ellipse(cx, cy, R, R * 0.45, 0, 0, TAU); g.fill();
     for (const s of [1, -1]) { const A = (-90 + s * tgt * 1.6) * Math.PI / 180; g.beginPath(); g.arc(cx + Math.cos(A) * R, cy + Math.sin(A) * R * 0.45, 20, 0, TAU); g.fillStyle = (s === 1) === (side === 0) ? T.accent : alpha(T.accent, 0.2); g.fill(); }
     const A = (-90 + clamp(yaw, -60, 60) * 1.6) * Math.PI / 180;
     g.strokeStyle = T.ink; g.lineWidth = 16; g.lineCap = "round"; g.beginPath(); g.moveTo(cx - Math.cos(A) * R * 0.7, cy - Math.sin(A) * R * 0.32); g.lineTo(cx + Math.cos(A) * R * 0.7, cy + Math.sin(A) * R * 0.32); g.stroke(); g.lineCap = "butt";
     g.beginPath(); g.arc(cx, cy, 22, 0, TAU); g.fillStyle = alpha(T.ink, 0.25); g.fill();
-  };
+  }
   return G;
 }
 
@@ -122,8 +187,9 @@ const REPS = { params: { reps: [10, 20, 30], level: [1, 2, 3], durationS: null }
     desc: "Lean to the left, to the right and forward, holding each lean for two seconds.", source: "Home weight-transfer programs after stroke; FitMi oblique work.",
     how: ["Sit on a firm chair with your feet flat.", "Lean toward the lit target and hold.", "Come back to the middle before the next one."], make: LeanShift },
   { id: "twist", name: "Trunk Twist", movement: "Seated trunk rotation", control: "tilt", pose: "chest", mount: "Hold the phone flat against your breastbone (or tuck it upright in a shirt pocket), screen facing out, top edge up.",
-    desc: "Turn your shoulders to the right and then to the left while your hips stay facing forward.", source: "FitMi seated twists and trunk rotation; GRASP trunk control.",
-    how: ["Sit tall with your feet flat.", "Turn your shoulders toward the lit target.", "Hold for a moment, then turn the other way."], make: TrunkTwist },
+    desc: "Turn your shoulders to look around. Find the animals on each side.", source: "FitMi seated twists and trunk rotation; GRASP trunk control.",
+    scenes: RC.Twist3D ? RC.Twist3D.SCENES : null,
+    how: ["Sit tall. Keep your hips facing forward.", "Turn your shoulders to look right, then left.", "Hold still on each animal to find it."], make: TrunkTwist },
   Object.assign({ id: "sit2stand", name: "Sit to Stand", movement: "Standing up from a chair", control: "accel", safety: "standing", pose: "chest", mount: "Hold the phone flat against your breastbone (or tuck it upright in a shirt pocket), screen facing out, top edge up.",
     desc: "Stand up from a chair and sit down again, slowly and with control.", source: "Otago exercise programme (sit to stand), used in stroke balance trials.",
     how: ["Only with a sturdy chair behind you and someone nearby.", "Feet back, lean forward, and stand up.", "Sit down slowly, reaching back for the chair."], make: SitToStand }, { params: { reps: [5, 8, 10], level: [1, 2, 3], durationS: null }, defaults: { reps: 5, level: 1, durationS: null } }),

@@ -65,14 +65,16 @@ S3.woodTexture = function (base, w, h) {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
 };
 
-// Frame-rate guard. After a second of warm-up it averages the time between frames; if 3D is too slow
+// Frame-rate guard. After a second of warm-up it averages the real time between frames (wall clock, not
+// game time, so a slow software renderer is caught too); if 3D is too slow
 // (under about 22 frames a second) it steps down: 0 = full quality, 1 = lower resolution and no shadows,
 // 2 = give up on 3D and draw the flat 2D view, so a slow computer still gets a playable game. Once that
 // happens, S3.off keeps the 3D exercises flat for the rest of the visit.
 S3.quality = function () {
   return {
     level: 0, n: 0, sum: 0, warm: 0,
-    sample(raw) {
+    sample() {
+      const now = performance.now() / 1000, raw = this.last == null ? 0 : now - this.last; this.last = now;
       if (!(raw > 0) || raw > 1) return this.level; // first frame, or the tab was hidden
       this.warm += raw; if (this.warm < 1) return this.level;
       this.n++; this.sum += raw;

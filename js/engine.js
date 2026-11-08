@@ -16,6 +16,9 @@ function resize() {
 new ResizeObserver(() => { resize(); }).observe(stageWrap);
 
 
+// Free whatever the running exercise holds (its 3D scene) before it is dropped.
+Game.release = function () { const i = Game.inst; if (i && i.dispose) { try { i.dispose(); } catch (e) { /* already gone */ } } };
+
 function fx(kind) {
   chime(kind);
   sendPhone({ type: "haptic", pattern: kind === "error" ? [120, 60, 120] : kind === "big" ? [60, 40, 60, 40, 120] : [50] });
@@ -31,7 +34,8 @@ function openActivity(def, opts = {}) {
   const item = opts.item || null;
   const pick = (k) => (item && item[k] != null ? item[k] : base[k]);
   Game.current = { def, item, cfg: { reps: pick("reps"), level: pick("level"), durationS: pick("durationS") } };
-  Game.inst = null; Game.state = "setup";
+  if (def.scenes) Game.current.cfg.scene = def.scenes.some((s) => s.id === base.scene) ? base.scene : def.scenes[0].id;
+  Game.release(); Game.inst = null; Game.state = "setup";
   $("pTitle").textContent = def.name; $("pMove").textContent = def.movement;
   show("vPlay"); resize(); renderSetup(); pushStatus(true);
 }
@@ -42,13 +46,15 @@ function patientSide() {
 }
 function settingsObj() {
   const c = Game.current.cfg;
-  return { amp: LEVEL_AMP[c.level], level: c.level, reps: c.reps, durationS: c.durationS, side: patientSide() };
+  return { amp: LEVEL_AMP[c.level], level: c.level, reps: c.reps, durationS: c.durationS, side: patientSide(), scene: c.scene };
 }
 function setupControls() {
   const d = Game.current.def, c = Game.current.cfg, locked = !!Game.current.item, p = d.params || {};
   const lvl = (v) => (d.control === "tilt" ? `${LEVEL_AMP[v]}°` : ["Easy", "Medium", "Hard"][v - 1] || v);
   const seg = (id, key, vals, label, fmt) => (vals ? `<div class="field"><label>${label}</label><div class="seg" id="${id}" data-key="${key}">${vals.map((v) => `<button data-v="${v}" aria-pressed="${v === c[key]}"${locked ? " disabled" : ""}>${fmt(v)}</button>`).join("")}</div></div>` : "");
-  return `<div class="setctl">${seg("setLevel", "level", p.level, d.control === "tilt" ? "Range target" : "Level", lvl)}${seg("setReps", "reps", p.reps, "Repetitions", String)}${seg("setDur", "durationS", p.durationS, "Time", fmtTime)}</div>
+  // Exercises with several worlds to choose from (Trunk Twist): the patient can always pick, even for assigned work.
+  const scenes = d.scenes ? `<div class="field scenefield"><label>Scene</label><div class="scenes" id="setScene">${d.scenes.map((s) => `<button data-s="${s.id}" aria-pressed="${s.id === c.scene}"><span class="sc-ic" aria-hidden="true">${s.icon}</span>${s.name}</button>`).join("")}</div></div>` : "";
+  return `${scenes}<div class="setctl">${seg("setLevel", "level", p.level, d.control === "tilt" ? "Range target" : "Level", lvl)}${seg("setReps", "reps", p.reps, "Repetitions", String)}${seg("setDur", "durationS", p.durationS, "Time", fmtTime)}</div>
     ${locked ? '<p class="note assigned">Set by your therapist for today.</p>' : ""}`;
 }
 
@@ -72,6 +78,13 @@ function renderSetup() {
   // Touch and guided exercises use the phone as a tap pad, so there is no tilt to calibrate.
   $("goPhone").onclick = () => { Input.mode = "phone"; if ((d.control === "touch" && !d.cursor) || d.control === "guided") begin(); else startCalibration(); };
   $("goMouse").onclick = () => { Input.mode = "mouse"; renderConn(); begin(); };
+  const sc = $("setScene");
+  if (sc) sc.addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-s]"); if (!b) return;
+    Game.current.cfg.scene = b.dataset.s;
+    settings.per[d.id] = Object.assign({}, settings.per[d.id] || {}, { scene: b.dataset.s }); saveSettings();
+    renderSetup();
+  });
   $("sheet").querySelectorAll(".setctl .seg").forEach((el) => el.addEventListener("click", (e) => {
     const b = e.target.closest("button[data-v]"); if (!b || b.disabled) return;
     Game.current.cfg[el.dataset.key] = Number(b.dataset.v);
@@ -99,6 +112,7 @@ function startCalibration() {
 
 function begin() {
   const S = settingsObj();
+  Game.release();
   Game.inst = Game.current.def.make(S);
   Game.inst.S = S;
   Game.rec = []; Game.t0 = performance.now(); Game.state = "play";
