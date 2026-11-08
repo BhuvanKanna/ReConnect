@@ -24,8 +24,8 @@ privacy, known limits). Read it before larger changes.
 | `js/games/*.js` | One file per library section (arm, wrist, hand, trunk, memory, ...) |
 | `js/link.js`, `js/relay.js`, `js/config.js` | Pairing: PeerJS (WebRTC) plus optional Cloudflare relay |
 | `relay/` | Cloudflare Worker relay (see `relay/README.md`) |
-| `js/scene3d.js`, `js/lift3d.js`, `js/pour3d.js`, `js/tilt3d.js` | 3D scenes for Lantern Lift, Pour the Tea and Ear to Shoulder: shared three.js loader and renderer, then one scene per exercise. Each game keeps a 2D fallback in its `js/games/*.js` file and frees its scene through `G.dispose()` |
-| `js/twist3d.js`, `js/twist-animals.js`, `js/twist-scenes.js` | Trunk Twist's look-around worlds: the shape kit and world (also used by `tilt3d.js`), the animals to find, and the nine scenes the patient picks from |
+| `js/scene3d.js`, `js/lift3d.js`, `js/pour3d.js`, `js/tilt3d.js`, `js/drive3d.js` | 3D scenes for Lantern Lift, Pour the Tea, Ear to Shoulder and Steering Wheel: shared three.js loader and renderer, then one scene per exercise. Each game keeps a 2D fallback in its `js/games/*.js` file and frees its scene through `G.dispose()` |
+| `js/twist3d.js`, `js/twist-animals.js`, `js/twist-scenes.js` | Trunk Twist's look-around worlds: the shape kit and world (also used by `tilt3d.js` and `drive3d.js`), the animals to find, and the nine scenes the patient picks from |
 | `vendor/` | PeerJS 1.5.4, qrcode-generator 1.4.4 and three.js r170 (all MIT). Loaded by relative path; don't move them |
 | `brand/` | Logo, icon and favicons |
 | `docs/exercise-catalog.md` | Sources for every exercise |

@@ -77,7 +77,7 @@ The whole app is static files, which is why it can run on GitHub Pages.
   namespace. `js/plan.js` (plan rules) and `js/data.js` (storage and demo seed) are pure and unit-tested in Node.
   Each library section is one file in `js/games/`; shared building blocks (rep counter, tilt cursor, answer cards,
   keypad, guided session) are in `js/kit.js`.
-- Four exercises are 3D scenes, built on three.js loaded on demand by `js/scene3d.js`. Each falls back to a flat
+- Five exercises are 3D scenes, built on three.js loaded on demand by `js/scene3d.js`. Each falls back to a flat
   2D view if WebGL isn't available, and steps down on a slow computer (lower resolution and no shadows first,
   then the 2D view if it still runs under about 22 frames a second):
   - **Lantern Lift** (`js/lift3d.js`), first person: the patient's own arm lifts a lantern into a gold ring,
@@ -93,6 +93,12 @@ The whole app is static files, which is why it can run on GitHub Pages.
   - **Ear to Shoulder** (`js/tilt3d.js`): a balance game on a pier at sunset. The whole picture slowly tips,
     tipping the board so a beach ball starts to roll; tipping the head the other way levels the picture. A
     spirit level at the bottom shows how close to level it is. Hold it level, then it tips the other way.
+  - **Steering Wheel** (`js/drive3d.js`), first person from the driver's seat of a little convertible on an
+    endless country road (meadow, village, farm, forest, lake). The wheel and the patient's hands turn exactly
+    as far as the phone does, and the car moves across the three lanes with the wheel. Each gate has a green
+    arch over one lane and barriers in the others; a green marker by the wheel shows where to turn it. Gates
+    mostly sit in the outside lanes and swap sides, so reaching one takes a 30° turn at level 1, 42° at
+    level 2 and 54° at level 3.
 - The computer registers a 6-digit code (`mend-rehab-<code>`) with the free [PeerJS](https://peerjs.com) broker and
   shows it as a QR code. `phone.html` connects by that code and the two talk over a WebRTC data channel.
 - If a relay is configured (`js/config.js`, see [`relay/README.md`](relay/README.md)), the computer also registers
