@@ -3,53 +3,13 @@
 // shoulder; the lantern hangs from the pole tip and sways with the movement. A gold ring marks the target,
 // and a string of lanterns in the garden lights up one per repetition.
 //
-// three.js (vendor/three, MIT) is an ES module, so it is loaded on demand with import() the first time
-// Lantern Lift opens. Until it has loaded, or where WebGL isn't available, the exercise draws its flat 2D view.
+// three.js is loaded on demand by js/scene3d.js; until then, or without WebGL, the exercise draws a flat 2D view.
 (() => {
 "use strict";
 const RC = window.RC;
-const L3 = { THREE: null, failed: false, loading: null, renderer: null };
-
-L3.ensure = function () {
-  if (L3.THREE || L3.failed || L3.loading) return;
-  L3.loading = import(new URL("vendor/three/three.module.min.js", document.baseURI).href)
-    .then((m) => { L3.THREE = m; })
-    .catch(() => { L3.failed = true; });
-};
-L3.ready = () => !!L3.THREE && !L3.failed;
-
-// One WebGL renderer is shared by every session, so playing again doesn't leak GPU contexts.
-function renderer() {
-  if (L3.renderer || L3.failed) return L3.renderer;
-  const THREE = L3.THREE;
-  try {
-    const r = new THREE.WebGLRenderer({ canvas: document.createElement("canvas"), antialias: true, powerPreference: "high-performance" });
-    r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.05;
-    r.outputColorSpace = THREE.SRGBColorSpace;
-    L3.renderer = r;
-  } catch (e) { L3.failed = true; }
-  return L3.renderer;
-}
-
-function glowTexture(THREE) {
-  const c = document.createElement("canvas"); c.width = c.height = 128;
-  const g = c.getContext("2d"), grd = g.createRadialGradient(64, 64, 0, 64, 64, 64);
-  grd.addColorStop(0, "rgba(255,255,255,1)"); grd.addColorStop(0.25, "rgba(255,255,255,0.55)"); grd.addColorStop(1, "rgba(255,255,255,0)");
-  g.fillStyle = grd; g.fillRect(0, 0, 128, 128);
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
-}
-function woodTexture(THREE) {
-  const c = document.createElement("canvas"); c.width = 512; c.height = 64;
-  const g = c.getContext("2d"); g.fillStyle = "#8a5a36"; g.fillRect(0, 0, 512, 64);
-  let s = 11; const rnd = () => ((s = (s * 16807) % 2147483647) / 2147483647);
-  for (let i = 0; i < 70; i++) {
-    g.strokeStyle = `rgba(${rnd() < 0.5 ? "60,34,18" : "170,118,74"},${0.15 + rnd() * 0.25})`; g.lineWidth = 1 + rnd() * 2;
-    const y = rnd() * 64; g.beginPath(); g.moveTo(0, y);
-    for (let x = 0; x <= 512; x += 32) g.lineTo(x, y + Math.sin(x / 60 + i) * 2.5);
-    g.stroke();
-  }
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping; return t;
-}
+const S3 = RC.Scene3D;
+const L3 = { ensure: () => S3.ensure(), ready: () => S3.ready() };
+const glowTexture = () => S3.glowTexture(), woodTexture = () => S3.woodTexture();
 
 // Build a lantern group whose origin is the top of its bail (the point it hangs from).
 function makeLantern(THREE, glowTex, scale) {
@@ -77,7 +37,7 @@ function makeLantern(THREE, glowTex, scale) {
 
 L3.create = function (opts) {
   if (!L3.ready()) return null;
-  const THREE = L3.THREE, R = renderer();
+  const THREE = S3.THREE, R = S3.getRenderer();
   if (!R) return null;
   const side = opts.side === "left" ? -1 : 1, count = Math.max(1, Math.min(20, opts.count || 10)), calm = !!opts.calm;
   const scene = new THREE.Scene();

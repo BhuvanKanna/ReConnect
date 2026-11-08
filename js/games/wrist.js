@@ -4,15 +4,19 @@ const RC = window.RC;
 const { $, clamp, lerp, TAU, reduceMotion, store, settings, saveSettings, T, alpha, txt, rr, chime, esc, fmtTime, Game, readTheme } = RC;
 const { base, drawGonio } = RC.kit;
 // ---- 2. Pour the Tea: controlled supination/pronation --------------------------
+// Drawn as a 3D kitchen table (js/pour3d.js); a flat 2D view stands in until three.js loads or without WebGL.
 function PourTea(S) {
   const amp = S.amp, G = base(S, S.reps);
   const thr = amp * 0.55, vmax = { 1: 55, 2: 70, 3: 85 }[S.level];
   let cup = 0, fill = 0, state = "pour", prevR = 0, vel = 0, spills = 0, overT = 0, drops = [], spillFlash = 0, pourTime = 0;
+  let world = null, lastT = null, tipNow = 0, idle = 0;
+  const P3 = RC.Pour3D; if (P3) P3.ensure();
   const dir = () => (cup % 2 === 0 ? 1 : -1);
   G.update = function (dt, a) {
     const r = a.roll;
-    vel += ((r - prevR) / Math.max(dt, 0.008) - vel) * (1 - Math.exp(-dt / 0.12)); prevR = r;
-    const tip = r * dir();
+    vel += ((r - prevR) / Math.max(dt, 0.008) - vel) * (1 - Math.exp(-dt / 0.12));
+    idle = Math.abs(r - prevR) > 0.3 ? 0 : idle + dt; prevR = r;
+    const tip = r * dir(); tipNow = tip;
     spillFlash = Math.max(0, spillFlash - dt);
     if (state === "pour") {
       if (tip > thr) {
@@ -29,20 +33,84 @@ function PourTea(S) {
     }
     drops.forEach((d) => (d.k += dt * 2.4)); drops = drops.filter((d) => d.k < 1);
   };
+  const pouring = () => (state === "pour" || state === "return") && tipNow > thr;
+  const overflowing = () => state === "return" && tipNow > thr;
+  const tooFast = () => Math.abs(vel) > vmax * 0.8;
+  // Short words: one instruction at a time; the cup, line and speed meter show the rest.
   G.status = function () {
-    const side = dir() > 0 ? "right" : "left";
-    if (state === "spilled") return { title: "Too fast, it spilled", text: "Bring the pot upright, then pour more slowly.", tone: "warn" };
-    if (state === "return") return { title: "Full. Return the pot upright.", text: `${this._reps + 1} of ${S.reps}`, tone: "good" };
-    return { title: `Turn your hand to the ${side} to pour`, text: "Slow and steady fills the cup." };
+    const side = dir() > 0 ? "right" : "left", n = `Cup ${Math.min(this._reps + 1, S.reps)} of ${S.reps}`;
+    if (state === "spilled") return { title: "Too fast! It spilled", text: "Turn the pot back up. Then go slower.", tone: "warn" };
+    if (state === "return") return overflowing() ? { title: "Stop! Turn the pot back up", text: "The cup is overflowing", tone: "warn" } : { title: "Full! Turn the pot back up", text: n, tone: "good" };
+    if (pouring()) return { title: `Turn your hand to the ${side} to pour`, text: tooFast() ? "Slow down" : "Slow and steady", tone: tooFast() ? "warn" : undefined };
+    if (tipNow < -thr) return { title: `Turn your hand to the ${side} to pour`, text: "Other way: the cup is on the " + side, tone: "warn" };
+    return { title: `Turn your hand to the ${side} to pour`, text: n };
   };
   G.stats = () => [["Spills", String(spills)], ["Pour time", `${pourTime.toFixed(1)} s`]];
+  G.debug = () => ({ state, val: prevR, fill, cup, view: world ? "3d" : "2d" });
   G.draw = function (g, W, H, a, t) {
+    const dt = lastT == null ? 0 : Math.min(0.05, Math.max(0, t - lastT)); lastT = t;
+    if (!world && P3 && P3.ready()) world = P3.create({ count: S.reps, dir: dir(), calm: reduceMotion });
+    if (!world) { drawFlat(g, W, H, a, t); drawSpeed(g, W, H, 1); return; }
+    const pr = g.getTransform ? g.getTransform().a : 1, tip = a.roll * dir();
+    const st = { roll: a.roll, dir: dir(), cup: G._reps, fill, pouring: pouring(), rate: clamp((tip - thr) / (amp * 0.5), 0.15, 1), full: state === "return", spills, overflow: overflowing() };
+    g.drawImage(world.frame(W, H, pr, st, t, dt), 0, 0, W, H);
+    const unit = Math.min(W, H) / 600;
+    // "Fill to here" tag beside the cup's green line
+    if (state === "pour" && fill < 0.98) {
+      const p = world.toScreen(world.lineAt, W, H), d = dir(), x = p.x + d * 26 * unit;
+      g.save(); g.font = `600 ${Math.round(17 * unit)}px ${T.display}`;
+      const label = "Fill to here", tw = g.measureText(label).width, bw = tw + 24 * unit, bh = 32 * unit;
+      const bx = d > 0 ? x : x - bw;
+      g.fillStyle = "rgba(255,255,255,0.92)"; rr(g, bx, p.y - bh / 2, bw, bh, bh / 2); g.fill();
+      g.strokeStyle = "#22b866"; g.lineWidth = 2.5 * unit; g.stroke();
+      g.fillStyle = "#22b866"; g.beginPath(); g.moveTo(p.x + d * 8 * unit, p.y); g.lineTo(x + d * 2 * unit, p.y - 7 * unit); g.lineTo(x + d * 2 * unit, p.y + 7 * unit); g.fill();
+      g.fillStyle = "#15603a"; g.textAlign = "left"; g.textBaseline = "middle"; g.fillText(label, bx + 12 * unit, p.y + 1);
+      g.restore();
+    }
+    // curved arrow around the pot: which way to turn, or back to upright
+    const c = world.toScreen(world.pot, W, H), rad = 190 * unit;
+    if (state === "pour" && tip < thr * 0.9) turnArrow(g, c.x, c.y, rad, -90 + dir() * 62, -90 + dir() * 112, unit, t, idle > 3);
+    else if ((state === "return" || state === "spilled") && Math.abs(a.roll) > amp * 0.3) turnArrow(g, c.x, c.y, rad, -90 + Math.sign(a.roll) * 112, -90 + Math.sign(a.roll) * 62, unit, t, false);
+    drawSpeed(g, W, H, unit);
+  };
+  // Arrow along an arc (angles in degrees; -90 is straight up, positive turns clockwise on screen).
+  function turnArrow(g, cx, cy, r, a0, a1, unit, t, strong) {
+    if (Math.abs(a1 - a0) < 8) return;
+    const A0 = a0 * Math.PI / 180, A1 = a1 * Math.PI / 180, ccw = a1 < a0;
+    const pulse = reduceMotion ? 1 : 0.75 + 0.25 * Math.sin(t * 4);
+    g.save(); g.globalAlpha = strong ? 1 : 0.9 * pulse; g.lineCap = "round"; g.lineJoin = "round";
+    for (const [w, col] of [[20, "rgba(40,25,10,0.6)"], [11, "#ffcf5a"]]) {
+      g.lineWidth = w * unit; g.strokeStyle = col; g.beginPath(); g.arc(cx, cy, r, A0, A1, ccw); g.stroke();
+      const ex = cx + Math.cos(A1) * r, ey = cy + Math.sin(A1) * r, tx = -Math.sin(A1) * (ccw ? -1 : 1), ty = Math.cos(A1) * (ccw ? -1 : 1), s = (w + 14) * unit;
+      g.fillStyle = col; g.beginPath(); g.moveTo(ex + tx * s, ey + ty * s); g.lineTo(ex - ty * s * 0.75 - tx * s * 0.2, ey + tx * s * 0.75 - ty * s * 0.2); g.lineTo(ex + ty * s * 0.75 - tx * s * 0.2, ey - tx * s * 0.75 - ty * s * 0.2); g.fill();
+    }
+    g.restore();
+  }
+  // Speed meter: how fast the forearm is turning; the red zone spills.
+  function drawSpeed(g, W, H, unit) {
+    const u = Math.max(0.8, unit), gw = 26 * u, gh = Math.min(H * 0.5, 260 * u), gx = 30 * u, gy = (H - gh) / 2 + 10 * u;
+    g.save();
+    g.fillStyle = "rgba(255,255,255,0.88)"; rr(g, gx - 16 * u, gy - 44 * u, gw + 32 * u, gh + 76 * u, 16 * u); g.fill();
+    txt(g, "Speed", gx + gw / 2, gy - 24 * u, 15 * u, T.ink, { weight: 600 });
+    const lim = 1 / 1.4, ly = gy + gh * (1 - lim);
+    rr(g, gx, gy, gw, gh, gw / 2); g.fillStyle = "rgba(0,0,0,0.08)"; g.fill();
+    g.save(); rr(g, gx, gy, gw, gh, gw / 2); g.clip();
+    g.fillStyle = "rgba(230,80,60,0.22)"; g.fillRect(gx, gy, gw, ly - gy);
+    const frac = clamp(Math.abs(vel) / (vmax * 1.4), 0, 1), fast = Math.abs(vel) > vmax, warm = Math.abs(vel) > vmax * 0.8;
+    g.fillStyle = fast ? "#e5533d" : warm ? "#f0a640" : "#22b866"; g.fillRect(gx, gy + gh * (1 - frac), gw, gh * frac);
+    g.restore();
+    g.strokeStyle = "#e5533d"; g.lineWidth = 3 * u; g.beginPath(); g.moveTo(gx - 6 * u, ly); g.lineTo(gx + gw + 6 * u, ly); g.stroke();
+    txt(g, "Too", gx + gw / 2, gy + 14 * u, 12 * u, "#b8321f", { weight: 600 });
+    txt(g, "fast", gx + gw / 2, gy + 28 * u, 12 * u, "#b8321f", { weight: 600 });
+    txt(g, "Slow", gx + gw / 2, gy + gh + 18 * u, 13 * u, "#15603a", { weight: 600 });
+    g.restore();
+  }
+  function drawFlat(g, W, H, a, t) {
     g.fillStyle = T.stage; g.fillRect(0, 0, W, H);
     const tableY = H * 0.8;
     g.fillStyle = alpha(T.ink, 0.07); g.fillRect(0, tableY, W, H - tableY);
     g.strokeStyle = T.line; g.lineWidth = 2; g.beginPath(); g.moveTo(0, tableY); g.lineTo(W, tableY); g.stroke();
     const d = dir(), cupX = W / 2 + d * Math.min(W * 0.2, 210), cupW = 92, cupH = 104, cupTop = tableY - cupH;
-    // cup
     g.fillStyle = T.surface; g.strokeStyle = T.ink; g.lineWidth = 3;
     g.beginPath(); g.moveTo(cupX - cupW / 2, cupTop); g.lineTo(cupX - cupW / 2 + 8, tableY); g.lineTo(cupX + cupW / 2 - 8, tableY); g.lineTo(cupX + cupW / 2, cupTop); g.closePath(); g.fill(); g.stroke();
     const lvl = cupTop + cupH * (1 - fill * 0.82);
@@ -50,9 +118,7 @@ function PourTea(S) {
     const lineY = cupTop + cupH * 0.18;
     g.setLineDash([5, 5]); g.strokeStyle = T.go; g.lineWidth = 2; g.beginPath(); g.moveTo(cupX - cupW / 2 - 10, lineY); g.lineTo(cupX + cupW / 2 + 10, lineY); g.stroke(); g.setLineDash([]);
     g.beginPath(); g.arc(cupX + d * (cupW / 2 + 4), cupTop + 42, 16, -Math.PI / 2, Math.PI / 2, d < 0); g.strokeStyle = T.ink; g.lineWidth = 3; g.stroke();
-    // done cups
-    for (let i = 0; i < S.reps; i++) { const x = 28 + i * 22, y = H - 28; g.beginPath(); g.arc(x, y, 7, 0, TAU); g.fillStyle = i < G._reps ? T.go : alpha(T.ink, 0.18); g.fill(); }
-    // pot
+    for (let i = 0; i < S.reps; i++) { const x = W - 28 - (S.reps - 1 - i) * 22, y = H - 28; g.beginPath(); g.arc(x, y, 7, 0, TAU); g.fillStyle = i < G._reps ? T.go : alpha(T.ink, 0.18); g.fill(); }
     const px = W / 2, py = H * 0.36, rot = clamp(a.roll, -95, 95) * Math.PI / 180;
     g.save(); g.translate(px, py); g.rotate(rot);
     g.fillStyle = T.ink; g.strokeStyle = T.ink;
@@ -63,7 +129,6 @@ function PourTea(S) {
     g.beginPath(); g.moveTo(d * 56, -8); g.quadraticCurveTo(d * 100, -18, d * 112, -50); g.stroke();
     g.lineWidth = 9; g.beginPath(); g.arc(-d * 72, 0, 30, -Math.PI / 2, Math.PI / 2, d > 0); g.stroke();
     g.restore();
-    // stream
     const tip = a.roll * d;
     if ((state === "pour" || state === "return") && tip > thr) {
       const sx = px + Math.cos(rot) * (d * 112) - Math.sin(rot) * -50, sy = py + Math.sin(rot) * (d * 112) + Math.cos(rot) * -50;
@@ -74,14 +139,7 @@ function PourTea(S) {
       g.fillStyle = alpha(T.warn, 0.55 * spillFlash);
       for (let i = 0; i < 7; i++) { g.beginPath(); g.ellipse(cupX + (i - 3) * 22, tableY + 8 + (i % 2) * 6, 14, 5, 0, 0, TAU); g.fill(); }
     }
-    // speed gauge: how fast the forearm is turning
-    const gx = 28, gy = 130, gw = 18, gh = H * 0.4;
-    rr(g, gx, gy, gw, gh, 9); g.fillStyle = alpha(T.ink, 0.08); g.fill();
-    const frac = clamp(Math.abs(vel) / (vmax * 1.4), 0, 1);
-    rr(g, gx, gy + gh * (1 - frac), gw, gh * frac, 9); g.fillStyle = Math.abs(vel) > vmax ? T.warn : T.go; g.fill();
-    const ly = gy + gh * (1 - 1 / 1.4); g.strokeStyle = T.warn; g.lineWidth = 2; g.beginPath(); g.moveTo(gx - 4, ly); g.lineTo(gx + gw + 4, ly); g.stroke();
-    txt(g, "Speed", gx + gw / 2, gy + gh + 18, 11, T.muted, { font: T.mono, weight: 500 });
-  };
+  }
   return G;
 }
 
@@ -243,10 +301,10 @@ function TiltMaze(S) {
 
 RC.register(Object.assign({ section: "wrist" }, {
     id: "pour", name: "Pour the Tea", movement: "Forearm rotation · slow control", axes: "Roll",
-    brain: false, pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table.",
-    desc: "Turn your forearm to tip the pot and fill each cup to the line. Pour too fast and it spills.",
+    brain: false, pose: "handleTable", mount: "Hold the phone like a pan handle: screen up, pointing forward. Rest your forearm on the table.",
+    desc: "Turn your hand to tip the teapot. Fill each cup to the green line.",
     source: "mRehab Slow Pour and Quick Twist; RAPAEL Smart Glove pouring and supination–pronation games.",
-    how: ["Keep your elbow on the table.", "Turn your palm to tip the pot toward the cup.", "Pour slowly. Return upright when the cup is full."],
+    how: ["Rest your forearm on the table.", "Turn your hand slowly to pour.", "Stop at the green line. Turn the pot back up."],
     make: (S) => PourTea(S),
   }));
 RC.register(Object.assign({ section: "wrist" }, {
