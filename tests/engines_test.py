@@ -14,7 +14,7 @@ import functools, http.server, json, os, socketserver, sys, threading
 from playwright.sync_api import sync_playwright
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-NEW = """gate paint moon stir pendulum fruit quickreach reachturn key drawbridge wheel wristcircle water mole
+NEW = """lift gate paint moon stir pendulum fruit quickreach reachturn key drawbridge wheel wristcircle water mole
 scales drum beat numhunt typeword tapcount pegboard shake floor sidereach rock trunkcircle kneeext
 kneeout foottilt ankletrace toetap bridge standshift minisquat""".split()
 # The third batch: phone motion only (tilt or acceleration), no touch and no follow-along.

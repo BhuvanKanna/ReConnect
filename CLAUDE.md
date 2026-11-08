@@ -24,7 +24,8 @@ privacy, known limits). Read it before larger changes.
 | `js/games/*.js` | One file per library section (arm, wrist, hand, trunk, memory, ...) |
 | `js/link.js`, `js/relay.js`, `js/config.js` | Pairing: PeerJS (WebRTC) plus optional Cloudflare relay |
 | `relay/` | Cloudflare Worker relay (see `relay/README.md`) |
-| `vendor/` | PeerJS 1.5.4 and qrcode-generator 1.4.4 (MIT). Loaded by relative path; don't move them |
+| `js/lift3d.js` | Lantern Lift's first-person 3D scene (three.js, loaded on demand; 2D fallback in `js/games/arm.js`) |
+| `vendor/` | PeerJS 1.5.4, qrcode-generator 1.4.4 and three.js r170 (all MIT). Loaded by relative path; don't move them |
 | `brand/` | Logo, icon and favicons |
 | `docs/exercise-catalog.md` | Sources for every exercise |
 | `docs/superpowers/` | Design spec and implementation plan from the Oct 2026 plans/library redesign |

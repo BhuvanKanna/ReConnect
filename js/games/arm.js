@@ -4,40 +4,81 @@ const RC = window.RC;
 const { $, clamp, lerp, TAU, reduceMotion, store, settings, saveSettings, T, alpha, txt, rr, chime, esc, fmtTime, Game, readTheme } = RC;
 const { base, drawGonio } = RC.kit;
 // ---- 1. Lantern Lift: shoulder flexion with hold --------------------------------
+// A first-person 3D scene (js/lift3d.js): your own arm lifts a lantern on a pole into a gold ring.
+// Each repetition lights one lantern on the string in the garden. Until three.js has loaded, or if
+// WebGL isn't available, the same exercise draws as a flat 2D view.
 function LanternLift(S) {
   const amp = S.amp, G = base(S, S.reps), HOLD = 1.2;
   const newTarget = () => amp * (0.9 + Math.random() * 0.2);
   const rc = RC.kit.RepCounter({ target: newTarget(), rest: amp * 0.35, hold: HOLD, reps: S.reps });
   const peaks = rc.peaks, NAMES = { rest: "rest", move: "raise", return: "lower" };
-  let state = "rest", hold = 0, target = rc.target, sparkle = [];
+  let state = "rest", hold = 0, target = rc.target, sparkle = [], flare = 0, idle = 0, lastT = null, world = null, lastPitch = 0;
+  const L3 = RC.Lift3D; if (L3) L3.ensure();
   G.update = function (dt, a) {
     const before = rc.state;
-    if (rc.update(dt, a.pitch) === "rep") { this._reps++; this.events.push("success"); burst(); }
+    if (rc.update(dt, a.pitch) === "rep") { this._reps++; this.events.push("success"); burst(); flare = 1; }
     if (before === "return" && rc.state === "rest") { if (this._reps >= S.reps) this.done = true; else rc.target = newTarget(); }
     state = NAMES[rc.state]; hold = rc.holdT; target = rc.target;
+    // seconds without real movement, so the up/down arrows can grow more noticeable
+    idle = Math.abs(a.pitch - lastPitch) > 0.4 ? 0 : idle + dt; lastPitch = a.pitch;
+    flare = Math.max(0, flare - dt * 1.2);
     sparkle = sparkle.filter((s) => (s.life -= dt) > 0); sparkle.forEach((s) => { s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 40 * dt; });
   };
-  function burst() { if (reduceMotion) return; for (let i = 0; i < 18; i++) { const ang = Math.random() * TAU, sp = 40 + Math.random() * 90; sparkle.push({ x: 0, y: 0, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, life: 0.8 }); } }
+  function burst() { if (reduceMotion) return; for (let i = 0; i < 22; i++) { const ang = Math.random() * TAU, sp = 50 + Math.random() * 110; sparkle.push({ x: 0, y: 0, vx: Math.cos(ang) * sp, vy: Math.sin(ang) * sp, life: 0.9 }); } }
+  const lit = () => `${G._reps} of ${S.reps} lanterns lit`;
+  // Short words only: one instruction at a time, and the scene shows the rest.
   G.status = function () {
-    if (state === "rest") return { title: "Rest your arm", text: "Lower your arm to start the next lift." };
-    if (state === "raise") return hold > 0.05 ? { title: "Hold it there", text: `${Math.max(0, HOLD - hold).toFixed(1)} s`, tone: "good" } : { title: "Raise your arm to the line", text: `Target ${Math.round(target)}°` };
-    return { title: "Good. Lower slowly.", text: `${this._reps} of ${S.reps} done`, tone: "good" };
+    if (state === "rest") return { title: "Rest your arm", text: G._reps ? lit() : "Get ready" };
+    if (state === "raise") return hold > 0.05 ? { title: "Hold it there", text: "Keep still", tone: "good" } : { title: "Lift the lantern into the ring", text: lit() };
+    return { title: "Good! Now lower it slowly", text: lit(), tone: "good" };
   };
   G.stats = () => [["Best lift", peaks.length ? `${Math.round(Math.max(...peaks))}°` : "–"], ["Average lift", peaks.length ? `${Math.round(peaks.reduce((s, x) => s + x, 0) / peaks.length)}°` : "–"]];
+  G.debug = () => ({ state: rc.state, target: rc.target, val: lastPitch, view: world ? "3d" : "2d" });
   G.draw = function (g, W, H, a, t) {
+    const dt = lastT == null ? 0 : Math.min(0.05, Math.max(0, t - lastT)); lastT = t;
+    if (!world && L3 && L3.ready()) world = L3.create({ side: S.side, count: S.reps, calm: reduceMotion });
+    if (!world) return drawFlat(g, W, H, a);
+    const pr = g.getTransform ? g.getTransform().a : 1;
+    const holdP = state === "raise" ? clamp(hold / HOLD, 0, 1) : 0;
+    const cv = world.frame(W, H, pr, { f: a.pitch / amp, goalF: target / amp, holdP, lit: G._reps, flare, showGoal: state !== "lower" || flare > 0 }, t, dt);
+    g.drawImage(cv, 0, 0, W, H);
+    const L = world.toScreen(world.lantern, W, H), R = world.toScreen(world.goal, W, H);
+    const unit = Math.min(W, H) / 600, rpx = world.ringPx(W, H) + 14 * unit;
+    // hold ring: fills around the gold ring while the lantern is held there
+    if (holdP > 0) {
+      g.save(); g.lineCap = "round"; g.lineWidth = 10 * unit;
+      g.strokeStyle = "rgba(255,255,255,0.35)"; g.beginPath(); g.arc(R.x, R.y, rpx, 0, TAU); g.stroke();
+      g.strokeStyle = "#5ee0a0"; g.beginPath(); g.arc(R.x, R.y, rpx, -Math.PI / 2, -Math.PI / 2 + TAU * holdP); g.stroke(); g.restore();
+    }
+    // arrows: up toward the ring while raising, down toward the rail while lowering
+    if (state === "raise" && hold <= 0.05 && R.y < L.y - 40 * unit) arrows(g, L.x, L.y - 60 * unit, R.y + rpx, -1, t, unit, idle > 3);
+    if (state === "lower") arrows(g, L.x, L.y + 50 * unit, Math.min(H - 30 * unit, L.y + 190 * unit), 1, t, unit, idle > 3);
+    g.fillStyle = "#ffd27a"; sparkle.forEach((s) => { g.globalAlpha = clamp(s.life / 0.9, 0, 1); g.beginPath(); g.arc(R.x + s.x * unit, R.y + s.y * unit, 4 * unit, 0, TAU); g.fill(); }); g.globalAlpha = 1;
+  };
+  // Big soft chevrons that drift in the direction to move. `dir` -1 = up, 1 = down.
+  function arrows(g, x, y0, y1, dir, t, unit, strong) {
+    if (Math.abs(y1 - y0) < 30 * unit) return;
+    const n = 3, sz = (strong ? 30 : 24) * unit, phase = reduceMotion ? 0.5 / n : (t * 0.9) % 1;
+    g.save(); g.lineJoin = "round"; g.lineCap = "round";
+    for (let i = 0; i < n; i++) {
+      const u = (i + phase) / n, y = y0 + (y1 - y0) * u;
+      g.globalAlpha = clamp(0.35 + Math.sin(u * Math.PI) * 0.65, 0, 1);
+      g.beginPath(); g.moveTo(x - sz, y - dir * sz * 0.55); g.lineTo(x, y + dir * sz * 0.45); g.lineTo(x + sz, y - dir * sz * 0.55);
+      g.lineWidth = 16 * unit; g.strokeStyle = "rgba(20,16,40,0.7)"; g.stroke();
+      g.lineWidth = 9 * unit; g.strokeStyle = "#ffd27a"; g.stroke();
+    }
+    g.restore();
+  }
+  function drawFlat(g, W, H, a) {
     const grd = g.createLinearGradient(0, 0, 0, H); grd.addColorStop(0, T["sky-top"]); grd.addColorStop(1, T["sky-bot"]);
     g.fillStyle = grd; g.fillRect(0, 0, W, H);
-    // hills
     g.fillStyle = T.hill; g.beginPath(); g.moveTo(0, H);
     for (let x = 0; x <= W; x += 20) g.lineTo(x, H - 60 - Math.sin(x / 140) * 18 - Math.sin(x / 57) * 6);
     g.lineTo(W, H); g.fill();
     const top = 170, bottom = H - 80;
     const yOf = (deg) => lerp(bottom, top, clamp((deg + 5) / (amp * 1.35 + 5), 0, 1));
-    // target line
     const ty = yOf(target);
     g.setLineDash([10, 8]); g.strokeStyle = T.accent; g.lineWidth = 3; g.beginPath(); g.moveTo(40, ty); g.lineTo(W - 90, ty); g.stroke(); g.setLineDash([]);
-    txt(g, `${Math.round(target)}°`, W - 80, ty, 16, T["accent-ink"], { align: "left", font: T.mono, weight: 600 });
-    // lantern
     const lx = W * 0.42, ly = yOf(a.pitch);
     g.strokeStyle = alpha(T.ink, 0.35); g.lineWidth = 2; g.beginPath(); g.moveTo(lx, ly + 34); g.lineTo(lx, H); g.stroke();
     const glow = g.createRadialGradient(lx, ly, 4, lx, ly, 70); glow.addColorStop(0, alpha(T.accent, 0.55)); glow.addColorStop(1, alpha(T.accent, 0));
@@ -45,19 +86,18 @@ function LanternLift(S) {
     rr(g, lx - 22, ly - 30, 44, 60, 14); g.fillStyle = T.accent; g.fill();
     g.fillStyle = alpha(T.surface, 0.6); rr(g, lx - 12, ly - 18, 24, 36, 8); g.fill();
     if (state === "raise" && hold > 0) { g.strokeStyle = T.go; g.lineWidth = 6; g.lineCap = "round"; g.beginPath(); g.arc(lx, ly, 46, -Math.PI / 2, -Math.PI / 2 + TAU * (hold / HOLD)); g.stroke(); g.lineCap = "butt"; }
-    g.fillStyle = T.accent; sparkle.forEach((s) => { g.globalAlpha = clamp(s.life / 0.8, 0, 1); g.beginPath(); g.arc(lx + s.x, ty + s.y, 3, 0, TAU); g.fill(); }); g.globalAlpha = 1;
-    // goniometer
+    g.fillStyle = T.accent; sparkle.forEach((s) => { g.globalAlpha = clamp(s.life / 0.9, 0, 1); g.beginPath(); g.arc(lx + s.x, ty + s.y, 3, 0, TAU); g.fill(); }); g.globalAlpha = 1;
     drawGonio(g, W - 230, H - 24, Math.min(110, W * 0.12), a.pitch, target, "Arm raise");
-  };
+  }
   return G;
 }
 
 RC.register(Object.assign({ section: "arm" }, {
     id: "lift", name: "Lantern Lift", movement: "Shoulder flexion · arm raise", axes: "Pitch",
-    brain: false, pose: "handleArm", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Keep your elbow straight.",
-    desc: "Raise your arm to lift the lantern to the line, hold it there, then lower slowly.",
+    brain: false, pose: "handleArm", mount: "Hold the phone like a pan handle: screen up, pointing forward. Keep your elbow straight.",
+    desc: "Lift your arm to raise the lantern into the gold ring.",
     source: "FitMi and Flint arm raises; Penumbra REAL shoulder range-of-motion activities.",
-    how: ["Sit tall with your arm resting on the table.", "Raise your arm forward until the lantern touches the line.", "Hold while the ring fills, then lower slowly to rest."],
+    how: ["Rest your arm on the table.", "Lift your arm. Put the lantern in the gold ring.", "Hold still. Then lower slowly."],
     make: (S) => LanternLift(S),
   }));
 

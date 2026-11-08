@@ -77,6 +77,9 @@ The whole app is static files, which is why it can run on GitHub Pages.
   namespace. `js/plan.js` (plan rules) and `js/data.js` (storage and demo seed) are pure and unit-tested in Node.
   Each library section is one file in `js/games/`; shared building blocks (rep counter, tilt cursor, answer cards,
   keypad, guided session) are in `js/kit.js`.
+- Lantern Lift is a first-person 3D scene (`js/lift3d.js`): the patient's own arm lifts a lantern into a gold
+  ring, and each rep lights a lantern in the garden. It loads three.js on demand and falls back to the flat 2D
+  view if WebGL isn't available.
 - The computer registers a 6-digit code (`mend-rehab-<code>`) with the free [PeerJS](https://peerjs.com) broker and
   shows it as a QR code. `phone.html` connects by that code and the two talk over a WebRTC data channel.
 - If a relay is configured (`js/config.js`, see [`relay/README.md`](relay/README.md)), the computer also registers
@@ -125,6 +128,7 @@ The phone page needs https to read motion sensors, so test phone control on the 
 
 - [PeerJS](https://github.com/peers/peerjs) 1.5.4, MIT license (`vendor/peerjs.LICENSE`)
 - [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) 1.4.4 by Kazuhiko Arase, MIT license (header of `vendor/qrcode.js`)
+- [three.js](https://threejs.org) r170, MIT license (`vendor/three/LICENSE`), for Lantern Lift's 3D scene
 - Font: [Fredoka](https://fonts.google.com/specimen/Fredoka) via Google Fonts, SIL Open Font License (also used for the logo wordmark)
 
 ReConnect's own code is MIT licensed; see `LICENSE`.
