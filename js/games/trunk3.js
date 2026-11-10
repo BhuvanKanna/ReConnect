@@ -133,7 +133,7 @@ const TRUNK = [
   { id: "nod", name: "Yes Nods", movement: "Neck flexion and extension", control: "tilt", pose: "head", mount: "Hold the phone flat on top of your head with one hand, screen up, top edge pointing forward.", art: ["swingv", "🙂"],
     desc: "Nod slowly: chin down toward your chest, then up to look at the ceiling.", source: "Cervical range-of-motion exercises from physiotherapy home programs.",
     how: ["Sit tall with the phone on your head.", "Tip your chin down.", "Then lift it to look up."],
-    make: (S) => M.Swing(S, { signal: (a) => a.pitch, targets: (S) => [S.amp * 0.6, -S.amp * 0.6], hold: 0.4, cues: ["Look up", "Chin down"], labels: ["Up", "Down"], emoji: "🙂", vertical: true }) },
+    make: (S) => in3D(M.Swing(S, { signal: (a) => a.pitch, targets: (S) => [S.amp * 0.6, -S.amp * 0.6], hold: 0.4, cues: ["Look up", "Chin down"], labels: ["Up", "Down"], emoji: "🙂", vertical: true }), "nod") },
   Object.assign({ id: "gaze", name: "Gaze Stabilization", movement: "Head turns with eyes fixed · balance", control: "tilt", pose: "head", mount: "Hold the phone flat on top of your head with one hand, screen up, top edge pointing forward.", art: ["wave", "👁️"],
     desc: "Keep your eyes on the letter on the phone while you turn your head side to side.", source: "Vestibular rehab gaze-stabilization (VOR x1) exercises, as in Cawthorne-Cooksey programs.",
     how: ["Look at the eye in the middle of the computer screen.", "Keep your eyes on it as you turn your head left.", "Then right. Small, steady turns."],
@@ -145,7 +145,7 @@ const TRUNK = [
   Object.assign({ id: "sidebendhold", name: "Side Bend Hold", movement: "Trunk side flexion · sustained", control: "tilt", pose: "chest", mount: "Hold the phone flat against your breastbone (or tuck it upright in a shirt pocket), screen facing out, top edge up.", art: ["hold", "🧍"],
     desc: "Lean your upper body to one side and hold it in the band.", source: "Lateral trunk flexion from the Trunk Impairment Scale and trunk training.",
     how: ["Sit tall with your feet flat.", "Lean sideways into the green band.", "Hold, then sit back up straight."],
-    make: (S) => M.Hold(S, { signal: abs("roll"), band: (S) => [S.amp * 0.5, S.amp * 1.1], holdS: (S) => lvl(S, { 1: 4, 2: 6, 3: 8 }), restBelow: (S) => S.amp * 0.25, emoji: "🧍", cues: { below: "Lean a little further", above: "Not quite so far", in: "Hold the lean", rest: "Sit up straight and rest" } }) }, reps([3, 5, 8], 3)),
+    make: (S) => in3D(M.Hold(S, { signal: abs("roll"), band: (S) => [S.amp * 0.5, S.amp * 1.1], holdS: (S) => lvl(S, { 1: 4, 2: 6, 3: 8 }), restBelow: (S) => S.amp * 0.25, emoji: "🧍", cues: { below: "Lean a little further", above: "Not quite so far", in: "Hold the lean", rest: "Sit up straight and rest" } }), "sidebendhold") }, reps([3, 5, 8], 3)),
   Object.assign({ id: "kneelift", name: "Knee Lift Hold", movement: "Seated hip flexion · sustained", control: "tilt", pose: "thigh", mount: "Sitting, lay the phone flat on top of your affected thigh near the knee, screen up, top edge toward the knee. A strap or tight pocket helps keep it there.", art: ["hold", "🦵"],
     desc: "Lift your knee up off the chair and hold it there.", source: "Seated hip flexion holds from post-stroke leg strengthening programs.",
     how: ["Sit with both feet flat.", "Lift your knee into the green band.", "Hold, then lower your foot to the floor."],
@@ -185,7 +185,7 @@ const TRUNK = [
   { id: "heeltoe", name: "Heel-Toe Rock", movement: "Ankle dorsiflexion and plantarflexion", control: "tilt", pose: "foot", mount: "Lay the phone flat on top of your affected foot, screen up, top edge toward your toes, held by a sock or a band.", art: ["swingv", "🦶"],
     desc: "Rock your foot up onto your heel, then down onto your toes.", source: "Ankle range-of-motion exercises from FitMi and Otago programs.",
     how: ["Sit with your foot flat on the floor.", "Lift your toes to rock onto your heel.", "Then press down onto your toes."],
-    make: (S) => M.Swing(S, { signal: (a) => a.pitch, targets: (S) => [S.amp * 0.7, -S.amp * 0.5], hold: 0.3, cues: ["Toes up", "Toes down"], labels: ["Toes up", "Toes down"], emoji: "🦶", vertical: true }) },
+    make: (S) => in3D(M.Swing(S, { signal: (a) => a.pitch, targets: (S) => [S.amp * 0.7, -S.amp * 0.5], hold: 0.3, cues: ["Toes up", "Toes down"], labels: ["Toes up", "Toes down"], emoji: "🦶", vertical: true }), "heeltoe") },
   { id: "chestup", name: "Sit Up Tall", movement: "Upper-back extension · posture", control: "tilt", pose: "chest", mount: "Hold the phone flat against your breastbone (or tuck it upright in a shirt pocket), screen facing out, top edge up.", art: ["rise", "🧘"],
     desc: "Lift your chest and sit up tall, leaning back slightly, then relax.", source: "Thoracic extension and posture exercises from trunk training programs.",
     how: ["Sit near the front of the chair.", "Lift your chest and lean back a little.", "Hold, then relax forward."],
@@ -193,7 +193,7 @@ const TRUNK = [
   Object.assign({ id: "toeshold", name: "Toes Up Hold", movement: "Ankle dorsiflexion · sustained", control: "tilt", pose: "foot", mount: "Lay the phone flat on top of your affected foot, screen up, top edge toward your toes, held by a sock or a band.", art: ["hold", "🦶"],
     desc: "Lift your toes up toward your shin and hold them there.", source: "Isometric dorsiflexion for foot drop, from post-stroke ankle programs.",
     how: ["Sit with your heel on the floor.", "Lift your toes into the green band.", "Hold, then lower your foot."],
-    make: (S) => M.Hold(S, { signal: (a) => a.pitch, band: (S) => [S.amp * 0.5, S.amp * 1.2], holdS: (S) => lvl(S, { 1: 3, 2: 5, 3: 8 }), restBelow: (S) => S.amp * 0.2, emoji: "🦶", cues: { below: "Lift your toes higher", above: "A little lower", in: "Hold your toes up", rest: "Lower your foot and rest" } }) }, reps([3, 5, 8], 3)),
+    make: (S) => in3D(M.Hold(S, { signal: (a) => a.pitch, band: (S) => [S.amp * 0.5, S.amp * 1.2], holdS: (S) => lvl(S, { 1: 3, 2: 5, 3: 8 }), restBelow: (S) => S.amp * 0.2, emoji: "🦶", cues: { below: "Lift your toes higher", above: "A little lower", in: "Hold your toes up", rest: "Lower your foot and rest" } }), "toeshold") }, reps([3, 5, 8], 3)),
 ];
 TRUNK.forEach((d) => { defineArt(d.id, M.art(...d.art)); RC.register(Object.assign({ section: "trunk" }, d)); });
 })();

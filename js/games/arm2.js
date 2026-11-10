@@ -43,7 +43,7 @@ const ARM = [
     desc: "Let your arm hang and swing it gently side to side, like a pendulum.", source: "Codman pendulum exercises for shoulder mobility.",
     params: { reps: [10, 20, 30], level: [1, 2, 3], durationS: null }, defaults: { reps: 10, level: 1, durationS: null },
     how: ["Lean on a table with your good hand.", "Let the affected arm hang loose.", "Swing it gently left and right. Let the body rock it."],
-    make: (S) => M.Wave(S, { signal: (a) => a.roll, thr: (S) => S.amp * 0.4, emoji: "🕰️", cues: ["Swing to one side", "Now to the other side"] }) },
+    make: (S) => in3D(M.Wave(S, { signal: (a) => a.roll, thr: (S) => S.amp * 0.4, emoji: "🕰️", cues: ["Swing to one side", "Now to the other side"] }), "pendulum") },
   Object.assign({ id: "fruit", name: "Fruit Catch", movement: "Side-to-side control · timing", control: "tilt", pose: "handleArm", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Point it at the screen and move your whole arm to steer.",
     desc: "Tip your hand left and right to move the basket under the falling fruit.", source: "Catching games used in Kinect and virtual-reality stroke rehab studies.",
     how: ["Hold your arm out, pointing the phone at the screen.", "Point left or right to move the basket.", "Get under each piece of fruit before it lands."],

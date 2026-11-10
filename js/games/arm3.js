@@ -23,7 +23,7 @@ const ARM = [
   { id: "pressdown", name: "Press Down", movement: "Elbow extension · triceps", control: "tilt", pose: "handleArm", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Bend your elbow so your forearm points up and forward.", art: ["rise", "⬇️"],
     desc: "Start with your forearm raised, then straighten your elbow to press down.", source: "Triceps press-down exercise from resistance-band arm programs.",
     how: ["Bend your elbow so your forearm points up and forward.", "Push your hand down until your arm is straight.", "Hold, then let it come back up."],
-    make: (S) => Reach(S, { signal: (a) => -a.pitch, target: (S) => S.amp, rest: (S) => S.amp * 0.3, hold: 1, label: "Press down", title: "Press your hand down", draw: scene.rise("⬇️", "Press line") }) },
+    make: (S) => in3D(Reach(S, { signal: (a) => -a.pitch, target: (S) => S.amp, rest: (S) => S.amp * 0.3, hold: 1, label: "Press down", title: "Press your hand down", draw: scene.rise("⬇️", "Press line") }), "pressdown") },
   { id: "spotlight", name: "Aim the Spotlight", movement: "Precise shoulder control", control: "tilt", pose: "handleArm", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up.", art: ["dial", "🔦"],
     desc: "Raise or lower your arm to point the spotlight exactly at the target, and hold it there.", source: "Precision aiming tasks for graded shoulder control.",
     how: ["Rest your forearm on the table.", "Raise or lower your arm to line up the beam.", "Hold steady on the green mark."],

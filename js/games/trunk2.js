@@ -6,6 +6,7 @@ const RC = window.RC;
 const { Reach, defineArt } = RC.kit;
 const M = RC.moves, { scene } = M;
 const cap = (v, m) => Math.min(v, m);
+const in3D = (G, id) => (RC.Play3D ? RC.Play3D.wrap(G, id) : G);
 const reach = (signal, target, hold, title, emoji, label) => (S) => Reach(S, { signal, target, rest: (S) => S.amp * 0.3, hold, label, title, draw: scene.rise(emoji, label) });
 // The phone's top edge can point either way along the leg, so leg lifts use the size of the tilt.
 const pitch = (a) => a.pitch, absPitch = (a) => Math.abs(a.pitch), absRoll = (a) => Math.abs(a.roll);
@@ -19,11 +20,11 @@ const TRUNK = [
   { id: "sidereach", name: "Side Reach", movement: "Seated lateral reach · weight shift", control: "tilt", pose: "chest", mount: "Hold the phone flat against your breastbone (or tuck it upright in a shirt pocket), screen facing out, top edge up.",
     desc: "Reach out sideways past your knee, shifting your weight onto that hip, then come back.", source: "Seated reaching beyond arm's length (seated reach training after stroke).",
     how: ["Sit tall, feet flat.", "Reach out to the side, leaning your body with it.", "Hold, then sit back up in the middle."],
-    make: (S) => Reach(S, { signal: absRoll, target: (S) => S.amp * 1.1, rest: (S) => S.amp * 0.3, hold: 1.5, label: "Side lean", title: "Reach out to the side", draw: scene.slide("🫲", "Reach past your knee") }) },
+    make: (S) => in3D(Reach(S, { signal: absRoll, target: (S) => S.amp * 1.1, rest: (S) => S.amp * 0.3, hold: 1.5, label: "Side lean", title: "Reach out to the side", draw: scene.slide("🫲", "Reach past your knee") }), "sidereach") },
   { id: "rock", name: "Forward and Back", movement: "Seated trunk flexion and extension", control: "tilt", pose: "chest", mount: "Hold the phone flat against your breastbone (or tuck it upright in a shirt pocket), screen facing out, top edge up.",
     desc: "Rock your upper body slowly forward, then back to sitting tall and slightly back.", source: "Seated pelvic tilts and trunk flexion-extension (trunk training programs after stroke).",
     how: ["Sit on a firm chair with your feet flat.", "Lean forward from your hips to the front target.", "Then sit back past upright to the back target."],
-    make: (S) => M.Swing(S, { signal: pitch, targets: (S) => [S.amp * 0.7, -S.amp * 0.35], hold: 0.6, cues: ["Lean forward", "Now sit back"], labels: ["Forward", "Back"], emoji: "🪑", vertical: true }) },
+    make: (S) => in3D(M.Swing(S, { signal: pitch, targets: (S) => [S.amp * 0.7, -S.amp * 0.35], hold: 0.6, cues: ["Lean forward", "Now sit back"], labels: ["Forward", "Back"], emoji: "🪑", vertical: true }), "rock") },
   Object.assign({ id: "trunkcircle", name: "Trunk Circles", movement: "Seated trunk control · circles", control: "tilt", pose: "chest", mount: "Hold the phone flat against your breastbone (or tuck it upright in a shirt pocket), screen facing out, top edge up.",
     desc: "Move your upper body in a slow circle: forward, to the side, back and round.", source: "Seated trunk-control training (trunk exercises in stroke rehab trials).",
     how: ["Sit tall with your feet flat.", "Lean out to the ring, then circle your upper body round.", "Halfway through, circle the other way."],
@@ -31,7 +32,7 @@ const TRUNK = [
   Object.assign({ id: "kneeext", name: "Knee Straighten", movement: "Seated knee extension · quadriceps", control: "tilt", pose: "shin", mount: "Strap the phone to the front of your affected shin just below the knee, or tuck it into a long sock, screen facing out.",
     desc: "Straighten your knee to lift your foot, hold, then lower it slowly.", source: "Otago exercise programme (knee extensor strengthening).",
     how: ["Sit tall with your feet flat.", "Straighten your knee to lift your foot off the floor.", "Hold, then lower slowly."],
-    make: reach(absPitch, (S) => cap(S.amp * 1.6, 70), 2, "Straighten your knee", "🦵", "Knee straight") }, REPS),
+    make: (S) => in3D(reach(absPitch, (S) => cap(S.amp * 1.6, 70), 2, "Straighten your knee", "🦵", "Knee straight")(S), "kneeext") }, REPS),
   Object.assign({ id: "kneeout", name: "Knees Apart", movement: "Seated hip abduction", control: "tilt", pose: "thigh", mount: "Sitting, lay the phone flat on top of your affected thigh near the knee, screen up, top edge toward the knee. A strap or tight pocket helps keep it there.",
     desc: "Move your affected knee out to the side, then back in line.", source: "Seated hip-abduction strengthening (home leg programs after stroke).",
     how: ["Sit tall with your feet flat.", "Let your knee fall out to the side.", "Hold, then bring it back to the middle."],
@@ -52,7 +53,7 @@ const TRUNK = [
   Object.assign({ id: "bridge", name: "Bridges", movement: "Hip extension · lying", control: "tilt", pose: "thighLying", mount: "Lie on your back with your knees bent and lay the phone flat on your affected thigh, screen up, top edge toward the knee.",
     desc: "Lying on your back, lift your hips off the bed, hold, and lower.", source: "Bridging exercises from post-stroke lower-limb and trunk programs.",
     how: ["Lie on your back with your knees bent and feet flat.", "Squeeze your buttocks and lift your hips.", "Hold, then lower slowly."],
-    make: reach(absPitch, (S) => S.amp * 0.5, 3, "Lift your hips", "🌉", "Hips up") }, REPS),
+    make: (S) => in3D(reach(absPitch, (S) => S.amp * 0.5, 3, "Lift your hips", "🌉", "Hips up")(S), "bridge") }, REPS),
   Object.assign({ id: "standshift", name: "Standing Weight Shift", movement: "Standing balance · side to side", control: "tilt", safety: "standing", pose: "chest", mount: "Hold the phone flat against your breastbone (or tuck it upright in a shirt pocket), screen facing out, top edge up.",
     desc: "Standing at a counter, shift your weight onto one leg, then the other.", source: "Otago exercise programme and Berg Balance Scale weight-shifting tasks.",
     how: ["Only at a counter you can hold, with someone nearby.", "Shift your weight onto one foot, keeping both on the floor.", "Then shift across to the other foot."],

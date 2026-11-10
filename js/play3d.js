@@ -25,7 +25,7 @@ P3.create = function (id, S) {
   const def = build(K, THREE, cam, S) || {};
   const tmp = new THREE.Vector3();
   return {
-    gauge: def.gauge || "h",
+    gauge: def.gauge || "h", flip: !!def.flip,
     lowQuality(on) { if (K.sun && K.sun.castShadow === on) K.sun.castShadow = !on; },
     frame(W, H, pr, v, t, dt) {
       cam.aspect = W / H; cam.fov = W / H < 1.2 ? (def.fovTall || (def.fov || 55) + 14) : (def.fov || 55); cam.updateProjectionMatrix();
@@ -75,7 +75,8 @@ function drawGauge(g, W, H, v, vertical, flip) {
     g.fill();
     if (z.on && q.fill > 0) {
       const f = clamp(q.fill, 0, 1); g.fillStyle = "#1f9a5a";
-      if (vertical) rr(g, x0 + 4 * unit, y0 + len * (1 - a) - len * (b - a) * f, th - 8 * unit, len * (b - a) * f, (th - 8 * unit) / 2);
+      if (vertical && flip) rr(g, x0 + 4 * unit, y0 + len * (1 - b), th - 8 * unit, len * (b - a) * f, (th - 8 * unit) / 2);
+      else if (vertical) rr(g, x0 + 4 * unit, y0 + len * (1 - a) - len * (b - a) * f, th - 8 * unit, len * (b - a) * f, (th - 8 * unit) / 2);
       else if (flip) rr(g, x0 + len * b - len * (b - a) * f, y0 + 4 * unit, len * (b - a) * f, th - 8 * unit, (th - 8 * unit) / 2);
       else rr(g, x0 + len * a, y0 + 4 * unit, len * (b - a) * f, th - 8 * unit, (th - 8 * unit) / 2);
       g.fill();
@@ -115,7 +116,7 @@ P3.wrap = function (G, id, opts) {
     const pr = (g.getTransform ? g.getTransform().a : 1) * (q >= 1 ? 0.6 : 1);
     g.drawImage(world.frame(W, H, pr, v, t, dt), 0, 0, W, H);
     drawDots(g, W, H, v);
-    drawGauge(g, W, H, v, world.gauge === "v", o.flip);
+    drawGauge(g, W, H, v, world.gauge === "v", o.flip || world.flip);
     if (v.fresh && !RC.reduceMotion) {
       const f = world.focus(W, H) || { x: W / 2, y: H * 0.45 }; sx = f.x; sy = f.y;
       for (let i = 0; i < 26; i++) { const ang = Math.random() * RC.TAU, s = 70 + Math.random() * 140; sparkle.push({ x: 0, y: 0, vx: Math.cos(ang) * s, vy: Math.sin(ang) * s - 60, life: 1, c: ["#ffd27a", "#7ae0a0", "#ffffff", "#ff9ec0"][i % 4] }); }
