@@ -5,6 +5,8 @@ const RC = window.RC;
 const { clamp, TAU, T, alpha, rr, txt } = RC;
 const { Reach, defineArt } = RC.kit;
 const M = RC.moves, { scene, icon, lvl } = M;
+// Draw with a 3D scene from js/play3d-scenes.js when the computer can (the engine still does the scoring).
+const in3D = (G, id) => (RC.Play3D ? RC.Play3D.wrap(G, id) : G);
 const cap = (v, m) => Math.min(v, m);
 
 // Screwdriver: the screw sinks as the turns add up
@@ -127,12 +129,12 @@ const WRIST = [
   { id: "key", name: "Turn the Key", movement: "Forearm supination · turning", pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table.",
     desc: "Turn your hand as if turning a key in a lock, hold, then turn back.", source: "Wolf Motor Function Test (turning a key in a lock); mRehab unlock with key.",
     how: ["Rest your forearm on the table, thumb up.", "Turn your palm up as far as is comfortable.", "Hold, then turn it back."],
-    make: (S) => Reach(S, { signal: (a) => Math.abs(a.roll), target: (S) => cap(S.amp * 1.6, 80), rest: (S) => S.amp * 0.4, hold: 0.8, label: "Turn", title: "Turn the key", draw: scene.slide("🔑", "Turn it all the way") }) },
+    make: (S) => in3D(Reach(S, { signal: (a) => Math.abs(a.roll), target: (S) => cap(S.amp * 1.6, 80), rest: (S) => S.amp * 0.4, hold: 0.8, label: "Turn", title: "Turn the key", draw: scene.slide("🔑", "Turn it all the way") }), "key") },
   { id: "drawbridge", name: "Raise the Drawbridge", movement: "Wrist extension · sustained hold", pose: "edgeDown", mount: "Rest your forearm on the table with your wrist just past the edge. Palm down, grip the phone flat against your palm: screen facing the floor, top edge toward your fingertips.",
     desc: "Lift your hand up at the wrist and hold it there while the count runs.", source: "Wrist-extension holds (Fugl-Meyer wrist stability; RAPAEL wrist extension).",
     params: { reps: [3, 5, 8], level: [1, 2, 3], durationS: null }, defaults: { reps: 3, level: 1, durationS: null },
     how: ["Rest your forearm on the table, wrist over the edge.", "Lift your hand up at the wrist into the green band.", "Hold until the bar fills, then relax."],
-    make: (S) => M.Hold(S, { signal: (a) => a.pitch, band: (S) => [S.amp * 0.7, 90], holdS: (S) => lvl(S, { 1: 5, 2: 8, 3: 12 }), restBelow: (S) => S.amp * 0.3, emoji: "🏰", cues: { below: "Lift your hand at the wrist", above: "", in: "Hold the bridge up", rest: "Lower and relax" } }) },
+    make: (S) => in3D(M.Hold(S, { signal: (a) => a.pitch, band: (S) => [S.amp * 0.7, 90], holdS: (S) => lvl(S, { 1: 5, 2: 8, 3: 12 }), restBelow: (S) => S.amp * 0.3, emoji: "🏰", cues: { below: "Lift your hand at the wrist", above: "", in: "Hold the bridge up", rest: "Lower and relax" } }), "drawbridge") },
   Object.assign({ id: "wheel", name: "Steering Wheel", movement: "Two-handed forearm rotation", pose: "wheel", mount: "Hold the phone upright (tall) in both hands, one on each side, screen facing you.",
     desc: "Drive down a country road. Turn the wheel to steer through the green arches.", source: "Bilateral steering tasks (driving simulation in stroke rehab).",
     how: ["Hold the phone with both hands like a wheel.", "Turn it to steer into the lane with the green arch.", "Line up early, then hold the wheel steady."],

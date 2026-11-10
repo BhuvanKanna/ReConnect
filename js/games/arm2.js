@@ -5,6 +5,8 @@ const RC = window.RC;
 const { clamp, lerp, TAU, T, alpha, rr } = RC;
 const { Reach, defineArt } = RC.kit;
 const M = RC.moves, { scene, icon, lvl } = M;
+// Draw with a 3D scene from js/play3d-scenes.js when the computer can (the engine still does the scoring).
+const in3D = (G, id) => (RC.Play3D ? RC.Play3D.wrap(G, id) : G);
 const abs = (k) => (a) => Math.abs(a[k]);
 const cap = (v, m) => Math.min(v, m);
 
@@ -22,11 +24,11 @@ const ARM = [
   { id: "gate", name: "Swing the Gate", movement: "Shoulder external rotation", control: "tilt", pose: "handleArm", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Tuck your elbow against your side, bent to a right angle.",
     desc: "Keep your elbow tucked in and swing your forearm out like a gate, then back in.", source: "Fugl-Meyer upper-extremity item (shoulder external rotation).",
     how: ["Tuck your elbow against your side, bent to a right angle.", "Swing your forearm outward, keeping the elbow in.", "Hold, then swing it back in."],
-    make: (S) => Reach(S, { signal: abs("yaw"), target: (S) => S.amp, rest: (S) => S.amp * 0.3, hold: 1, label: "Outward turn", title: "Swing your forearm outward", draw: scene.slide("🚪", "Open the gate") }) },
+    make: (S) => in3D(Reach(S, { signal: abs("yaw"), target: (S) => S.amp, rest: (S) => S.amp * 0.3, hold: 1, label: "Outward turn", title: "Swing your forearm outward", draw: scene.slide("🚪", "Open the gate") }), "gate") },
   { id: "paint", name: "Paint the Fence", movement: "Shoulder and elbow · up-and-down strokes", control: "tilt", pose: "handleArm", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up.",
     desc: "Paint the fence with long up-and-down strokes.", source: "Repetitive task practice with painting strokes (RAPAEL house-painting game).",
     how: ["Hold your arm as if holding a brush.", "Stroke up to the top target.", "Then down to the bottom one. Keep a steady rhythm."],
-    make: (S) => M.Swing(S, { signal: (a) => a.pitch, targets: (S) => [S.amp, -S.amp * 0.4], hold: 0.15, cues: ["Brush up", "Brush down"], labels: ["Highest stroke", "Lowest stroke"], emoji: "🖌️", vertical: true }) },
+    make: (S) => in3D(M.Swing(S, { signal: (a) => a.pitch, targets: (S) => [S.amp, -S.amp * 0.4], hold: 0.15, cues: ["Brush up", "Brush down"], labels: ["Highest stroke", "Lowest stroke"], emoji: "🖌️", vertical: true }), "paint") },
   { id: "moon", name: "Follow the Moon", movement: "Smooth arm control · tracking", control: "tilt", pose: "handleArm", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up.",
     desc: "The moon drifts slowly up and down. Raise and lower your arm to stay on it.", source: "Pursuit-tracking tasks from robot-assisted and virtual-reality arm therapy.",
     params: { reps: null, level: [1, 2, 3], durationS: [30, 60, 90] }, defaults: { reps: null, level: 1, durationS: 30 },

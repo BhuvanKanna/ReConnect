@@ -25,7 +25,8 @@ privacy, known limits). Read it before larger changes.
 | `js/link.js`, `js/relay.js`, `js/config.js` | Pairing: PeerJS (WebRTC) plus optional Cloudflare relay |
 | `relay/` | Cloudflare Worker relay (see `relay/README.md`) |
 | `js/scene3d.js`, `js/lift3d.js`, `js/pour3d.js`, `js/tilt3d.js`, `js/drive3d.js` | 3D scenes for Lantern Lift, Pour the Tea, Ear to Shoulder and Steering Wheel: shared three.js loader and renderer, then one scene per exercise. Each game keeps a 2D fallback in its `js/games/*.js` file and frees its scene through `G.dispose()` |
-| `js/twist3d.js`, `js/twist-animals.js`, `js/twist-scenes.js` | Trunk Twist's look-around worlds: the shape kit and world (also used by `tilt3d.js` and `drive3d.js`), the animals to find, and the nine scenes the patient picks from |
+| `js/play3d.js`, `js/play3d-scenes.js` | 3D scenes for ten exercises built on the shared engines (gate, paint, key, drawbridge, jar, airplane, cycling, neckturn, kneelift, tennis). The engine keeps scoring; `RC.Play3D.wrap(game, id)` swaps the drawing for a scene plus a target gauge, using each engine's `view()`. Falls back to the engine's flat drawing |
+| `js/twist3d.js`, `js/twist-animals.js`, `js/twist-scenes.js` | Trunk Twist's look-around worlds: the shape kit and world (also used by `tilt3d.js`, `drive3d.js` and `play3d-scenes.js`), the animals to find, and the nine scenes the patient picks from |
 | `vendor/` | PeerJS 1.5.4, qrcode-generator 1.4.4 and three.js r170 (all MIT). Loaded by relative path; don't move them |
 | `brand/` | Logo, icon and favicons |
 | `docs/exercise-catalog.md` | Sources for every exercise |

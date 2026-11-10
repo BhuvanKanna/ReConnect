@@ -4,6 +4,8 @@
 const RC = window.RC;
 const { Reach, defineArt } = RC.kit;
 const M = RC.moves, { scene, lvl } = M;
+// Draw with a 3D scene from js/play3d-scenes.js when the computer can (the engine still does the scoring).
+const in3D = (G, id) => (RC.Play3D ? RC.Play3D.wrap(G, id) : G);
 const abs = (k) => (a) => Math.abs(a[k]);
 const reps = (list, d) => ({ params: { reps: list, level: [1, 2, 3], durationS: null }, defaults: { reps: d, level: 1, durationS: null } });
 const timed = { params: { reps: null, level: [1, 2, 3], durationS: [30, 60, 90] }, defaults: { reps: null, level: 1, durationS: 30 } };
@@ -12,7 +14,7 @@ const WRIST = [
   Object.assign({ id: "jar", name: "Open the Jar", movement: "Repeated forearm twists", control: "tilt", pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table.", art: ["wave", "🫙"],
     desc: "Twist the lid back and forth until the jar opens.", source: "Jar opening, a standard ADL task in hand and wrist therapy.",
     how: ["Rest your forearm on the table.", "Twist your hand one way.", "Then back the other way, over and over."],
-    make: (S) => M.Wave(S, { signal: (a) => a.roll, thr: (S) => S.amp * 0.5, emoji: "🫙", cues: ["Twist the lid", "Twist back"] }) }, reps([8, 12, 20], 8)),
+    make: (S) => in3D(M.Wave(S, { signal: (a) => a.roll, thr: (S) => S.amp * 0.5, emoji: "🫙", cues: ["Twist the lid", "Twist back"] }), "jar") }, reps([8, 12, 20], 8)),
   Object.assign({ id: "scoophold", name: "Scoop and Hold", movement: "Wrist flexion · sustained", control: "tilt", pose: "edgeDown", mount: "Rest your forearm on the table with your wrist just past the edge. Palm down, grip the phone flat against your palm: screen facing the floor, top edge toward your fingertips.", art: ["hold", "🥄"],
     desc: "Curl your wrist down as if scooping, and hold it in the band.", source: "Isometric wrist flexion holds from hand-therapy programs.",
     how: ["Let your hand rest over the table edge.", "Curl your wrist down into the green band.", "Hold it there, then relax."],

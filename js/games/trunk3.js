@@ -5,6 +5,8 @@
 const RC = window.RC;
 const { Reach, defineArt } = RC.kit;
 const M = RC.moves, { scene, lvl } = M;
+// Draw with a 3D scene from js/play3d-scenes.js when the computer can (the engine still does the scoring).
+const in3D = (G, id) => (RC.Play3D ? RC.Play3D.wrap(G, id) : G);
 const abs = (k) => (a) => Math.abs(a[k]);
 const most = (a) => Math.max(Math.abs(a.pitch), Math.abs(a.roll));
 const cap = (v, m) => Math.min(v, m);
@@ -127,7 +129,7 @@ const TRUNK = [
   { id: "neckturn", name: "Head Turns", movement: "Neck rotation", control: "tilt", pose: "head", mount: "Hold the phone flat on top of your head with one hand, screen up, top edge pointing forward.", art: ["swing", "🙂"],
     desc: "Turn your head slowly to one side, then the other, keeping the phone in front of your nose.", source: "Cervical range-of-motion exercises from physiotherapy home programs.",
     how: ["Sit tall with the phone on your head.", "Turn your head to one side.", "Then slowly to the other."],
-    make: (S) => M.Swing(S, { signal: (a) => a.yaw, targets: (S) => [S.amp * 0.9, -S.amp * 0.9], hold: 0.4, cues: ["Turn your head one way", "Now the other way"], labels: ["One side", "Other side"], emoji: "🙂" }) },
+    make: (S) => in3D(M.Swing(S, { signal: (a) => a.yaw, targets: (S) => [S.amp * 0.9, -S.amp * 0.9], hold: 0.4, cues: ["Turn your head one way", "Now the other way"], labels: ["One side", "Other side"], emoji: "🙂" }), "neckturn") },
   { id: "nod", name: "Yes Nods", movement: "Neck flexion and extension", control: "tilt", pose: "head", mount: "Hold the phone flat on top of your head with one hand, screen up, top edge pointing forward.", art: ["swingv", "🙂"],
     desc: "Nod slowly: chin down toward your chest, then up to look at the ceiling.", source: "Cervical range-of-motion exercises from physiotherapy home programs.",
     how: ["Sit tall with the phone on your head.", "Tip your chin down.", "Then lift it to look up."],
@@ -147,7 +149,7 @@ const TRUNK = [
   Object.assign({ id: "kneelift", name: "Knee Lift Hold", movement: "Seated hip flexion · sustained", control: "tilt", pose: "thigh", mount: "Sitting, lay the phone flat on top of your affected thigh near the knee, screen up, top edge toward the knee. A strap or tight pocket helps keep it there.", art: ["hold", "🦵"],
     desc: "Lift your knee up off the chair and hold it there.", source: "Seated hip flexion holds from post-stroke leg strengthening programs.",
     how: ["Sit with both feet flat.", "Lift your knee into the green band.", "Hold, then lower your foot to the floor."],
-    make: (S) => M.Hold(S, { signal: (a) => a.pitch, band: (S) => [S.amp * 0.5, S.amp * 1.3], holdS: (S) => lvl(S, { 1: 3, 2: 5, 3: 8 }), restBelow: (S) => S.amp * 0.25, emoji: "🦵", cues: { below: "Lift your knee higher", above: "A little lower", in: "Hold the knee up", rest: "Lower your foot and rest" } }) }, reps([3, 5, 8], 3)),
+    make: (S) => in3D(M.Hold(S, { signal: (a) => a.pitch, band: (S) => [S.amp * 0.5, S.amp * 1.3], holdS: (S) => lvl(S, { 1: 3, 2: 5, 3: 8 }), restBelow: (S) => S.amp * 0.25, emoji: "🦵", cues: { below: "Lift your knee higher", above: "A little lower", in: "Hold the knee up", rest: "Lower your foot and rest" } }), "kneelift") }, reps([3, 5, 8], 3)),
   { id: "penalty", name: "Penalty Kick", movement: "Knee extension · force control", control: "accel", pose: "shin", mount: "Strap the phone to the front of your affected shin just below the knee, or tuck it into a long sock, screen facing out.", art: ["throw", "⚽"],
     desc: "Kick your lower leg forward to shoot. A harder kick goes further.", source: "Kicking games from Kinect-based lower-limb stroke rehab.",
     how: ["Sit with your foot on the floor.", "Kick your lower leg forward.", "Kick harder or softer to land in the green zone."],
@@ -167,7 +169,7 @@ const TRUNK = [
   Object.assign({ id: "cycling", name: "Seated Cycling", movement: "Alternating leg pedaling", control: "tilt", pose: "thigh", mount: "Sitting, lay the phone flat on top of your affected thigh near the knee, screen up, top edge toward the knee. A strap or tight pocket helps keep it there.", art: ["wave", "🚴"],
     desc: "Pedal your legs as if riding a bike, or use a pedal exerciser.", source: "Cycling and pedal-exerciser training (such as MOTOmed) for lower-limb rehab.",
     how: ["Sit with your feet on the pedals or the floor.", "Push your leg forward and down.", "Then bring it back up. Keep a steady rhythm."],
-    make: (S) => M.Wave(S, { signal: (a) => a.pitch, thr: (S) => S.amp * 0.3, emoji: "🚴", cues: ["Push down", "Bring it up"] }) }, reps([15, 25, 40], 15)),
+    make: (S) => in3D(M.Wave(S, { signal: (a) => a.pitch, thr: (S) => S.amp * 0.3, emoji: "🚴", cues: ["Push down", "Bring it up"] }), "cycling") }, reps([15, 25, 40], 15)),
   { id: "sidelegs", name: "Side-Lying Leg Lift", movement: "Hip abduction", control: "tilt", pose: "sideLying", mount: "Lie on your side with the affected leg on top. Lay the phone flat on the outside of your top thigh near the knee, screen up.", art: ["rise", "🦵"],
     desc: "Lying on your side, lift your top leg up toward the ceiling.", source: "Side-lying hip abduction from lower-limb strengthening programs.",
     how: ["Lie on your side, bottom knee bent.", "Lift your top leg up, keeping it straight.", "Hold, then lower it slowly."],

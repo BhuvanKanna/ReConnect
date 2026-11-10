@@ -4,6 +4,8 @@
 const RC = window.RC;
 const { Reach, defineArt } = RC.kit;
 const M = RC.moves, { scene, lvl } = M;
+// Draw with a 3D scene from js/play3d-scenes.js when the computer can (the engine still does the scoring).
+const in3D = (G, id) => (RC.Play3D ? RC.Play3D.wrap(G, id) : G);
 const abs = (k) => (a) => Math.abs(a[k]);
 const cap = (v, m) => Math.min(v, m);
 const reps = (list, d) => ({ params: { reps: list, level: [1, 2, 3], durationS: null }, defaults: { reps: d, level: 1, durationS: null } });
@@ -29,11 +31,11 @@ const ARM = [
   { id: "tennis", name: "Tennis Swing", movement: "Shoulder rotation · forehand and backhand", control: "tilt", pose: "handleArm", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Use a wrist strap and never let go of it.", art: ["swing", "🎾"],
     desc: "Swing forehand to one side, then backhand to the other.", source: "Tennis (Wii Sports) in virtual-reality stroke-rehab trials such as EVREST.",
     how: ["Hold the phone like a racket, arm in front.", "Swing across to the forehand side.", "Then across to the backhand side."],
-    make: (S) => M.Swing(S, { signal: (a) => a.yaw, targets: (S) => [S.amp, -S.amp], hold: 0.15, cues: ["Forehand!", "Backhand!"], labels: ["Forehand", "Backhand"], emoji: "🎾" }) },
+    make: (S) => in3D(M.Swing(S, { signal: (a) => a.yaw, targets: (S) => [S.amp, -S.amp], hold: 0.15, cues: ["Forehand!", "Backhand!"], labels: ["Forehand", "Backhand"], emoji: "🎾" }), "tennis") },
   Object.assign({ id: "airplane", name: "Airplane Arms", movement: "Shoulder abduction · sustained", control: "tilt", pose: "handleHang", mount: "Grip the bottom of the phone in your fist, thumb forward, and let your arm hang straight down at your side, so the phone points at the floor with the screen facing forward. Keep your elbow straight.", art: ["hold", "✈️"],
     desc: "Lift your arm out to the side like an airplane wing and hold it there.", source: "Isometric shoulder abduction holds from post-stroke strength programs.",
     how: ["Let your arm hang at your side.", "Lift it straight out to the side into the green band.", "Hold it there, then lower and rest."],
-    make: (S) => M.Hold(S, { signal: abs("roll"), band: (S) => [S.amp * 0.8, S.amp * 1.6], holdS: (S) => lvl(S, { 1: 4, 2: 7, 3: 10 }), restBelow: (S) => S.amp * 0.4, emoji: "✈️", cues: { below: "Lift your arm out higher", above: "A little lower", in: "Hold your wing out", rest: "Lower your arm and rest" } }) }, reps([3, 5, 8], 3)),
+    make: (S) => in3D(M.Hold(S, { signal: abs("roll"), band: (S) => [S.amp * 0.8, S.amp * 1.6], holdS: (S) => lvl(S, { 1: 4, 2: 7, 3: 10 }), restBelow: (S) => S.amp * 0.4, emoji: "✈️", cues: { below: "Lift your arm out higher", above: "A little lower", in: "Hold your wing out", rest: "Lower your arm and rest" } }), "airplane") }, reps([3, 5, 8], 3)),
 ];
 ARM.forEach((d) => { defineArt(d.id, M.art(...d.art)); RC.register(Object.assign({ section: "arm" }, d)); });
 })();

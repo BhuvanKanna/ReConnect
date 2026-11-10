@@ -77,7 +77,7 @@ The whole app is static files, which is why it can run on GitHub Pages.
   namespace. `js/plan.js` (plan rules) and `js/data.js` (storage and demo seed) are pure and unit-tested in Node.
   Each library section is one file in `js/games/`; shared building blocks (rep counter, tilt cursor, answer cards,
   keypad, guided session) are in `js/kit.js`.
-- Five exercises are 3D scenes, built on three.js loaded on demand by `js/scene3d.js`. Each falls back to a flat
+- Fifteen exercises are 3D scenes, built on three.js loaded on demand by `js/scene3d.js`. Each falls back to a flat
   2D view if WebGL isn't available, and steps down on a slow computer (lower resolution and no shadows first,
   then the 2D view if it still runs under about 22 frames a second):
   - **Lantern Lift** (`js/lift3d.js`), first person: the patient's own arm lifts a lantern into a gold ring,
@@ -99,6 +99,17 @@ The whole app is static files, which is why it can run on GitHub Pages.
     arch over one lane and barriers in the others; a green marker by the wheel shows where to turn it. Gates
     mostly sit in the outside lanes and swap sides, so reaching one takes a 30° turn at level 1, 42° at
     level 2 and 54° at level 3.
+  - Ten more use the shared engines (Reach, Hold, Swing, Wave) for their scoring and only swap the picture:
+    `js/play3d.js` wraps the game, draws the scene and a gauge that shows the movement against the green target
+    zone (plus the reps done), and `js/play3d-scenes.js` builds one scene per exercise:
+    **Swing the Gate** (a farm gate opens and a sheep walks through to join the flock), **Paint the Fence**
+    (each full stroke paints a picket; every finished fence starts over in a new colour), **Turn the Key** (a
+    treasure chest on a beach opens and spills gold coins), **Raise the Drawbridge** (hold the bridge up while a
+    boat sails along the moat), **Open the Jar** (each twist loosens the lid of a cookie jar until it pops off),
+    **Airplane Arms** (fly through golden rings at the right height to reach the next island), **Seated
+    Cycling** (ride a park path to the finish arch), **Head Turns** (bird watching: turn to the singing bird and
+    take its picture), **Knee Lift Hold** (rise into the breeze and drift the balloon to the flag on the far
+    hill) and **Tennis Swing** (hit the machine's balls back, forehand then backhand).
 - The computer registers a 6-digit code (`mend-rehab-<code>`) with the free [PeerJS](https://peerjs.com) broker and
   shows it as a QR code. `phone.html` connects by that code and the two talk over a WebRTC data channel.
 - If a relay is configured (`js/config.js`, see [`relay/README.md`](relay/README.md)), the computer also registers

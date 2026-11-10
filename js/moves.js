@@ -93,6 +93,11 @@ function Swing(S, spec) {
   G.status = () => (hold >= 0.8 && dwell > 0.05 ? { title: "Hold it there", text: `${Math.max(0, hold - dwell).toFixed(1)} s`, tone: "good" } : { title: spec.cues[side], text: `${G._reps} of ${S.reps} done` });
   G.stats = () => [[spec.labels[0], deg(Math.abs(ext[0]))], [spec.labels[1], deg(Math.abs(ext[1]))], ["Average time per rep", secs(times)]].concat(spec.stats ? spec.stats(times) : []);
   G.debug = () => ({ kind: "value", target: tg[side], val, side });
+  // For the 3D scenes (js/play3d.js). x: -1 at the negative target, 0 at rest, +1 at the positive target.
+  G.view = () => {
+    const pos = Math.max(1, ...tg.filter((v) => v > 0)), neg = Math.max(1, ...tg.filter((v) => v < 0).map(Math.abs));
+    return { type: "swing", val, targets: tg, side, x: val >= 0 ? val / pos : val / neg, prog: hold >= 0.2 ? dwell / hold : 0, reps: G._reps, goal: S.reps };
+  };
   G.draw = function (g, W, H, a, tt) {
     Game.W = W; Game.H = H; bg(g, W, H); dots(g, W, S.reps, this._reps);
     draw(g, W, H, { val, targets: tg, side, prog: hold >= 0.2 ? dwell / hold : 0, reps: this._reps, a, t: tt });
@@ -158,6 +163,8 @@ function Hold(S, spec) {
   const sd = () => (n > 1 ? Math.sqrt(Math.max(0, sum2 / n - (sum / n) ** 2)) : 0);
   G.stats = () => [["Holds", `${G._reps} / ${S.reps}`], ["Longest steady hold", `${best.toFixed(1)} s`], ["Wobble while holding", `${sd().toFixed(1)}°`]];
   G.debug = () => ({ kind: "value", target: state === "go" ? (band[0] + Math.min(band[1], band[0] + 40)) / 2 : (spec.restBelow ? spec.restBelow(S) * 0.5 : (band[0] + Math.min(band[1], band[0] + 40)) / 2), val, state });
+  // For the 3D scenes (js/play3d.js). u: 1 at the bottom of the band; hi: the top of the band on the same scale.
+  G.view = () => ({ type: "hold", val, band, u: Math.max(0, val / Math.max(1, band[0])), hi: band[1] / Math.max(1, band[0]), inBand: inBand(val), held, need, prog: held / need, state, reps: G._reps, goal: S.reps });
   G.draw = function (g, W, H) {
     bg(g, W, H); dots(g, W, S.reps, this._reps);
     const top = 160, bottom = H - 70, x = W * 0.42, maxV = Math.max(10, Math.min(band[1], band[0] + 40) * 1.25, band[0] * 1.4);
@@ -331,6 +338,8 @@ function Wave(S, spec) {
   G.status = () => ({ title: spec.cues[want > 0 ? 0 : 1], text: `${G._reps} of ${S.reps}` });
   G.stats = () => [["Cycles", `${G._reps} / ${S.reps}`], ["Pace", `${pace()} per second`]];
   G.debug = () => ({ kind: "value", target: want * thr * 1.25, val });
+  // For the 3D scenes (js/play3d.js). x: +1 and -1 at the two turn points.
+  G.view = () => ({ type: "wave", val, thr, want, x: val / Math.max(1, thr), prog: G._reps / S.reps, reps: G._reps, goal: S.reps });
   G.draw = function (g, W, H, a, tt) {
     bg(g, W, H); dots(g, W, Math.min(S.reps, 30), Math.round((this._reps / S.reps) * Math.min(S.reps, 30)));
     if (spec.draw) { spec.draw(g, W, H, { val, thr, prog: this._reps / S.reps, want }); return; }

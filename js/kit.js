@@ -226,6 +226,8 @@ function Reach(S, spec) {
   const best = () => (rc.peaks.length ? Math.round(Math.max(...rc.peaks.map(Math.abs))) : null);
   G.stats = () => [["Best", best() == null ? "–" : `${best()}°`], ["Average", rc.peaks.length ? `${Math.round(rc.peaks.reduce((s, x) => s + Math.abs(x), 0) / rc.peaks.length)}°` : "–"]].concat(spec.stats ? spec.stats() : []);
   G.debug = () => ({ state: rc.state, target: rc.target, val });
+  // What a 3D scene needs to draw this exercise (see js/play3d.js). u: share of the way to the target.
+  G.view = () => ({ type: "reach", val, target: rc.target, u: Math.max(0, (rc.target < 0 ? -val : val) / Math.max(1, Math.abs(rc.target))), prog: rc.progress(), state: rc.state, reps: G._reps, goal: S.reps });
   G.draw = function (g, W, H, a, t) {
     bg(g, W, H);
     dots(g, W, S.reps, this._reps);
