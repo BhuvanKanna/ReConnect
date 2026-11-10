@@ -95,6 +95,8 @@ function fish(K, parent, color) {
   K.eyes(g, 0.075, 0.04, 0.22, 0.03);
   return { g, tail };
 }
+// shared with the later scene files (js/play3d-scenes3.js, ...)
+P3.lib = { PI, D2R, clamp, damp, lerp, ease, A, fit, animal, trees, pines, flowers, flag, stick, textTex, sunny, shadowBox, target, duck, fish };
 
 // ================================================================ 11. Pendulum Swing (Wave)
 // A rope swing under a big oak. The arm's swing rocks the bunny on the swing out to the pinwheel on each

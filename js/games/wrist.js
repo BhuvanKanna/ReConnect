@@ -3,6 +3,8 @@
 const RC = window.RC;
 const { $, clamp, lerp, TAU, reduceMotion, store, settings, saveSettings, T, alpha, txt, rr, chime, esc, fmtTime, Game, readTheme } = RC;
 const { base, drawGonio } = RC.kit;
+// Draw with a 3D scene from the js/play3d-scenes files when the computer can (the game still does the scoring).
+const in3D = (G, id) => (RC.Play3D ? RC.Play3D.wrap(G, id) : G);
 // ---- 2. Pour the Tea: controlled supination/pronation --------------------------
 // Drawn as a 3D kitchen table (js/pour3d.js); a flat 2D view stands in until three.js loads or without WebGL.
 function PourTea(S) {
@@ -156,8 +158,9 @@ function ComboLock(S) {
   function newCode() { code = []; while (code.length < len) { const d = Math.floor(Math.random() * 10); if (d !== code[code.length - 1]) code.push(d); } entered = []; phase = "show"; phaseT = 0; armed = false; lastD = -1; rounds++; }
   newCode();
   const dialVal = (r) => clamp(((r + amp) / (2 * amp)) * 9, 0, 9);
+  let roll = 0;
   G.update = function (dt, a) {
-    phaseT += dt;
+    phaseT += dt; roll = a.roll;
     if (phase === "show") { if (phaseT > 2.2 + len * 0.7) { phase = "dial"; phaseT = 0; dwell = 0; armed = false; lastD = Math.round(dialVal(a.roll)); } return; }
     if (phase === "reveal") { if (phaseT > 2.0) { if (this._reps >= S.reps) this.done = true; else newCode(); } return; }
     const d = Math.round(dialVal(a.roll));
@@ -177,6 +180,8 @@ function ComboLock(S) {
     return { title: `Dial number ${entered.length + 1} of ${len}`, text: "Turn your wrist, then hold still on the number." };
   };
   G.stats = () => [["Codes opened", `${codesOpened} / ${rounds}`], ["Digits correct", `${correct} / ${correct + wrong}`]];
+  // For the 3D scene: dial is the number under the pointer (0..9, fractional while turning).
+  G.view = () => ({ type: "lock", phase, code, entered, len, dial: dialVal(roll), armed, prog: armed ? dwell / 1.0 : 0, opened: phase === "reveal" && entered.every((x, i) => x === code[i]), rounds, reps: G._reps, goal: S.reps });
   G.draw = function (g, W, H, a, t) {
     g.fillStyle = T.stage; g.fillRect(0, 0, W, H);
     const cx = W / 2, cy = H - 44, R = Math.max(110, Math.min(W * 0.36, cy - 236, 300));
@@ -214,7 +219,7 @@ function ComboLock(S) {
 function TiltMaze(S) {
   const amp = S.amp, G = base(S, Math.max(2, Math.min(4, Math.round(S.reps / 4))));
   const dims = { 1: [5, 3], 2: [7, 4], 3: [9, 5] }[S.level];
-  let maze, ball, hits = 0, hitCool = 0, mazeT = 0, times = [], win = 0;
+  let maze, ball, hits = 0, hitCool = 0, mazeT = 0, times = [], win = 0, tilt = { x: 0, y: 0 };
   function build() {
     const [C, R] = dims, cells = [];
     for (let y = 0; y < R; y++) for (let x = 0; x < C; x++) cells.push({ x, y, n: 1, e: 1, s: 1, w: 1, v: 0 });
@@ -237,6 +242,7 @@ function TiltMaze(S) {
     const tx = Math.abs(a.roll) < dz ? 0 : clamp(a.roll / amp, -1.3, 1.3);
     const py = a.demo ? -a.pitch : a.pitch; // real phone: tipping the top edge down rolls the ball up the screen
     const ty = Math.abs(py) < dz ? 0 : clamp(py / amp, -1.3, 1.3);
+    tilt = { x: tx, y: ty };
     const acc = 7;
     ball.vx += tx * acc * dt; ball.vy += ty * acc * dt;
     const fr = Math.exp(-dt * 1.6); ball.vx *= fr; ball.vy *= fr;
@@ -268,6 +274,8 @@ function TiltMaze(S) {
     }
   }
   G.debug = () => ({ maze, ball });
+  // For the 3D scene: the maze, the ball (in cell units) and the tilt that is rolling it.
+  G.view = () => ({ type: "maze", maze, ball, rad: RAD, win, tilt, reps: G._reps, goal: G.goal() });
   G.status = function () {
     if (win > 0) return { title: "You made it", text: this._reps < this.goal() ? "Next maze coming up." : "Last maze done.", tone: "good" };
     return { title: "Roll the ball to the flag", text: `Maze ${this._reps + 1} of ${this.goal()} · gentle tilts work best` };
@@ -318,7 +326,7 @@ RC.register(Object.assign({ section: "wrist" }, {
     desc: "Memorize the code, then turn your wrist to dial each number and hold it there.",
     source: "mRehab Unlock with Key and Turn Doorknob; Constant Therapy visual memory tasks.",
     how: ["Read the code while it is showing.", "Turn your wrist to move the pointer to each number.", "Hold still on a number to enter it."],
-    make: (S) => ComboLock(S),
+    make: (S) => in3D(ComboLock(S), "lock"),
   }));
 RC.register(Object.assign({ section: "wrist" }, {
     id: "maze", name: "Tilt Maze", movement: "Wrist tilt and forearm rotation", axes: "Pitch + Roll",
@@ -326,7 +334,7 @@ RC.register(Object.assign({ section: "wrist" }, {
     desc: "Tilt your hand like a tray to roll the ball to the flag without bumping the walls.",
     source: "RAPAEL Smart Glove wrist flexion/extension and radial/ulnar deviation games.",
     how: ["Rest your forearm on the table so the wrist does the work.", "Tip the front of the phone down or up, or turn your hand left or right, to roll the ball.", "Gentle tilts are enough. Bring the phone level to stop."],
-    make: (S) => TiltMaze(S),
+    make: (S) => in3D(TiltMaze(S), "maze"),
   }));
 
 // ================================================================ more wrist & forearm exercises
@@ -346,6 +354,8 @@ function Alternate(S, spec) {
   G.status = () => ({ title: spec.cues[side], text: `${G._reps} of ${S.reps} done` });
   G.stats = () => [[spec.rangeLabels[0], `${Math.round(ranges[0])}°`], [spec.rangeLabels[1], `${Math.round(ranges[1])}°`]];
   G.debug = () => ({ side, val });
+  // For the 3D scenes: the same fields as the Swing engine's view in js/moves.js.
+  G.view = () => { const tg = spec.targets(S), pos = Math.max(1, ...tg.filter((v) => v > 0)), neg = Math.max(1, ...tg.filter((v) => v < 0).map(Math.abs)); return { type: "swing", val, targets: tg, side, x: val >= 0 ? val / pos : val / neg, prog: dwell / spec.hold, reps: G._reps, goal: S.reps }; };
   G.draw = function (g, W, H) {
     bg(g, W, H); dots(g, W, S.reps, this._reps);
     spec.draw(g, W, H, { val, side, prog: dwell / spec.hold, targets: spec.targets(S) });
@@ -399,6 +409,8 @@ function SteadyCup(S) {
   G.status = () => (Math.hypot(x, y) <= radius() ? { title: "Steady. Keep it there.", text: `${RC.fmtTime(Math.max(0, dur - t))} left`, tone: "good" } : { title: "Bring the dot back to the middle", text: "Small, slow corrections." });
   G.stats = () => [["Time steady", `${Math.round((inT / Math.max(0.1, t)) * 100)}%`], ["Sway", `${Math.sqrt(sum2 / Math.max(1, n)).toFixed(1)}° RMS`]];
   G.debug = () => ({ t, r: radius() });
+  // For the 3D scene: tilt and the allowed circle on a scale where 1 is 30 degrees.
+  G.view = () => ({ type: "steady", x: x / 30, y: y / 30, r: radius() / 30, inside: Math.hypot(x, y) <= radius(), prog: t / dur, reps: G._reps, goal: 1 });
   G.draw = function (g, W, H) {
     bg(g, W, H);
     const cx = W / 2, cy = H * 0.56, scale = Math.min(W, H - 160) / 70;
@@ -413,14 +425,14 @@ function SteadyCup(S) {
 [
   { id: "wristbend", name: "Wrist Bend", movement: "Wrist flexion and extension", pose: "edgeDown", mount: "Rest your forearm on the table with your wrist just past the edge. Palm down, grip the phone flat against your palm: screen facing the floor, top edge toward your fingertips.",
     desc: "Bend your wrist up to the top line, then down to the bottom one.", source: "FitMi wrist bend; RAPAEL wrist flexion and extension.",
-    how: ["Rest your forearm on the table with the wrist free.", "Bend your wrist up until the hand reaches the line.", "Then bend it down to the lower line."], make: WristBend },
+    how: ["Rest your forearm on the table with the wrist free.", "Bend your wrist up until the hand reaches the line.", "Then bend it down to the lower line."], make: (S) => in3D(WristBend(S), "wristbend") },
   { id: "wiper", name: "Wrist Wiper", movement: "Radial and ulnar deviation", pose: "palmDown", mount: "Put your hand on top of the phone, palm down, and grip its sides: screen facing the table, top edge toward your fingertips. Rest your forearm on the table.",
     desc: "Sweep your hand side to side like a windscreen wiper.", source: "RAPAEL radial and ulnar deviation; GRASP wrist range of motion.",
-    how: ["Keep your forearm still on the table.", "Sweep your hand sideways toward the lit target, sliding on the table.", "Then sweep across to the other side."], make: WristWiper },
+    how: ["Keep your forearm still on the table.", "Sweep your hand sideways toward the lit target, sliding on the table.", "Then sweep across to the other side."], make: (S) => in3D(WristWiper(S), "wiper") },
   { id: "steady", name: "Steady Cup", movement: "Holding still · steadiness", pose: "palm", mount: "Lay the phone flat on your open palm, screen up, top edge toward your fingertips. Rest your forearm on the table.",
     desc: "Keep the dot inside the circle as it slowly gets smaller.", source: "mRehab Walk with Mug (keeping a cup level).",
     params: { reps: null, level: [1, 2, 3], durationS: [30, 60, 90] }, defaults: { reps: null, level: 2, durationS: 30 },
-    how: ["Rest your forearm on the table, hand level.", "Keep the orange dot inside the green circle.", "Small, slow corrections are best."], make: SteadyCup },
+    how: ["Rest your forearm on the table, hand level.", "Keep the orange dot inside the green circle.", "Small, slow corrections are best."], make: (S) => in3D(SteadyCup(S), "steady") },
 ].forEach((d) => RC.register(Object.assign({ section: "wrist", control: "tilt" }, d)));
 
 defineArt("wristbend", '<rect x="18" y="32" width="46" height="12" rx="6" fill="var(--a-mute)" opacity=".3"/><rect x="62" y="20" width="32" height="12" rx="6" fill="var(--a-hi)" transform="rotate(-24 64 38)"/><path d="M64 38 L100 16 M64 38 L100 54" stroke="var(--a-hi)" stroke-width="1.5" stroke-dasharray="3 3"/>');

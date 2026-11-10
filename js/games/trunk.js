@@ -4,6 +4,8 @@
 const RC = window.RC;
 const { clamp, lerp, TAU, T, alpha, txt, rr, fmtTime } = RC;
 const { base, bg, dots, Guided, defineArt } = RC.kit;
+// Draw with a 3D scene from the js/play3d-scenes files when the computer can (the game still does the scoring).
+const in3D = (G, id) => (RC.Play3D ? RC.Play3D.wrap(G, id) : G);
 
 // ---- Lean & Shift: seated weight shift to the left, right and forward
 function LeanShift(S) {
@@ -21,6 +23,9 @@ function LeanShift(S) {
   G.status = () => (need ? { title: "Sit up tall in the middle", text: "Then lean to the next target." } : hold > 0.05 ? { title: "Hold the lean", text: `${Math.max(0, HOLD - hold).toFixed(1)} s`, tone: "good" } : { title: `Lean ${dir() === "forward" ? "forward" : "to the " + dir()}`, text: "Keep both feet flat on the floor." });
   G.stats = () => [["Leaned left", `${Math.round(best.left)}°`], ["Leaned right", `${Math.round(best.right)}°`], ["Leaned forward", `${Math.round(best.forward)}°`]];
   G.debug = () => ({ dir: dir(), need, hold });
+  // For the 3D scene and the direction pad (js/play3d.js): x, y are the lean as a share of the target lean.
+  const PAD = { left: [-0.9, 0], right: [0.9, 0], forward: [0, 0.9] }, PADS = [PAD.left, PAD.right, PAD.forward];
+  G.view = () => ({ type: "direction", lean: true, phase: need ? "back" : "go", dir: dir(), d: PAD[dir()], dirs: PADS, x: roll / amp, y: pitch / amp, prog: hold / HOLD, reps: G._reps, goal: S.reps });
   G.draw = function (g, W, H) {
     bg(g, W, H); dots(g, W, S.reps, this._reps);
     const cx = W / 2, cy = H * 0.58, R = Math.min(W * 0.3, H * 0.34), sc = R / (amp * 1.4);
@@ -141,6 +146,8 @@ function Spikes(S, spec) {
   G.status = () => ({ title: spec.cues[phase], text: `${G._reps} of ${S.reps} done` });
   G.stats = () => [["Reps", `${G._reps} / ${S.reps}`], ["Average time per rep", times.length ? `${(times.reduce((s, x) => s + x, 0) / times.length).toFixed(1)} s` : "–"]];
   G.debug = () => ({ phase, acc });
+  // For the 3D scenes: the same fields as the Bursts engine's view in js/moves.js.
+  G.view = () => ({ type: "bursts", acc, thr: spec.thr, a: acc / spec.thr, armed, phase, per: spec.per, beat: G._reps * spec.per + phase, reps: G._reps, goal: S.reps });
   G.draw = function (g, W, H) {
     bg(g, W, H); dots(g, W, S.reps, this._reps);
     spec.draw(g, W, H, { phase, acc, thr: spec.thr });
@@ -171,6 +178,8 @@ function BalanceHold(S) {
   G.update = function (dt, a) { t += dt; x = a.roll; y = a.pitch; sum2 += x * x + y * y; n++; if (t >= dur) { this._reps = 1; this.done = true; } };
   G.status = () => ({ title: "Stand tall and hold still", text: `${fmtTime(Math.max(0, dur - t))} left · hold the counter if you need to` });
   G.stats = () => [["Time held", fmtTime(Math.min(t, dur))], ["Sway", `${Math.sqrt(sum2 / Math.max(1, n)).toFixed(1)}° RMS`]];
+  // For the 3D scene: sway on a scale where 1 is 24 degrees; inside the small circle counts as steady.
+  G.view = () => ({ type: "steady", x: x / 24, y: y / 24, r: 6 / 24, inside: Math.hypot(x, y) <= 6, prog: t / dur, reps: G._reps, goal: 1 });
   G.draw = function (g, W, H) {
     bg(g, W, H);
     const cx = W / 2, cy = H * 0.56, sc = Math.min(W, H - 160) / 60;
@@ -185,21 +194,21 @@ const REPS = { params: { reps: [10, 20, 30], level: [1, 2, 3], durationS: null }
 [
   { id: "lean", name: "Lean & Shift", movement: "Seated weight shift", control: "tilt", pose: "chest", mount: "Hold the phone flat against your breastbone (or tuck it upright in a shirt pocket), screen facing out, top edge up.",
     desc: "Lean to the left, to the right and forward, holding each lean for two seconds.", source: "Home weight-transfer programs after stroke; FitMi oblique work.",
-    how: ["Sit on a firm chair with your feet flat.", "Lean toward the lit target and hold.", "Come back to the middle before the next one."], make: LeanShift },
+    how: ["Sit on a firm chair with your feet flat.", "Lean toward the lit target and hold.", "Come back to the middle before the next one."], make: (S) => in3D(LeanShift(S), "lean") },
   { id: "twist", name: "Trunk Twist", movement: "Seated trunk rotation", control: "tilt", pose: "chest", mount: "Hold the phone flat against your breastbone (or tuck it upright in a shirt pocket), screen facing out, top edge up.",
     desc: "Turn your shoulders to look around. Find the animals on each side.", source: "FitMi seated twists and trunk rotation; GRASP trunk control.",
     scenes: RC.Twist3D ? RC.Twist3D.SCENES : null,
     how: ["Sit tall. Keep your hips facing forward.", "Turn your shoulders to look right, then left.", "Hold still on each animal to find it."], make: TrunkTwist },
   Object.assign({ id: "sit2stand", name: "Sit to Stand", movement: "Standing up from a chair", control: "accel", safety: "standing", pose: "chest", mount: "Hold the phone flat against your breastbone (or tuck it upright in a shirt pocket), screen facing out, top edge up.",
     desc: "Stand up from a chair and sit down again, slowly and with control.", source: "Otago exercise programme (sit to stand), used in stroke balance trials.",
-    how: ["Only with a sturdy chair behind you and someone nearby.", "Feet back, lean forward, and stand up.", "Sit down slowly, reaching back for the chair."], make: SitToStand }, { params: { reps: [5, 8, 10], level: [1, 2, 3], durationS: null }, defaults: { reps: 5, level: 1, durationS: null } }),
+    how: ["Only with a sturdy chair behind you and someone nearby.", "Feet back, lean forward, and stand up.", "Sit down slowly, reaching back for the chair."], make: (S) => in3D(SitToStand(S), "sit2stand") }, { params: { reps: [5, 8, 10], level: [1, 2, 3], durationS: null }, defaults: { reps: 5, level: 1, durationS: null } }),
   { id: "balance", name: "Balance Hold", movement: "Standing balance", control: "tilt", safety: "standing", pose: "chest", mount: "Hold the phone flat against your breastbone (or tuck it upright in a shirt pocket), screen facing out, top edge up.",
     desc: "Stand still for the whole time. Your sway is measured.", source: "Otago balance exercises (standing, tandem and one-leg stance).",
     params: { reps: null, level: [1, 2, 3], durationS: [20, 30, 60] }, defaults: { reps: null, level: 1, durationS: 20 },
-    how: ["Stand next to a counter you can hold, with someone nearby.", "Feet apart on level 1, together on level 2, one in front on level 3.", "Stand tall and keep the dot in the middle."], make: BalanceHold },
+    how: ["Stand next to a counter you can hold, with someone nearby.", "Feet apart on level 1, together on level 2, one in front on level 3.", "Stand tall and keep the dot in the middle."], make: (S) => in3D(BalanceHold(S), "balance") },
   Object.assign({ id: "march", name: "Seated March", movement: "Hip flexion · seated stepping", control: "accel", pose: "pocket", mount: "Put the phone in the front trouser pocket on your affected side.",
     desc: "March in your chair, lifting one knee and then the other.", source: "FitMi seated marching.",
-    how: ["Sit tall with your feet flat.", "Lift your knee as high as is comfortable.", "Lower it and lift the other one."], make: SeatedMarch }, REPS),
+    how: ["Sit tall with your feet flat.", "Lift your knee as high as is comfortable.", "Lower it and lift the other one."], make: (S) => in3D(SeatedMarch(S), "march") }, REPS),
   Object.assign({ id: "heelraise", name: "Heel Raises", movement: "Calf strength · ankle", control: "guided", pad: "done", mount: "",
     desc: "Lift your heels off the floor, hold, and lower. Seated or holding a counter.", source: "Otago heel raises.",
     how: ["Sit, or stand holding a counter.", "Lift both heels and hold for a count of two.", "Lower slowly and press Done."], make: (S) => Guided(S, { steps: ["Lift your heels", "Hold for two", "Lower slowly"], accel: true }) }, REPS),

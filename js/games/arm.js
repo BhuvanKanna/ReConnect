@@ -3,6 +3,8 @@
 const RC = window.RC;
 const { $, clamp, lerp, TAU, reduceMotion, store, settings, saveSettings, T, alpha, txt, rr, chime, esc, fmtTime, Game, readTheme } = RC;
 const { base, drawGonio } = RC.kit;
+// Draw with a 3D scene from the js/play3d-scenes files when the computer can (the game still does the scoring).
+const in3D = (G, id) => (RC.Play3D ? RC.Play3D.wrap(G, id) : G);
 // ---- 1. Lantern Lift: shoulder flexion with hold --------------------------------
 // A first-person 3D scene (js/lift3d.js): your own arm lifts a lantern on a pole into a gold ring.
 // Each repetition lights one lantern on the string in the garden. Until three.js has loaded, or if
@@ -161,16 +163,20 @@ function ReachTargets(S) {
   G.status = () => ({ title: "Reach for the lit circle", text: "Tilt to move the dot there, then hold still." });
   G.stats = () => [["Targets hit", `${G._reps} / ${S.reps}`], ["Average time to target", times.length ? `${(times.reduce((s, x) => s + x, 0) / times.length).toFixed(1)} s` : "–"]];
   G.debug = () => ({ lit, rects, cursor: { x: cur.x, y: cur.y } });
-  G.draw = function (g, W, H) {
+  // The board's layout follows the stage size (js/play3d.js calls this too when it draws instead of draw()).
+  let board = null;
+  G.onStage = (W, H) => {
     Game.W = W; Game.H = H;
-    bg(g, W, H); dots(g, W, S.reps, this._reps);
     const size = Math.min(W * 0.62, H - 190), cell = size / 3, x0 = W / 2 - size / 2, y0 = 160 + (H - 170 - size) / 2;
-    rects = [];
-    for (let i = 0; i < 9; i++) {
-      const cx = x0 + (i % 3) * cell + cell / 2, cy = y0 + Math.floor(i / 3) * cell + cell / 2, r = cell * 0.3;
-      rects.push({ x: cx - r, y: cy - r, w: r * 2, h: r * 2 });
-      g.beginPath(); g.arc(cx, cy, r, 0, TAU); g.fillStyle = i === lit ? T.accent : alpha(T.ink, 0.06); g.fill();
-    }
+    board = { x0, y0, size }; rects = [];
+    for (let i = 0; i < 9; i++) { const cx = x0 + (i % 3) * cell + cell / 2, cy = y0 + Math.floor(i / 3) * cell + cell / 2, r = cell * 0.3; rects.push({ x: cx - r, y: cy - r, w: r * 2, h: r * 2 }); }
+  };
+  // For the 3D scene: the pointer on the board (-1..1 across, -1 at the top), the lit circle (0..8, row by row) and the hold.
+  G.view = () => ({ type: "board", lit, x: board ? ((cur.x - board.x0) / board.size) * 2 - 1 : 0, y: board ? ((cur.y - board.y0) / board.size) * 2 - 1 : 0, prog: cur.idx === lit ? Math.max(0, cur.dwellT) / DWELL : 0, reps: G._reps, goal: S.reps });
+  G.draw = function (g, W, H) {
+    G.onStage(W, H);
+    bg(g, W, H); dots(g, W, S.reps, this._reps);
+    rects.forEach((r, i) => { g.beginPath(); g.arc(r.x + r.w / 2, r.y + r.h / 2, r.w / 2, 0, TAU); g.fillStyle = i === lit ? T.accent : alpha(T.ink, 0.06); g.fill(); });
     cur.draw(g, DWELL);
   };
   return G;
@@ -192,6 +198,8 @@ function PushAway(S) {
   G.status = () => (phase === "ready" ? { title: "Push your hand forward", text: "Straighten your arm in one smooth push." } : { title: "Now bring it back and rest", text: "Hold still for a moment." });
   G.stats = () => [["Pushes", `${G._reps} / ${S.reps}`], ["Strongest push", peaks.length ? `${Math.max(...peaks).toFixed(1)} m/s²` : "–"]];
   G.debug = () => ({ phase, accNow });
+  // For the 3D scene (bursts-style gauge): a is the push as a share of the threshold; ball runs 0..1 with the push.
+  G.view = () => ({ type: "bursts", a: accNow / thr, armed: phase === "ready", phase, ball, beat: G._reps * 2 + (phase === "push" ? 1 : 0), reps: G._reps, goal: S.reps });
   G.draw = function (g, W, H) {
     bg(g, W, H); dots(g, W, S.reps, this._reps);
     const y = H * 0.58, x0 = W * 0.15, x1 = W * 0.8;
@@ -235,8 +243,11 @@ function TraceIt(S) {
   G.status = () => ({ title: "Trace the shape", text: "Follow the line from the dot. Slow and steady is best." });
   G.stats = () => [["Shapes", `${G._reps} / ${shapesGoal}`], ["Accuracy", scores.length ? `${Math.round(scores.reduce((s, x) => s + x, 0) / scores.length)}%` : "–"]];
   G.debug = () => ({ idx, n: path.length, next: path[Math.min(idx + 3, path.length - 1)], cursor: { x: cur.x, y: cur.y } });
+  G.onStage = (W, H) => { if (W !== W0 || H !== H0) { W0 = W; H0 = H; path = build(W, H); } };
+  // For the 3D scene: the same shape as the Path engine's view (stage pixels).
+  G.view = () => ({ type: "path", name: `trace${S.level}-${G._reps}`, pts: path, idx, tol: 34, cur: { x: cur.x, y: cur.y }, prog: path.length ? idx / (path.length - 1) : 0, reps: G._reps, goal: shapesGoal });
   G.draw = function (g, W, H) {
-    if (W !== W0 || H !== H0) { W0 = W; H0 = H; path = build(W, H); }
+    G.onStage(W, H);
     bg(g, W, H); dots(g, W, shapesGoal, this._reps);
     g.lineCap = "round"; g.lineJoin = "round";
     g.strokeStyle = alpha(T.ink, 0.12); g.lineWidth = 30; g.beginPath(); path.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.stroke();
@@ -250,20 +261,20 @@ function TraceIt(S) {
 const ARM = [
   { id: "sideraise", name: "Side Raise", movement: "Shoulder abduction", control: "tilt", pose: "handleHang", mount: "Grip the bottom of the phone in your fist, thumb forward, and let your arm hang straight down at your side, so the phone points at the floor with the screen facing forward. Keep your elbow straight.",
     desc: "Lift your arm out to the side to the line, hold, then lower.", source: "FitMi side arm raise; GRASP arm strengthening.",
-    how: ["Sit or stand tall with your arm hanging by your side.", "Lift it straight out to the side until the arm reaches the dashed line.", "Hold while the ring fills, then lower slowly."], make: SideRaise },
+    how: ["Sit or stand tall with your arm hanging by your side.", "Lift it straight out to the side until the arm reaches the dashed line.", "Hold while the ring fills, then lower slowly."], make: (S) => in3D(SideRaise(S), "sideraise") },
   { id: "reach", name: "Reach Targets", movement: "Diagonal reach · aiming", control: "tilt", pose: "handleArm", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Point it at the screen and move your whole arm to steer.",
     desc: "Reach toward the lit circle on a 3×3 board and hold still on it.", source: "GRASP target board; FitMi diagonal reach.",
-    how: ["Hold your arm out, pointing the phone at the screen.", "Point at the lit circle to move the dot there.", "Hold still until the ring fills; a new circle lights up."], make: ReachTargets },
+    how: ["Hold your arm out, pointing the phone at the screen.", "Point at the lit circle to move the dot there.", "Hold still until the ring fills; a new circle lights up."], make: (S) => in3D(ReachTargets(S), "reach") },
   { id: "cupmouth", name: "Cup to Mouth", movement: "Elbow flexion · drinking", control: "tilt", pose: "upright", mount: "Hold the phone upright in your fist, top edge up, screen facing you. Rest your forearm on the table.",
     desc: "Lift the cup to your mouth, hold for a sip, then lower it.", source: "mRehab Sip from Mug; FitMi bicep curl.",
-    how: ["Start with your forearm resting on the table.", "Bend your elbow to bring the phone to your mouth, tipping it toward you as if to sip.", "Hold for a sip while the ring fills, then lower."], make: CupToMouth },
+    how: ["Start with your forearm resting on the table.", "Bend your elbow to bring the phone to your mouth, tipping it toward you as if to sip.", "Hold for a sip while the ring fills, then lower."], make: (S) => in3D(CupToMouth(S), "cupmouth") },
   { id: "push", name: "Push Away", movement: "Elbow extension · forward push", control: "accel", pose: "handleArm", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up.",
     desc: "Push your hand forward in one smooth movement, then bring it back.", source: "FitMi straight push and forward punches.",
-    how: ["Start with your elbow bent and your hand near your chest.", "Push your hand straight forward.", "Bring it back and hold still before the next push."], make: PushAway },
+    how: ["Start with your elbow bent and your hand near your chest.", "Push your hand straight forward.", "Bring it back and hold still before the next push."], make: (S) => in3D(PushAway(S), "push") },
   { id: "trace", name: "Trace It", movement: "Controlled multi-direction reaching", control: "tilt", pose: "handleArm", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Point it at the screen and move your whole arm to steer.",
     desc: "Steer the dot along a circle, a square or a figure-8.", source: "Penumbra REAL range-of-motion activities; RAPAEL house painting.",
     params: { reps: [5, 10, 15], level: [1, 2, 3], durationS: null }, defaults: { reps: 5, level: 1, durationS: null },
-    how: ["Hold your arm out, pointing the phone at the screen.", "Point slowly to move the dot along the line.", "Finish the shape; level 2 is a square, level 3 a figure-8."], make: TraceIt },
+    how: ["Hold your arm out, pointing the phone at the screen.", "Point slowly to move the dot along the line.", "Finish the shape; level 2 is a square, level 3 a figure-8."], make: (S) => in3D(TraceIt(S), "trace") },
 ];
 ARM.forEach((d) => RC.register(Object.assign({ section: "arm" }, d)));
 

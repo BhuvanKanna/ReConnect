@@ -142,11 +142,11 @@ const WRIST = [
   Object.assign({ id: "wristcircle", name: "Wrist Circles", movement: "Wrist circumduction", pose: "edgeDown", mount: "Rest your forearm on the table with your wrist just past the edge. Palm down, grip the phone flat against your palm: screen facing the floor, top edge toward your fingertips.",
     desc: "Make slow circles with your hand at the wrist, one way and then the other.", source: "Fugl-Meyer upper-extremity item (wrist circumduction).",
     how: ["Rest your forearm on the table, wrist over the edge.", "Tilt your hand out to the ring and circle round.", "Halfway through, circle the other way."],
-    make: (S) => M.Circles(S, { emoji: "✋", cue: "Circle your hand at the wrist" }) }, { params: { reps: [4, 6, 10], level: [1, 2, 3], durationS: null }, defaults: { reps: 4, level: 1, durationS: null } }),
+    make: (S) => in3D(M.Circles(S, { emoji: "✋", cue: "Circle your hand at the wrist" }), "wristcircle") }, { params: { reps: [4, 6, 10], level: [1, 2, 3], durationS: null }, defaults: { reps: 4, level: 1, durationS: null } }),
   { id: "water", name: "Water the Plants", movement: "Aim, then pour", pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table.",
     desc: "Turn toward each plant, then tip the can to water it.", source: "Daily-activity task practice (pouring); mRehab slow pour.",
     how: ["Turn your hand toward the plant shown.", "Tip the front of the phone down and hold it while the water pours.", "Bring it back to the middle for the next plant."],
-    make: (S) => M.Seq(S, { steps: (S, k) => { const s = k % 2 ? -1 : 1; return [{ axis: "yaw", target: s * S.amp, hold: 0.5, cue: `Turn toward the ${s > 0 ? "right" : "left"} plant`, short: "Aim", emoji: "🪴" }, { axis: "pitch", target: -S.amp * 0.8, hold: 1.5, cue: "Tip the spout down to pour", short: "Pour", emoji: "💧" }]; }, restCue: "Back to the middle" }) },
+    make: (S) => in3D(M.Seq(S, { steps: (S, k) => { const s = k % 2 ? -1 : 1; return [{ axis: "yaw", target: s * S.amp, hold: 0.5, cue: `Turn toward the ${s > 0 ? "right" : "left"} plant`, short: "Aim", emoji: "🪴" }, { axis: "pitch", target: -S.amp * 0.8, hold: 1.5, cue: "Tip the spout down to pour", short: "Pour", emoji: "💧" }]; }, restCue: "Back to the middle" }), "water") },
 ];
 WRIST.forEach((d) => RC.register(Object.assign({ section: "wrist", control: "tilt" }, d)));
 

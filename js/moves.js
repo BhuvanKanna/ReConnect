@@ -123,6 +123,8 @@ function Bursts(S, spec) {
   G.status = () => ({ title: spec.cues[phase], text: `${G._reps} of ${S.reps} done` });
   G.stats = () => [["Reps", `${G._reps} / ${S.reps}`], ["Average time per rep", secs(times)], ["Strongest movement", peaks.length ? `${Math.max(...peaks).toFixed(1)} m/s²` : "–"]];
   G.debug = () => ({ kind: "spikes", thr, armed, acc });
+  // For the 3D scenes (js/play3d.js). a: movement as a share of the threshold; fresh spikes bump `beat`.
+  G.view = () => ({ type: "bursts", acc, thr, a: acc / thr, armed, phase, per, beat: G._reps * per + phase, reps: G._reps, goal: S.reps });
   G.draw = function (g, W, H) {
     bg(g, W, H); dots(g, W, S.reps, this._reps);
     const cx = W / 2, cy = H * 0.5, up = acc > thr;
@@ -200,6 +202,9 @@ function Track(S, spec) {
   G.status = () => (Math.abs(val - target(t)) <= tol ? { title: "On it. Keep following.", text: `${fmtTime(Math.max(0, dur - t))} left`, tone: "good" } : { title: spec.cue || "Follow the moving target", text: val < target(t) ? "A little higher" : "A little lower" });
   G.stats = () => [["Time on target", `${Math.round((on / Math.max(0.1, t)) * 100)}%`], ["Average distance", `${(err / Math.max(1, n)).toFixed(1)}°`]];
   G.debug = () => ({ kind: "value", target: target(t), val });
+  // For the 3D scenes (js/play3d.js). x, tx: your value and the target on a -1..1 scale; ahead(s): the target s seconds from now.
+  const norm = (v) => ((v - lo) / (hi - lo)) * 2 - 1;
+  G.view = () => ({ type: "track", x: norm(val), tx: norm(target(t)), tw: (tol / (hi - lo)) * 2, on: Math.abs(val - target(t)) <= tol, ahead: (s) => norm(target(t + s)), share: on / Math.max(0.1, t), prog: t / dur, reps: G._reps, goal: 1 });
   G.draw = function (g, W, H) {
     bg(g, W, H);
     const top = 160, bottom = H - 60, x0 = W * 0.28, pps = (W - x0 - 40) / 4;
@@ -238,6 +243,8 @@ function Catch(S, spec) {
   G.status = () => (flashT > 0 ? (flashOk ? { title: "Caught it", text: `${caught} caught`, tone: "good" } : { title: "Missed that one", text: "Move under the next one early.", tone: "warn" }) : { title: spec.cue, text: `${caught} caught · ${S.reps - sent} to come` });
   G.stats = () => [["Caught", `${caught} / ${S.reps}`], ["Missed", String(missed)]];
   G.debug = () => ({ kind: "value", target: item ? item.u * span : 0, val });
+  // For the 3D scenes (js/play3d.js). x: the basket, -1..1; item.u: where it falls, item.y: 0 at the top to 1 at the basket.
+  G.view = () => ({ type: "catch", x: pos(), bw, item: item ? { u: item.u, y: item.y, n: sent } : null, flash: flashT > 0 ? (flashOk ? 1 : -1) : 0, caught, sent, reps: G._reps, goal: S.reps });
   G.draw = function (g, W, H) {
     bg(g, W, H); dots(g, W, S.reps, sent - (item ? 1 : 0));
     const top = 150, floor = H - 70, cx = W / 2, half = W * 0.38;
@@ -272,6 +279,8 @@ function Steer(S, spec) {
   G.status = () => (flashT > 0 && !flashOk ? { title: "Missed the gap", text: "Line up with the next one early.", tone: "warn" } : { title: spec.cue, text: `${cleared} of ${S.reps} through` });
   G.stats = () => [["Through the gap", `${cleared} / ${S.reps}`], ["Missed", String(passed - cleared)]];
   G.debug = () => ({ kind: "value", target: gates.length ? gates[0].c * span : 0, val });
+  // For the 3D scenes (js/play3d.js). x: your position, -1..1; each gate's u runs from 1.1 (far) to 0 (here), c is its gap.
+  G.view = () => ({ type: "steer", x: pos(), gapW, gates: gates.map((q) => ({ u: q.u, c: q.c })), flash: flashT > 0 ? (flashOk ? 1 : -1) : 0, passed, reps: G._reps, goal: S.reps });
   G.draw = function (g, W, H) {
     bg(g, W, H); dots(g, W, S.reps, passed);
     const vert = !!spec.vertical, top = 150;
@@ -310,6 +319,8 @@ function Circles(S, spec) {
   G.status = () => (wrongT > 0 ? { title: `Other way: go ${way()}`, text: "Follow the arrow around the ring.", tone: "warn" } : Math.hypot(x, y) < minR ? { title: spec.cue, text: `Tilt further to reach the ring, then go ${way()}` } : { title: `Keep going ${way()}`, text: `${G._reps} of ${S.reps} circles` });
   G.stats = () => [["Circles", `${G._reps} / ${S.reps}`], ["Average tilt while circling", rs.length ? deg(avg(rs)) : "–"]];
   G.debug = () => ({ kind: "circles", dir: dir(), sum, r: minR });
+  // For the 3D scenes (js/play3d.js). x, y: the tilt as a share of the exercise's range; minR on the same scale.
+  G.view = () => ({ type: "circles", x: x / S.amp, y: y / S.amp, minR: minR / S.amp, dir: dir(), sum, prog: Math.abs(sum) / TAU, wrong: wrongT > 0, reps: G._reps, goal: S.reps });
   G.draw = function (g, W, H) {
     bg(g, W, H); dots(g, W, S.reps, this._reps);
     const cx = W / 2, cy = H * 0.57, sc = Math.min(W * 0.3, (H - 200) * 0.45) / (S.amp * 1.2), R = minR * 1.4 * sc;
@@ -381,6 +392,8 @@ function Throw(S, spec) {
   };
   G.stats = () => [["Throws", `${G._reps} / ${S.reps}`], ["In the target", `${hits} / ${G._reps}`]];
   G.debug = () => ({ kind: "throw", phase, zone, thr, top });
+  // For the 3D scenes (js/play3d.js). power, zone and width are 0..1 along the throw; fly runs 0..1 after a throw.
+  G.view = () => ({ type: "throw", phase, zone, width, power, fly, ok, charge: clamp(charge / 1.6, 0, 1), reps: G._reps, goal: S.reps });
   G.draw = function (g, W, H) {
     bg(g, W, H); dots(g, W, S.reps, this._reps);
     const x0 = W * 0.12, x1 = W * 0.9, y = H - 90, xOf = (p) => lerp(x0 + 60, x1, p);
@@ -398,7 +411,7 @@ function Throw(S, spec) {
 // `steps(S, rep)` can vary the targets from rep to rep.
 function Seq(S, spec) {
   const G = base(S, S.reps);
-  let steps = spec.steps(S, 0), k = 0, dwell = 0, need = false, val = 0, restT = 0, t = 0, t0 = 0, times = [];
+  let steps = spec.steps(S, 0), k = 0, dwell = 0, need = false, val = 0, cur = 0, restT = 0, t = 0, t0 = 0, times = [];
   const reached = (st, v) => (st.target >= 0 ? v >= st.target * 0.9 : v <= st.target * 0.9);
   const stepVal = (st, a) => (st.abs ? Math.abs(a[st.axis]) : a[st.axis]); // abs: either direction counts
   G.update = function (dt, a) {
@@ -408,7 +421,7 @@ function Seq(S, spec) {
       if (Math.abs(a.pitch) < S.amp * 0.3 && Math.abs(a.roll) < S.amp * 0.3 && Math.abs(a.yaw) < S.amp * 0.4) { restT += dt; if (restT >= 0.4) { need = false; k = 0; steps = spec.steps(S, G._reps); t0 = t; } } else restT = 0;
       return;
     }
-    const st = steps[k]; val = stepVal(st, a);
+    const st = steps[k]; val = stepVal(st, a); cur = val / st.target;
     if (reached(st, val)) {
       dwell += dt;
       if (dwell >= (st.hold || 0.5)) {
@@ -421,6 +434,8 @@ function Seq(S, spec) {
   G.status = () => (need ? { title: spec.restCue || "Back to your starting position", text: `${G._reps} of ${S.reps} done` } : { title: steps[k].cue, text: `Step ${k + 1} of ${steps.length}` });
   G.stats = () => [["Reps", `${G._reps} / ${S.reps}`], ["Average time per rep", secs(times)]];
   G.debug = () => ({ kind: "value", target: need ? 0 : steps[k].target, val });
+  // For the 3D scenes (js/play3d.js). u: how far along the current step, 1 at its target; need: waiting to return to rest.
+  G.view = () => ({ type: "seq", k, n: steps.length, steps, need, u: need ? 0 : Math.max(0, cur), prog: need ? 0 : dwell / (steps[k].hold || 0.5), reps: G._reps, goal: S.reps });
   G.draw = function (g, W, H, a) {
     bg(g, W, H); dots(g, W, S.reps, this._reps);
     const n = steps.length, w = Math.min(220, (W - 80) / n - 20), x0 = W / 2 - (n * (w + 20) - 20) / 2, y = 190;
@@ -459,6 +474,8 @@ function Dial(S, spec) {
   G.status = () => (dwell > 0 ? { title: "Right there. Hold still.", text: `${Math.max(0, HOLD - dwell).toFixed(1)} s`, tone: "good" } : { title: spec.cue, text: val < target ? spec.more : spec.less });
   G.stats = () => [["Found", `${G._reps} / ${S.reps}`], ["Average time to find", secs(times)], ["Accuracy", errs.length ? `±${avg(errs).toFixed(1)}°` : "–"]];
   G.debug = () => ({ kind: "value", target, val });
+  // For the 3D scenes (js/play3d.js). x, tx: your value and the target as a share of the range; tw: the tolerance on that scale.
+  G.view = () => ({ type: "dial", x: val / range, tx: target / range, tw: tol / range, prog: dwell / HOLD, reps: G._reps, goal: S.reps });
   G.draw = function (g, W, H) {
     bg(g, W, H); dots(g, W, S.reps, this._reps);
     const cx = W / 2, cy = H - 80, R = Math.min(W * 0.38, H - 220), ang = (v) => -Math.PI / 2 + clamp(v / range, -1.15, 1.15) * 1.2;
@@ -529,6 +546,8 @@ function Direction(S, spec) {
   G.status = () => (phase === "go" ? { title: `Quick: ${NAME(d)}!`, text: "Reach toward the arrow.", tone: "good" } : phase === "back" ? { title: "Back to the middle", text: `${G._reps} of ${S.reps}` } : { title: spec.cue, text: "Wait for the arrow." });
   G.stats = () => [["Reaches", `${G._reps} / ${S.reps}`], ["Reaction time", secs(rts)], ["Fastest", rts.length ? `${Math.min(...rts).toFixed(2)} s` : "–"], ["Wrong way", String(wrong)]];
   G.debug = () => ({ kind: "direction", phase, dir: d, amp });
+  // For the 3D scenes (js/play3d.js). x, y: the tilt as a share of the reach distance; d: the direction asked for.
+  G.view = () => ({ type: "direction", phase, d, dirs: DIRS, x: x / amp, y: y / amp, reps: G._reps, goal: S.reps });
   G.draw = function (g, W, H) {
     bg(g, W, H); dots(g, W, S.reps, this._reps);
     const cx = W / 2, cy = H * 0.57, R = Math.min(W * 0.3, (H - 200) * 0.45), sc = R / (amp * 1.2);
@@ -740,8 +759,12 @@ function Path(S, spec) {
   G.status = () => ({ title: `${spec.cue}${name && spec.set === "letters" ? ` "${name}"` : ""}`, text: "Start at the orange dot and follow the line." });
   G.stats = () => [[spec.set === "letters" ? "Letters" : "Shapes", `${G._reps} / ${goal}`], ["Accuracy", scores.length ? `${Math.round(avg(scores))}%` : "–"]];
   G.debug = () => ({ kind: "points", targets: pts.length ? [{ x: pts[Math.min(idx + 2, pts.length - 1)][0], y: pts[Math.min(idx + 2, pts.length - 1)][1] }] : [], cursor: { x: G.cur.x, y: G.cur.y }, dwell: 0, follow: true });
+  // For the 3D scenes (js/play3d.js). Points are in stage pixels; idx: how far along the line you are.
+  G.view = () => ({ type: "path", name, pts, idx, tol, cur: { x: G.cur.x, y: G.cur.y }, prog: pts.length ? idx / (pts.length - 1) : 0, reps: G._reps, goal });
+  // Keeps the line in step with the stage size (also called by js/play3d.js, which draws instead of draw()).
+  G.onStage = (W, H) => { Game.W = W; Game.H = H; if (name && (W !== W0 || H !== H0)) load(W, H); W0 = W; H0 = H; };
   G.draw = function (g, W, H) {
-    Game.W = W; Game.H = H; if (name && (W !== W0 || H !== H0)) load(W, H); W0 = W; H0 = H;
+    G.onStage(W, H);
     bg(g, W, H); dots(g, W, goal, this._reps);
     if (!pts.length) return;
     g.lineCap = "round"; g.lineJoin = "round";

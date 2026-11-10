@@ -3,6 +3,8 @@
 const RC = window.RC;
 const { $, clamp, lerp, TAU, reduceMotion, store, settings, saveSettings, T, alpha, txt, rr, chime, esc, fmtTime, Game, readTheme } = RC;
 const { base, drawGonio } = RC.kit;
+// Draw with a 3D scene from the js/play3d-scenes files when the computer can (the game still does the scoring).
+const in3D = (G, id) => (RC.Play3D ? RC.Play3D.wrap(G, id) : G);
 // ---- 5. Sort It: rotation + semantic categories ------------------------------
 const WORDS = {
   1: [["Food", ["apple", "bread", "carrot", "cheese", "banana", "soup", "rice", "egg", "grapes", "pasta"]], ["Clothing", ["shirt", "sock", "hat", "coat", "shoe", "scarf", "glove", "belt", "jacket", "skirt"]]],
@@ -16,8 +18,9 @@ function SortIt(S) {
   const deck = []; for (const w of L[1]) deck.push({ w, side: -1 }); for (const w of Rt[1]) deck.push({ w, side: 1 });
   for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; }
   let i = 0, phase = "center", ct = 0, dwell = 0, dwellSide = 0, rt = [], ok = 0, bad = 0, fb = null, fbT = 0, cardT = 0, flyX = 0;
+  let roll = 0;
   G.update = function (dt, a) {
-    const r = a.roll;
+    const r = a.roll; roll = r;
     if (phase === "center") { if (Math.abs(r) < amp * 0.3) { ct += dt; if (ct > 0.35) { phase = "card"; cardT = 0; dwell = 0; } } else ct = 0; return; }
     if (phase === "feedback") { fbT -= dt; flyX += fb.side * dt * 900; if (fbT <= 0) { if (this._reps >= S.reps) this.done = true; else { i = (i + 1) % deck.length; phase = "center"; ct = 0; } } return; }
     cardT += dt;
@@ -33,6 +36,8 @@ function SortIt(S) {
     if (phase === "feedback") return fb.right ? { title: "Correct", text: `${deck[i].w} goes with ${(deck[i].side < 0 ? L : Rt)[0].toLowerCase()}`, tone: "good" } : { title: "Not quite", text: `${deck[i].w} goes with ${(deck[i].side < 0 ? L : Rt)[0].toLowerCase()}`, tone: "warn" };
     return { title: `Where does "${deck[i].w}" go?`, text: `Turn left for ${L[0].toLowerCase()}, right for ${Rt[0].toLowerCase()}` };
   };
+  // For the 3D scene: the word, the two groups (left, right), which side you are leaning to and how long, and the answer.
+  G.view = () => ({ type: "sort", phase, word: deck[i].w, n: i, cats: [L[0], Rt[0]], side: dwellSide, prog: phase === "card" && dwellSide ? dwell / 0.5 : 0, fb, x: roll / amp, reps: G._reps, goal: S.reps });
   G.stats = () => [["Sorted correctly", `${ok} / ${ok + bad}`], ["Average decision time", rt.length ? `${(rt.reduce((s, x) => s + x, 0) / rt.length).toFixed(1)} s` : "–"]];
   G.draw = function (g, W, H, a, t) {
     g.fillStyle = T.stage; g.fillRect(0, 0, W, H);
@@ -66,6 +71,6 @@ RC.register(Object.assign({ section: "reasoning" }, {
     desc: "Read the word and turn your hand toward the group it belongs to.",
     source: "Constant Therapy categorization and reading tasks; FitMi object rotation.",
     how: ["Start with your hand level.", "Read the word in the middle.", "Turn left or right toward its group and hold for a moment."],
-    make: (S) => SortIt(S),
+    make: (S) => in3D(SortIt(S), "sort"),
   }));
 })();

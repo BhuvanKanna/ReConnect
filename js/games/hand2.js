@@ -6,6 +6,8 @@ const RC = window.RC;
 const { clamp, lerp, TAU, T, alpha, txt, rr, fmtTime, Game } = RC;
 const { base, bg, dots, Keypad, randInt, rand, pick, shuffle, inRect, defineArt } = RC.kit;
 const M = RC.moves, { icon, ring, lvl, secs } = M;
+// Draw with a 3D scene from the js/play3d-scenes files when the computer can (the engine still does the scoring).
+const in3D = (G, id) => (RC.Play3D ? RC.Play3D.wrap(G, id) : G);
 const FINGERS = ["Index", "Middle", "Ring", "Little"];
 const NINE = ["1", "2", "3", "4", "5", "6", "7", "8", "9"];
 // Send the phone a new pad when an exercise changes its keys part-way through.
@@ -296,7 +298,7 @@ const rounds = (r, d) => ({ params: { reps: r, level: [1, 2, 3], durationS: null
   { id: "shake", name: "Shake the Bottle", movement: "Grip · forearm endurance", control: "accel", pose: "handleArm", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Use a wrist strap and never let go of it.",
     desc: "Shake the bottle up and down to mix it. Every shake counts.", source: "Repetitive grip-and-shake task practice (FitMi-style speed exercises).",
     params: { reps: [20, 30, 40], level: [1, 2, 3], durationS: null }, defaults: { reps: 20, level: 1, durationS: null },
-    how: ["Hold the phone tightly.", "Shake it up and down in short movements.", "Keep going until the bottle is mixed."], make: (S) => M.Bursts(S, { thr: { 1: 2, 2: 2.5, 3: 3 }, gap: 0.12, cues: ["Shake, shake, shake"], pics: ["🧴"] }) },
+    how: ["Hold the phone tightly.", "Shake it up and down in short movements.", "Keep going until the bottle is mixed."], make: (S) => in3D(M.Bursts(S, { thr: { 1: 2, 2: 2.5, 3: 3 }, gap: 0.12, cues: ["Shake, shake, shake"], pics: ["🧴"] }), "shake") },
 ].forEach((d) => RC.register(Object.assign({ section: "hand" }, d)));
 
 defineArt("mole", Array.from({ length: 9 }, (_, i) => `<ellipse cx="${38 + (i % 3) * 22}" cy="${14 + Math.floor(i / 3) * 18}" rx="8" ry="3.5" fill="var(--a-mute)" opacity=".35"/>`).join("") + '<circle cx="60" cy="27" r="6" fill="var(--a-hi)"/>');

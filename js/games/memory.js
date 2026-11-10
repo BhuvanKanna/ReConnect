@@ -3,6 +3,8 @@
 const RC = window.RC;
 const { $, clamp, lerp, TAU, reduceMotion, store, settings, saveSettings, T, alpha, txt, rr, chime, esc, fmtTime, Game, readTheme } = RC;
 const { base, drawGonio } = RC.kit;
+// Draw with a 3D scene from the js/play3d-scenes files when the computer can (the game still does the scoring).
+const in3D = (G, id) => (RC.Play3D ? RC.Play3D.wrap(G, id) : G);
 // ---- 6. Memory Moves: sequence memory with four tilt directions ---------------
 function MemoryMoves(S) {
   const amp = S.amp, G = base(S, S.reps);
@@ -10,8 +12,9 @@ function MemoryMoves(S) {
   let len = { 1: 2, 2: 3, 3: 3 }[S.level], seq = [], step = 0, phase = "watch", pt = 0, lit = -1, needCenter = false, longest = 0, rounds = 0, wins = 0, mistakes = 0, flashDir = -1, flashOk = true, flashT = 0;
   function newRound() { seq = Array.from({ length: len }, () => Math.floor(Math.random() * 4)); step = 0; phase = "watch"; pt = -0.6; rounds++; }
   newRound();
+  let tx = 0, ty = 0;
   G.update = function (dt, a) {
-    pt += dt; flashT = Math.max(0, flashT - dt);
+    pt += dt; flashT = Math.max(0, flashT - dt); tx = a.roll / amp; ty = a.pitch / amp;
     if (phase === "watch") {
       const k = Math.floor(pt / 1.0); lit = pt >= 0 && k < seq.length && (pt % 1.0) < 0.72 ? seq[k] : -1;
       if (pt >= 0 && k >= seq.length) { phase = "repeat"; pt = 0; needCenter = true; lit = -1; }
@@ -39,6 +42,8 @@ function MemoryMoves(S) {
     return { title: `Move ${step + 1} of ${seq.length}`, text: "Tilt toward the next arrow." };
   };
   G.debug = () => ({ seq, step });
+  // For the 3D scene: directions are 0 up, 1 right, 2 down, 3 left; x, y the tilt as a share of the reach.
+  G.view = () => ({ type: "simon", phase, seq, step, lit, flashDir: flashT > 0 ? flashDir : -1, flashOk, needCenter, x: tx, y: ty, rounds, reps: G._reps, goal: S.reps });
   G.stats = () => [["Longest pattern", String(longest || "–")], ["Patterns completed", `${wins} / ${rounds}`], ["Wrong moves", String(mistakes)]];
   G.draw = function (g, W, H, a, t) {
     g.fillStyle = T.stage; g.fillRect(0, 0, W, H);
@@ -70,6 +75,6 @@ RC.register(Object.assign({ section: "memory" }, {
     desc: "Watch the arrows light up, then repeat the pattern by tilting your hand in each direction.",
     source: "Simon-style serious games for stroke rehab; Constant Therapy sequence and memory tasks.",
     how: ["Watch the whole pattern first.", "Tilt your hand toward each arrow in order.", "Return to level between moves."],
-    make: (S) => MemoryMoves(S),
+    make: (S) => in3D(MemoryMoves(S), "simon"),
   }));
 })();
