@@ -174,8 +174,6 @@ L3.create = function (opts) {
     lantern: lanternCenter, goal: goalPos,
     // st: { f, goalF, holdP, lit, flare, showGoal }
     frame(W, H, pr, st, t, dt) {
-      const w = Math.round(W * pr), h = Math.round(H * pr), cv = R.domElement;
-      if (cv.width !== w || cv.height !== h) R.setSize(w, h, false);
       cam.aspect = W / H; cam.fov = W / H < 1.2 ? 76 : 66; cam.updateProjectionMatrix();
       // target ring sits where the lantern hangs at the goal angle
       if (st.goalF !== goalF) { goalF = st.goalF; tipAt(phiOf(goalF), goalPos); goalPos.y -= HANG; }
@@ -223,8 +221,7 @@ L3.create = function (opts) {
       }
       if (NF) { flyGeo.attributes.position.needsUpdate = true; flyPts.material.opacity = 0.5 + 0.5 * Math.sin(t * 2); }
 
-      R.render(scene, cam);
-      return cv;
+      return S3.renderTo(R, scene, cam, W, H, pr);
     },
     // CSS-pixel position of a world point on the stage
     // pixel radius of the gold ring on screen

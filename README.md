@@ -60,10 +60,15 @@ The 169 motion-tracked exercises were cut to 74 in October 2026: each one left i
 in a distinct phone position, and the rest were the same movement under a different name. In the library, a search box finds exercises by name, movement, body area or description (every word typed must match), and **How you play** filters by Phone motion, Touch or Follow along. Every exercise has three levels and an assignable amount (reps,
 rounds or time).
 
-Before each exercise starts, a setup sheet explains it in plain words: the goal and what happens on screen
-when you do it, today's amount, how to sit and hold the phone (with a picture), three or four numbered
-steps, what counts as one repetition, a tip for doing it well and a safety line for the position (seated,
-standing at a counter, lying down, head movements). The words for all 126 are in `js/guides.js`. **About these exercises** in the
+Before each exercise starts, a setup sheet explains it in plain words for older stroke patients and
+children: the goal and what happens in the game, today's amount, a picture of how to hold the phone, a
+two-panel "Move like this" picture (where you start, then where you move to, with a big arrow), four or five
+numbered steps with one action each, what counts as one repetition, a tip and a safety line for the position
+(seated, standing at a counter, lying down, head movements). The words are in `js/guides.js` and the
+movement pictures in `js/moveart.js`.
+
+The 3D scenes stay on: a slow computer gets a lower-resolution picture rather than the flat one, a scene
+that hits an error rebuilds itself, and a lost graphics context or failed download is retried. **About these exercises** in the
 app, and [`docs/exercise-catalog.md`](docs/exercise-catalog.md), list the programs and studies each one comes from.
 
 ## What gets measured

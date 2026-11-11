@@ -38,11 +38,10 @@ function LanternLift(S) {
   G.stats = () => [["Best lift", peaks.length ? `${Math.round(Math.max(...peaks))}°` : "–"], ["Average lift", peaks.length ? `${Math.round(peaks.reduce((s, x) => s + x, 0) / peaks.length)}°` : "–"]];
   G.dispose = () => { if (world) { world.dispose(); world = null; } };
   G.debug = () => ({ state: rc.state, target: rc.target, val: lastPitch, view: world ? "3d" : "2d", quality: quality.level });
-  G.draw = function (g, W, H, a, t) {
+  G.draw = RC.Scene3D.guard(G, function (g, W, H, a, t) {
     const raw = lastT == null ? 0 : t - lastT, dt = Math.min(0.05, Math.max(0, raw)); lastT = t;
     const q = world ? quality.sample() : 0;
-    if (q >= 2 && world) { world.dispose(); world = null; RC.Scene3D.off = true; }
-    if (!world && !RC.Scene3D.off && L3 && L3.ready()) world = L3.create({ side: S.side, count: S.reps, calm: reduceMotion });
+    if (!world && L3 && L3.ready()) world = L3.create({ side: S.side, count: S.reps, calm: reduceMotion });
     if (!world) return drawFlat(g, W, H, a);
     const pr = (g.getTransform ? g.getTransform().a : 1) * (q >= 1 ? 0.6 : 1);
     const holdP = state === "raise" ? clamp(hold / HOLD, 0, 1) : 0;
@@ -60,7 +59,7 @@ function LanternLift(S) {
     if (state === "raise" && hold <= 0.05 && R.y < L.y - 40 * unit) arrows(g, L.x, L.y - 60 * unit, R.y + rpx, -1, t, unit, idle > 3);
     if (state === "lower") arrows(g, L.x, L.y + 50 * unit, Math.min(H - 30 * unit, L.y + 190 * unit), 1, t, unit, idle > 3);
     g.fillStyle = "#ffd27a"; sparkle.forEach((s) => { g.globalAlpha = clamp(s.life / 0.9, 0, 1); g.beginPath(); g.arc(R.x + s.x * unit, R.y + s.y * unit, 4 * unit, 0, TAU); g.fill(); }); g.globalAlpha = 1;
-  };
+  });
   // Big soft chevrons that drift in the direction to move. `dir` -1 = up, 1 = down.
   function arrows(g, x, y0, y1, dir, t, unit, strong) {
     if (Math.abs(y1 - y0) < 30 * unit) return;

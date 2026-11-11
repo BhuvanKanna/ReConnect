@@ -66,11 +66,10 @@ function Drive(S) {
   G.stats = () => [["Through the gates", `${cleared} / ${S.reps}`], ["Missed", String(passed - cleared)], ["Wheel turned left", `${Math.round(-ext[0])}°`], ["Wheel turned right", `${Math.round(ext[1])}°`]];
   G.dispose = () => { if (world) { world.dispose(); world = null; } };
   G.debug = () => { const q = next(); return { kind: "value", target: q ? q.lane * SPAN : 0, val: wheel, x, cleared, passed, view: world ? "3d" : "2d", quality: quality.level }; };
-  G.draw = function (g, W, H, a, t) {
+  G.draw = RC.Scene3D.guard(G, function (g, W, H, a, t) {
     const raw = lastT == null ? 0 : t - lastT, dt = Math.min(0.05, Math.max(0, raw)); lastT = t;
     const qv = world ? quality.sample() : 0;
-    if (qv >= 2 && world) { world.dispose(); world = null; RC.Scene3D.off = true; }
-    if (!world && !RC.Scene3D.off && D3 && D3.ready()) world = D3.create({ calm: RC.reduceMotion });
+    if (!world && D3 && D3.ready()) world = D3.create({ calm: RC.reduceMotion });
     const q = next(), unit = Math.min(W, H) / 600;
     if (world) {
       world.lowQuality(qv >= 1);
@@ -93,7 +92,7 @@ function Drive(S) {
     }
     sparkle = sparkle.filter((p) => (p.life -= dt) > 0); sparkle.forEach((p) => { p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 90 * dt; });
     sparkle.forEach((p) => { g.globalAlpha = clamp(p.life, 0, 1); g.fillStyle = p.c; g.beginPath(); g.arc(W / 2 + p.x * unit, H * 0.36 + p.y * unit, 6 * unit, 0, TAU); g.fill(); }); g.globalAlpha = 1;
-  };
+  });
   function burst() { if (RC.reduceMotion) return; for (let i = 0; i < 30; i++) { const ang = Math.random() * TAU, v = 80 + Math.random() * 160; sparkle.push({ x: 0, y: 0, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v - 60, life: 1.0, c: ["#ffd27a", "#7af09a", "#ffffff", "#ff8aa8"][i % 4] }); } }
   // flat version: a road in simple perspective with the gates coming toward you
   function drawFlat(g, W, H) {

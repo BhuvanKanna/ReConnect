@@ -1,747 +1,763 @@
 // What the patient reads before each exercise starts (the setup sheet in js/engine.js).
+// Written for older adults after a stroke and for children: short sentences, everyday words, one action
+// per step, and every step spelled out. Keep it that way when editing (aim for 10 words or fewer a sentence).
 // One entry per exercise id:
-//   goal   one or two sentences: what you are trying to do and what happens on screen when you do it
+//   goal   what you do, then what happens in the game (one or two short sentences)
 //   ready  how to sit or stand and what to have ready (the phone grip itself is the exercise's `mount`)
-//   steps  3 or 4 short numbered steps, in order, as the patient does them (<b> marks the key action)
-//   rep    what counts as one repetition (left out for timed exercises)
-//   tip    one cue for doing it well
-//   unit   the word for one repetition, for "Today: 10 lifts" ("box|boxes" when the plural is irregular)
+//   steps  4 or 5 numbered steps in order (<b> marks the key action)
+//   rep    what counts as one (shown as "That is one lift: ..."); left out for timed exercises
+//   tip    one short cue for doing it well
+//   unit   the word for one, for "Today: 10 lifts" ("glass|glasses" when the plural is irregular)
 //   safe   optional: replaces the standard safety line chosen from the exercise's position
-// Wording is plain and short on purpose: many patients have aphasia or tire easily when reading.
+// The "Move like this" pictures are in js/moveart.js.
 (() => {
 "use strict";
 const RC = window.RC;
 const G = {};
+// Phrases many exercises share, so they read the same everywhere.
+const HOLD = "<b>Hold still</b> until the green bar is full.";
+const HOLDBAND = "<b>Hold it there.</b> The box at the top counts down.";
 
 // ---------------------------------------------------------------- Arm & shoulder
 G.lift = { unit: "lift",
-  goal: "Raise your arm in front of you to lift the lantern into the gold ring, and hold it there. Each lift lights another lantern in the garden.",
-  ready: "Sit tall in a sturdy chair at a table. Rest your forearm on the table to start.",
-  steps: ["<b>Lift your whole arm</b> up in front of you, elbow straight. The lantern rises with it.", "<b>Stop in the gold ring</b> and hold still while the green fills.", "<b>Lower slowly</b> back to the table and rest a moment."],
-  rep: "Lift into the ring, hold until it fills, lower to the table.",
-  tip: "Lift from the shoulder. Keep your elbow straight and your shoulder down, away from your ear." };
+  goal: "Lift your arm up high. The lantern goes up into the gold ring!",
+  ready: "Sit up tall at a table. Rest your arm on the table.",
+  steps: ["Hold the phone in your fist. <b>Screen up.</b>", "<b>Lift your arm up</b> in front of you. Keep it straight.", "Stop when the lantern is in the <b>gold ring</b>.", HOLD, "<b>Put your arm down</b> slowly on the table."],
+  rep: "Up, hold, down.",
+  tip: "Keep your shoulder down, away from your ear." };
 G.sideraise = { unit: "raise",
-  goal: "Lift your arm out to the side and the scarecrow lifts its arm with you. Hold it up and a bird lands on its hand.",
-  ready: "Sit tall near the front of a chair without armrests. Let your arm hang straight down by your side.",
-  steps: ["<b>Raise your arm out to the side</b>, elbow straight, thumb pointing forward.", "When the dot on the bar reaches the <b>green part</b>, hold still while it fills.", "<b>Lower slowly</b> back down to your side."],
-  rep: "Out to the green, hold, back down by your side.",
-  tip: "Don't lean your body the other way or shrug your shoulder. Only the arm moves." };
+  goal: "Lift your arm out to the side. The scarecrow copies you, and a bird lands on its hand!",
+  ready: "Sit up tall. Let your arm hang down by your side.",
+  steps: ["Hold the phone in your fist, <b>pointing at the floor</b>.", "<b>Lift your arm out to the side.</b> Keep it straight.", "Stop when the dot on the bar is in the <b>green</b>.", HOLD, "<b>Put your arm down</b> slowly."],
+  rep: "Out to the side, hold, down.",
+  tip: "Keep your body straight. Only your arm moves." };
 G.reach = { unit: "window",
-  goal: "Shine your torch on the window with the green ring and hold it there. The light comes on and whoever lives there waves hello.",
-  ready: "Sit tall facing the screen. Hold your arm out in front of you, pointing the phone at the screen.",
-  steps: ["Find the window with the <b>green ring</b>.", "<b>Move your whole arm</b> to point the torch at it: up, down, left or right.", "<b>Hold still</b> on that window until the light comes on. Then another window gets the ring."],
-  rep: "Point at the window and hold until its light comes on.",
-  tip: "Move from your shoulder, not just your wrist. Slow and steady is easier to aim." };
+  goal: "Shine your torch on the window with the green ring. The light comes on and someone waves!",
+  ready: "Sit up tall. Face the screen.",
+  steps: ["Hold the phone like a torch. <b>Point it at the screen.</b>", "Find the window with the <b>green ring</b>.", "<b>Move your whole arm</b> to point at it.", "<b>Hold still</b> until the light comes on.", "A new window gets the ring. Point at that one."],
+  rep: "Point at a window until its light comes on.",
+  tip: "Move from your shoulder, not just your wrist." };
 G.cupmouth = { unit: "sip",
-  goal: "Bring the mug of hot cocoa up to your mouth for a sip, hold it there, then put it back down on the table.",
-  ready: "Sit at a table with your forearm resting on it, holding the phone upright like a mug.",
-  steps: ["<b>Bend your elbow</b> to bring the phone up toward your mouth, tipping it toward you like a mug.", "<b>Hold it there</b> for your sip while the green fills.", "<b>Lower it slowly</b> back to the table and rest."],
-  rep: "Up to your mouth, hold for the sip, back to the table.",
-  tip: "Bring the cup to your mouth, not your mouth to the cup: keep your back against the chair." };
+  goal: "Lift the hot cocoa to your mouth for a sip. Then put it back down.",
+  ready: "Sit at a table. Rest your arm on the table.",
+  steps: ["Hold the phone <b>standing up</b> in your fist, like a mug.", "<b>Bend your elbow.</b> Bring the phone up to your mouth.", "Tip it toward you a little, like a sip.", "<b>Hold it there</b> until the green bar is full.", "<b>Put it back down</b> on the table slowly."],
+  rep: "Up to your mouth, hold, back down.",
+  tip: "Sit back in the chair. Bring the cup to you." };
 G.push = { unit: "push",
-  goal: "Slide each curling stone down the ice with one smooth push forward. Two penguins sweep the ice ahead of it.",
-  ready: "Sit tall. Bend your elbow and hold your hand near your chest, phone flat in your fist.",
-  steps: ["<b>Hold still</b> for a moment with your hand near your chest.", "<b>Push your hand straight forward</b> in one smooth movement, until your elbow is straight.", "<b>Bring it back</b> to your chest and hold still. The next stone is then ready."],
-  rep: "One push out and back.",
-  tip: "Straighten your elbow all the way. Keep your back against the chair; don't lean forward." };
+  goal: "Push the curling stone across the ice. The penguins sweep in front of it!",
+  ready: "Sit up tall. Hold your hand close to your chest.",
+  steps: ["Hold the phone flat in your fist. <b>Screen up.</b>", "<b>Keep still</b> for a moment.", "<b>Push your hand straight out</b> in front of you.", "Make your arm straight.", "<b>Bring your hand back</b> to your chest. Keep still again."],
+  rep: "Push out and come back.",
+  tip: "Sit back in the chair. Only your arm moves." };
 G.trace = { unit: "shape",
-  goal: "Fly the little plane along the dotted shape in the sky. It leaves a smoke trail wherever it goes.",
-  ready: "Sit tall facing the screen. Hold your arm out in front of you, pointing the phone at the screen.",
-  steps: ["<b>Point at the orange dot</b> to bring the plane to the start.", "<b>Move your arm slowly</b> to fly along the dotted line.", "Follow it all the way to the end. Level 1 is a circle, level 2 a square and level 3 a figure-8."],
-  rep: "From the orange dot all the way to the end of the line.",
-  tip: "Go slowly. If you slip off the line, come back to it and carry on." };
+  goal: "Fly the little plane along the dotted line in the sky. It draws as it flies!",
+  ready: "Sit up tall. Face the screen.",
+  steps: ["Hold the phone like a torch. <b>Point it at the screen.</b>", "<b>Point at the orange dot.</b> That is the start.", "<b>Move your arm slowly</b> along the dotted line.", "Keep going to the end of the line.", "Then a new shape comes."],
+  rep: "From the orange dot to the end of the line.",
+  tip: "Go slowly. If you slip off, just come back to the line." };
 G.gate = { unit: "swing",
-  goal: "Swing the farm gate open with your forearm and hold it open while the sheep walks through.",
-  ready: "Sit tall. Tuck your elbow against your side, bent to a right angle, hand pointing forward.",
-  steps: ["Keeping your <b>elbow tucked in</b>, swing your forearm <b>out to the side</b>, like opening a gate.", "<b>Hold it open</b> in the green while the sheep walks through.", "<b>Swing it back</b> to the front and rest."],
-  rep: "Open the gate, hold, swing it back.",
-  tip: "Your elbow stays against your side the whole time. A rolled towel under your arm helps." };
+  goal: "Open the farm gate with your arm. The sheep walks through!",
+  ready: "Sit up tall. Put your elbow against your side. Bend it so your hand points forward.",
+  steps: ["Hold the phone flat in your fist. <b>Screen up.</b>", "Keep your <b>elbow against your side</b>.", "<b>Swing your hand out</b> to the side, like opening a gate.", "<b>Hold it open</b> while the sheep walks through.", "<b>Swing your hand back</b> to the front."],
+  rep: "Open, hold, close.",
+  tip: "Your elbow stays touching your side the whole time." };
 G.paint = { unit: "stroke",
-  goal: "Paint the fence with long brush strokes, all the way up and all the way down. Every stroke paints a board.",
-  ready: "Sit tall with your arm out in front of you, holding the phone like a paintbrush.",
-  steps: ["<b>Raise your arm</b> to bring the brush up to the top target.", "<b>Lower your arm</b> to bring it down to the bottom target.", "Keep going <b>up and down</b> in a steady rhythm. A finished fence starts again in a new colour."],
-  rep: "One stroke up and one down.",
-  tip: "Long, smooth strokes with your whole arm, not flicks of the wrist." };
+  goal: "Paint the fence with big brush strokes. Up, then down!",
+  ready: "Sit up tall. Hold your arm out in front of you.",
+  steps: ["Hold the phone in your fist, like a paintbrush.", "<b>Lift your arm up</b> to the top.", "<b>Bring your arm down</b> to the bottom.", "Keep going <b>up and down</b>, nice and steady.", "Each stroke paints a board of the fence."],
+  rep: "One stroke up and one stroke down.",
+  tip: "Make big, slow strokes with your whole arm." };
 G.pendulum = { unit: "swing",
-  goal: "Let your arm hang and swing it gently from side to side. The bunny on the rope swing goes with you, and every swing makes a flower bloom.",
-  ready: "Lean forward with your good hand on a table. Let your affected arm hang loose, straight down.",
-  steps: ["<b>Let your arm hang</b> relaxed, like a rope.", "<b>Rock your body gently</b> so the arm swings out to one side.", "Let it <b>swing across</b> to the other side, and keep it going gently."],
+  goal: "Swing your arm gently, like a pendulum. The bunny on the swing goes with you!",
+  ready: "Stand by a table. Put your good hand on it. Lean forward a little.",
+  steps: ["Hold the phone in your fist, <b>pointing at the floor</b>.", "Let your arm <b>hang down loose</b>.", "<b>Rock your body gently.</b> Your arm swings to one side.", "Let it <b>swing to the other side</b>.", "Keep it slow and gentle."],
   rep: "One swing to each side.",
-  tip: "Let your body rock the arm. The arm itself stays relaxed; don't force it." };
+  tip: "Let your body move the arm. Keep the arm relaxed." };
 G.pressdown = { unit: "press",
-  goal: "Push the handle of the garden pump down and hold it. Water pours, and every press brings a duckling over to swim.",
-  ready: "Sit tall. Bend your elbow so your forearm points up and forward, phone flat in your fist.",
-  steps: ["<b>Straighten your elbow</b> to push your hand down until your arm is straight.", "<b>Hold it down</b> in the green while the water pours.", "<b>Let your hand come back up</b> slowly to the start."],
+  goal: "Push the handle of the water pump down. A duckling comes to swim!",
+  ready: "Sit up tall. Bend your elbow so your hand is up near your shoulder.",
+  steps: ["Hold the phone flat in your fist. <b>Screen up.</b>", "<b>Push your hand down</b> until your arm is straight.", "<b>Hold it down</b> until the green bar is full.", "<b>Let your hand come back up</b> slowly.", "Get ready for the next one."],
   rep: "Push down, hold, come back up.",
-  tip: "Keep your upper arm still by your side; only the elbow moves." };
+  tip: "Keep your upper arm still. Only your elbow moves." };
 G.tennis = { unit: "swing",
-  goal: "Hit the balls from the ball machine: a forehand to one side, then a backhand to the other.",
-  ready: "Sit or stand with your arm in front of you, gripping the phone like a racket. Use a wrist strap.",
-  steps: ["<b>Swing across</b> to your forehand side to hit the first ball.", "Then <b>swing across</b> to your backhand side for the next one.", "Keep going side to side. The banner tells you which side is next."],
-  rep: "One forehand and one backhand.",
-  tip: "Turn from the shoulder with a firm grip. Smooth swings, not fast jerks." };
+  goal: "Hit the tennis balls! Swing one way, then the other way.",
+  ready: "Sit or stand with your arm in front of you. Put the wrist strap on.",
+  steps: ["Hold the phone tight, like a racket.", "<b>Swing across</b> to one side to hit the ball.", "<b>Swing across</b> to the other side for the next ball.", "The box at the top shows which side is next.", "Keep going, side to side."],
+  rep: "One swing each way.",
+  tip: "Hold on tight. Smooth swings, not fast ones." };
 G.airplane = { unit: "flight",
-  goal: "Lift your arm out to the side like a wing and hold it there. The plane flies through the golden rings to the next island.",
-  ready: "Sit tall in a chair without armrests. Let your arm hang straight down by your side.",
-  steps: ["<b>Raise your arm out to the side</b>, elbow straight, into the green band.", "<b>Hold it there</b> while the plane flies through the rings. The banner counts the seconds down.", "<b>Lower and rest</b> before the next flight."],
-  rep: "Lift into the band and hold until you reach the island.",
-  tip: "Breathe normally while you hold. If your arm tires, holding a little lower is fine." };
+  goal: "Hold your arm out like a plane wing. The plane flies through the gold rings!",
+  ready: "Sit up tall. Let your arm hang down by your side.",
+  steps: ["Hold the phone in your fist, <b>pointing at the floor</b>.", "<b>Lift your arm out to the side.</b> Keep it straight.", "Stop when the dot is in the <b>green band</b>.", HOLDBAND, "<b>Put your arm down</b> and rest."],
+  rep: "Lift, hold until you reach the island, rest.",
+  tip: "Keep breathing while you hold. A bit lower is fine if you get tired." };
 G.moon = { unit: "",
-  goal: "Keep your paper lantern beside the moon as it drifts slowly up and down across the night sky.",
-  ready: "Sit tall at a table with your forearm resting on it, phone flat in your fist.",
-  steps: ["<b>Raise or lower your arm</b> to move the lantern.", "Keep the dot on the bar <b>inside the green part</b>. The lantern glows when you're on target.", "Keep following the moon until the time runs out. The little stars show where it goes next."],
-  tip: "Smooth, slow moves work best. Watch the stars ahead so the turns don't surprise you." };
+  goal: "Keep your lantern next to the moon. The moon moves up and down slowly.",
+  ready: "Sit up tall at a table.",
+  steps: ["Hold the phone flat in your fist. <b>Screen up.</b>", "<b>Lift or lower your arm</b> to move the lantern.", "Keep the dot on the bar <b>in the green</b>.", "The lantern glows when you are right.", "Keep going until the time is up."],
+  tip: "Move slowly. Watch the little stars to see where the moon goes next." };
 G.stir = { unit: "circle",
-  goal: "Stir the camp soup in big, slow circles. Every full circle drops another vegetable into the pot.",
-  ready: "Sit at a table holding the phone upright, like a spoon standing in a pot.",
-  steps: ["<b>Tip the phone out</b> until the dot on the round pad reaches the ring.", "<b>Stir all the way round</b> the way the arrow points.", "Halfway through, the arrow turns: <b>stir the other way</b>."],
-  rep: "Once all the way round the ring.",
-  tip: "Make big circles from your shoulder and elbow, and keep your wrist firm." };
+  goal: "Stir the soup in big circles. Each circle adds a vegetable!",
+  ready: "Sit at a table.",
+  steps: ["Hold the phone <b>standing up</b> in your fist, like a spoon.", "<b>Tip it out</b> until the dot reaches the ring.", "<b>Stir all the way round</b> the way the arrow points.", "Keep stirring in big circles.", "When the arrow turns around, <b>stir the other way</b>."],
+  rep: "One full circle.",
+  tip: "Big, slow circles. Keep your wrist firm." };
 G.fruit = { unit: "fruit|fruit",
-  goal: "Slide the basket under the falling fruit to catch it. The shadow on the grass shows where each one will land.",
-  ready: "Sit tall facing the screen. Hold your arm out, pointing the phone at the screen.",
-  steps: ["Look for the next piece of fruit and its <b>shadow</b> on the grass.", "<b>Move your arm left or right</b> to slide the basket under it.", "Get there early and wait for it to drop in."],
-  rep: "Each falling fruit, caught or missed.",
-  tip: "Move from your shoulder. Small movements are enough." };
+  goal: "Catch the falling fruit in your basket!",
+  ready: "Sit up tall. Face the screen.",
+  steps: ["Hold the phone like a torch. <b>Point it at the screen.</b>", "Look for the next fruit. Its <b>shadow</b> shows where it lands.", "<b>Move your arm left or right</b> to move the basket.", "Get under the fruit <b>before it lands</b>.", "Then get ready for the next one."],
+  rep: "Each fruit that falls, caught or missed.",
+  tip: "Small moves are enough. Get there early." };
 G.quickreach = { unit: "reach|reaches",
-  goal: "Bop the moles in the vegetable patch. Wait in the middle, and when a mole pops up, reach toward it as fast as you can.",
-  ready: "Sit tall facing the screen. Hold your arm out, pointing the phone at the middle of the screen.",
-  steps: ["<b>Hold still in the middle</b> and wait.", "When a mole pops up, <b>reach toward it quickly</b>: up, down, left or right.", "<b>Come back to the middle</b> and wait for the next one."],
-  rep: "One quick reach to a mole, then back to the middle.",
-  tip: "Wait for the mole before you move. Fast is good, but steady is better." };
+  goal: "Bop the moles! When a mole pops up, reach toward it fast.",
+  ready: "Sit up tall. Face the screen.",
+  steps: ["Hold the phone like a torch. <b>Point at the middle</b> of the screen.", "<b>Wait.</b> Keep still.", "A mole pops up. <b>Reach toward it fast!</b>", "<b>Come back to the middle.</b>", "Wait for the next mole."],
+  rep: "Reach to a mole, then back to the middle.",
+  tip: "Wait for the mole. Don't guess." };
 G.reachturn = { unit: "door",
-  goal: "Reach up to the round door handle, then turn your hand to open the door. A friend inside waves hello.",
-  ready: "Sit at a table with your forearm resting on it, phone flat in your fist.",
-  steps: ["<b>Step 1: lift your arm</b> to reach up to the handle.", "<b>Step 2: turn your hand</b> palm-up to open the door. The numbered chips show which step you're on.", "<b>Come back to rest</b> on the table before the next door."],
-  rep: "Reach, turn, back to the table.",
-  tip: "Finish the reach before you turn. Keep the turn in your forearm." };
+  goal: "Reach up to the door handle. Then turn your hand to open the door. A friend waves hello!",
+  ready: "Sit at a table. Rest your arm on the table.",
+  steps: ["Hold the phone flat in your fist. <b>Screen up.</b>", "<b>Step 1: lift your arm</b> up to the handle.", "<b>Step 2: turn your hand over</b>, palm up. The door opens.", "The numbers on the screen show which step you are on.", "<b>Put your arm back down</b> on the table."],
+  rep: "Reach up, turn, back down.",
+  tip: "Do the reach first. Then turn." };
 G.drawsword = { unit: "sword",
-  goal: "Pull the sword from the stone: sweep your arm up across your body and out to the side. A banner rises on the castle.",
-  ready: "Sit tall. Start with your hand by your opposite hip, phone flat in your fist.",
-  steps: ["<b>Step 1: sweep up</b> and across your body.", "<b>Step 2: carry it out</b> to the side and up high, like holding up a sword.", "<b>Bring it back down</b> to your opposite hip for the next one."],
-  rep: "Up, out to the side, and back to the hip.",
-  tip: "Watch your hand as it moves, and turn your thumb back as you finish." };
+  goal: "Pull the sword out of the stone! Sweep your arm up and out to the side.",
+  ready: "Sit up tall. Put your hand by your <b>other</b> hip.",
+  steps: ["Hold the phone flat in your fist. <b>Screen up.</b>", "<b>Step 1: sweep your hand up</b> across your body.", "<b>Step 2: carry it out</b> to the side, up high.", "Hold it up like a sword.", "<b>Bring it back down</b> to your other hip."],
+  rep: "Up, out to the side, back to your hip.",
+  tip: "Watch your hand as it moves." };
 G.bowling = { unit: "bowl",
-  goal: "Bowl the ball down the lane and stop it on the green mat to send the pins flying. A harder swing rolls further.",
-  ready: "Sit or stand with the phone gripped tightly. Use a wrist strap and never let go.",
-  steps: ["Look where the green mat is. Near needs a soft swing; far needs a harder one.", "<b>Swing your arm back</b>, then <b>forward</b>, as if bowling.", "Watch where the ball stops, then rest your arm. Change the next swing to match."],
-  rep: "Every swing is one bowl. Stopping on the mat scores.",
-  tip: "Hold on firmly. Control the swing; don't fling it." };
+  goal: "Roll the ball and stop it on the green mat. Knock down the pins!",
+  ready: "Sit or stand. Put the wrist strap on.",
+  steps: ["Hold the phone tight. <b>Do not let go.</b>", "Look at the green mat. Near? Swing softly. Far? Swing harder.", "<b>Swing your arm back.</b>", "<b>Swing it forward</b>, like bowling a ball.", "See where it stops. Change your next swing."],
+  rep: "Every swing is one bowl.",
+  tip: "Hold on tight. Swing smooth, don't throw." };
 G.spotlight = { unit: "bow",
-  goal: "Put the spotlight on the monkey acrobat and hold it there while it takes a bow.",
-  ready: "Sit at a table with your forearm resting on it, phone flat in your fist.",
-  steps: ["See how high the monkey has climbed on the rope.", "<b>Raise or lower your arm</b> to move the beam onto it (the green mark on the bar).", "<b>Hold very still</b> while it bows. Then it climbs to a new height."],
-  rep: "Light up the monkey and hold until it bows.",
-  tip: "Make tiny adjustments when you're close." };
+  goal: "Shine the spotlight on the monkey. Hold it there while the monkey takes a bow!",
+  ready: "Sit up tall at a table.",
+  steps: ["Hold the phone flat in your fist. <b>Screen up.</b>", "See how high the monkey is on the rope.", "<b>Lift or lower your arm</b> to move the light onto it.", "<b>Hold very still</b> while it bows.", "The monkey climbs to a new place. Find it again."],
+  rep: "Light up the monkey until it bows.",
+  tip: "When you are close, make tiny moves." };
 
 // ---------------------------------------------------------------- Wrist & forearm
 G.pour = { unit: "cup",
-  goal: "Turn your hand to tip the teapot and fill each cup to the green line, then turn the pot back up. Pour slowly or it splashes.",
-  ready: "Sit at a table with your forearm resting on it, phone flat in your fist like a pan handle.",
-  steps: ["<b>Turn your hand slowly</b>, as if tipping a teapot. Tea starts to pour.", "<b>Stop at the green line</b> on the cup.", "<b>Turn the pot back up</b>. The full cup slides away and the next one comes."],
-  rep: "Fill one cup to the line and turn the pot back up.",
-  tip: "Keep your elbow on the table; the turn comes from your forearm." };
+  goal: "Pour the tea! Fill each cup up to the green line.",
+  ready: "Sit at a table. Rest your arm on the table.",
+  steps: ["Hold the phone flat in your fist. <b>Screen up.</b>", "<b>Turn your hand slowly</b>, like tipping a teapot.", "The tea pours into the cup.", "<b>Stop at the green line.</b>", "<b>Turn your hand back.</b> A new cup comes."],
+  rep: "Fill one cup and turn back.",
+  tip: "Pour slowly, or the tea splashes!" };
 G.lock = { unit: "code",
-  goal: "Open the safe. Remember the code on the note, then turn your wrist to dial each number and hold it there.",
-  ready: "Sit at a table with your forearm resting on it, phone flat in your fist.",
-  steps: ["<b>Read the code</b> on the note while it shows, and remember it.", "<b>Turn your wrist</b> to swing the pointer to the first number.", "<b>Hold still</b> on the number to enter it, then dial the next one. Get them all right and the safe opens."],
-  tip: "Say the numbers out loud while you dial; it helps you remember." };
+  goal: "Open the safe! Remember the numbers. Then turn your wrist to dial each one.",
+  ready: "Sit at a table. Rest your arm on the table.",
+  steps: ["Hold the phone flat in your fist. <b>Screen up.</b>", "<b>Read the numbers</b> on the note. Remember them.", "<b>Turn your wrist</b> to move the pointer to the first number.", "<b>Hold still</b> on the number to put it in.", "Do the next number. Get them all and the safe opens!"],
+  rep: "One whole code.",
+  tip: "Say the numbers out loud. It helps you remember." };
 G.maze = { unit: "maze|mazes",
-  goal: "Tilt your hand like a tray to roll the steel ball through the wooden maze to the flag, without bumping the walls.",
-  ready: "Sit at a table with your forearm resting on it, phone flat in your fist.",
-  steps: ["<b>Tip the front of the phone</b> down or up to roll the ball forward or back.", "<b>Turn your hand</b> left or right to roll it sideways.", "Bring the phone <b>level to stop</b>. Reach the flag to finish the maze."],
-  rep: "Roll the ball from the start all the way to the flag.",
-  tip: "Gentle tilts are enough. Your forearm stays on the table; the wrist does the work." };
+  goal: "Tip your hand to roll the ball through the maze to the flag.",
+  ready: "Sit at a table. Rest your arm on the table.",
+  steps: ["Hold the phone flat in your fist. <b>Screen up.</b>", "<b>Tip the front down</b> to roll the ball forward.", "<b>Tip it up</b> to roll the ball back.", "<b>Turn your hand</b> left or right to roll it sideways.", "Hold the phone flat to stop. Get to the flag!"],
+  rep: "Roll the ball from the start to the flag.",
+  tip: "Small tips are enough. Try not to bump the walls." };
 G.wristbend = { unit: "strike",
-  goal: "Ring the garden gong. Bend your wrist up to lift the mallet, then down to strike, and the koi jump in the pond.",
-  ready: "Rest your forearm on the table with your wrist just past the edge, palm down.",
-  steps: ["<b>Bend your wrist up</b> to lift the mallet to the top line.", "<b>Bend it down</b> to the bottom line to strike the gong.", "Keep going up and down. The banner shows which way is next."],
-  rep: "Wrist up and then down.",
-  tip: "Keep your forearm flat on the table; only the hand moves." };
+  goal: "Ring the gong! Bend your wrist up, then down. The fish jump!",
+  ready: "Rest your arm on the table. Your hand hangs over the edge, palm down.",
+  steps: ["Hold the phone flat against your palm. <b>Screen down.</b>", "<b>Bend your wrist up.</b>", "<b>Bend your wrist down.</b> That rings the gong.", "Keep going: up, then down.", "The box at the top shows which way is next."],
+  rep: "Wrist up, then down.",
+  tip: "Keep your arm on the table. Only your hand moves." };
 G.wiper = { unit: "wipe",
-  goal: "Clear the rain off the windscreen. Sweep your hand side to side and the wiper follows.",
-  ready: "Rest your forearm on the table, palm down on top of the phone.",
-  steps: ["<b>Slide your hand sideways</b> toward the lit side, keeping your forearm still.", "Reach the green and <b>hold</b> for a moment.", "Then <b>sweep across</b> to the other side."],
-  rep: "One sweep to each side.",
-  tip: "Your hand slides on the table like a wiper; the forearm doesn't move." };
+  goal: "Clear the rain off the car window. Move your hand side to side, like a wiper.",
+  ready: "Rest your arm on the table. Put your hand on top of the phone.",
+  steps: ["Hold the phone under your palm. <b>Screen down.</b>", "<b>Slide your hand</b> to one side.", "Stop in the green and <b>hold</b> a moment.", "<b>Slide your hand</b> to the other side.", "Keep going, side to side."],
+  rep: "One wipe to each side.",
+  tip: "Your arm stays still. Only your hand slides." };
 G.steady = { unit: "",
-  goal: "Carry the lemonade on a tray without spilling. Keep the tray level so the bubble stays inside the green circle.",
-  ready: "Sit at a table with your forearm resting on it and the phone flat on your open palm.",
-  steps: ["<b>Hold your hand level</b>, like carrying a tray.", "Keep the bubble <b>inside the green circle</b>. The circle slowly gets smaller.", "Keep going until the time runs out."],
-  tip: "Small, slow corrections are best. Relax your shoulders and breathe." };
+  goal: "Carry the lemonade without spilling! Keep your hand flat and still.",
+  ready: "Sit at a table. Rest your arm on the table.",
+  steps: ["Put the phone <b>flat on your open hand</b>. Screen up.", "<b>Hold your hand flat</b>, like carrying a tray.", "Keep the bubble <b>inside the green circle</b>.", "The circle gets smaller. Stay steady!", "Keep going until the time is up."],
+  tip: "Relax your shoulders. Breathe slowly." };
 G.key = { unit: "turn",
-  goal: "Unlock the treasure chest on the beach. Turn your hand like turning a key, hold it, and the lid flies open.",
-  ready: "Sit at a table with your forearm resting on it, thumb on top of the phone.",
-  steps: ["<b>Turn your palm up</b> as far as is comfortable, like turning a key.", "<b>Hold it</b> in the green while the chest opens.", "<b>Turn back</b> to thumb-up. The lid closes for the next one."],
+  goal: "Turn the key to open the treasure chest!",
+  ready: "Sit at a table. Rest your arm on the table, thumb on top.",
+  steps: ["Hold the phone flat in your fist. <b>Thumb on top.</b>", "<b>Turn your hand over</b>, like turning a key.", "Turn until your <b>palm faces up</b>, if you can.", "<b>Hold it</b> while the chest opens.", "<b>Turn it back.</b> The lid closes."],
   rep: "Turn, hold, turn back.",
-  tip: "Keep your elbow by your side and on the table, so the turn comes from the forearm." };
+  tip: "Keep your elbow still on the table." };
 G.drawbridge = { unit: "lift",
-  goal: "Lift your hand at the wrist to raise the drawbridge, and hold it up while the little boat sails underneath.",
-  ready: "Rest your forearm on the table with your wrist just past the edge, palm down.",
-  steps: ["<b>Lift your hand up</b> at the wrist into the green band.", "<b>Hold it there</b> until the boat is through. The banner counts the seconds.", "<b>Relax your hand</b> down and rest."],
+  goal: "Lift your hand to raise the bridge. Hold it up while the boat goes under!",
+  ready: "Rest your arm on the table. Your hand hangs over the edge, palm down.",
+  steps: ["Hold the phone flat against your palm. <b>Screen down.</b>", "<b>Lift your hand up</b> at the wrist.", "Stop when the dot is in the <b>green band</b>.", HOLDBAND, "<b>Let your hand relax</b> down. Rest."],
   rep: "Lift, hold until the boat is through, relax.",
-  tip: "Keep your fingers relaxed; lift from the wrist only." };
+  tip: "Lift from the wrist. Keep your arm on the table." };
 G.wheel = { unit: "arch|arches",
-  goal: "Drive the little red car down the country road and steer through the green arches.",
-  ready: "Sit tall holding the phone upright in both hands, one on each side, like a steering wheel.",
-  steps: ["Look for the lane with the <b>green arch</b>.", "<b>Turn the phone</b> like a wheel to move into that lane.", "Line up early, then <b>hold the wheel steady</b> as you drive through."],
-  rep: "Drive under it in the right lane.",
-  tip: "Turn with both hands together, like a real wheel." };
+  goal: "Drive the little red car! Steer through the green arches.",
+  ready: "Sit up tall. Hold the phone with <b>both hands</b>, standing up tall.",
+  steps: ["Hold the phone like a <b>steering wheel</b>. Screen facing you.", "Look for the road with the <b>green arch</b>.", "<b>Turn the phone</b> to steer into that road.", "Get there early.", "<b>Hold steady</b> as you drive through."],
+  rep: "Drive under one green arch.",
+  tip: "Turn with both hands together." };
 G.wristcircle = { unit: "circle",
-  goal: "Turn the animal carousel by circling your wrist. Every full circle lights another string of bulbs.",
-  ready: "Rest your forearm on the table with your wrist just past the edge, palm down.",
-  steps: ["<b>Tilt your hand</b> until the dot on the round pad reaches the ring.", "<b>Circle all the way round</b> the way the arrow points.", "Halfway through, the arrow turns: <b>circle the other way</b>."],
-  rep: "Once all the way round the ring.",
-  tip: "Slow, big circles. Your forearm stays still on the table." };
+  goal: "Turn the merry-go-round! Make circles with your hand.",
+  ready: "Rest your arm on the table. Your hand hangs over the edge, palm down.",
+  steps: ["Hold the phone flat against your palm. <b>Screen down.</b>", "<b>Tip your hand</b> until the dot reaches the ring.", "<b>Circle all the way round</b> the way the arrow points.", "Keep making slow circles.", "When the arrow turns around, <b>circle the other way</b>."],
+  rep: "One full circle.",
+  tip: "Big, slow circles. Keep your arm still." };
 G.water = { unit: "plant",
-  goal: "Water the garden. Turn toward the plant, then tip the can to pour. Each plant grows a little every time.",
-  ready: "Sit at a table with your forearm resting on it, phone flat in your fist.",
-  steps: ["<b>Step 1: turn your hand</b> toward the plant that's shown.", "<b>Step 2: tip the front of the phone down</b> and hold it while the water pours.", "<b>Come back to the middle</b> for the next plant."],
-  rep: "Aim, pour, back to the middle.",
-  tip: "Do one step at a time; the numbered chips show where you are." };
+  goal: "Water the plants! Turn to the plant, then tip the can. The plant grows!",
+  ready: "Sit at a table. Rest your arm on the table.",
+  steps: ["Hold the phone flat in your fist. <b>Screen up.</b>", "<b>Step 1: turn your hand</b> toward the plant.", "<b>Step 2: tip the front down</b> to pour.", "<b>Hold it</b> while the water pours.", "<b>Come back to the middle</b> for the next plant."],
+  rep: "Turn, pour, back to the middle.",
+  tip: "Do one step at a time. The numbers show which step." };
 G.jar = { unit: "twist|twists",
-  goal: "Open the cookie jar. Twist the lid back and forth and it loosens a bit each time, until it pops off.",
-  ready: "Sit at a table with your forearm resting on it, phone flat in your fist.",
-  steps: ["<b>Twist your hand</b> one way into the green.", "Then <b>twist it back</b> the other way.", "Keep going back and forth until the lid comes off."],
+  goal: "Open the cookie jar! Twist the lid back and forth until it pops off.",
+  ready: "Sit at a table. Rest your arm on the table.",
+  steps: ["Hold the phone flat in your fist. <b>Screen up.</b>", "<b>Twist your hand</b> one way.", "<b>Twist it back</b> the other way.", "Keep twisting back and forth.", "The lid gets looser each time!"],
   rep: "One twist each way.",
-  tip: "Keep your elbow still; the twist comes from your forearm." };
+  tip: "Keep your elbow still. Twist from your arm." };
 G.scoophold = { unit: "scoop",
-  goal: "Serve ice cream to the animals. Curl your wrist down to dip the scoop, and hold it to make a ball of ice cream.",
-  ready: "Rest your forearm on the table with your hand over the edge, palm down.",
-  steps: ["<b>Curl your wrist down</b> into the green band.", "<b>Hold it there</b> while the scoop forms. The banner counts the seconds.", "<b>Relax</b> your hand back to level and rest."],
-  rep: "Curl down, hold until the scoop is made, relax.",
-  tip: "Move only at the wrist; keep your forearm on the table." };
+  goal: "Scoop the ice cream! Bend your wrist down and hold it.",
+  ready: "Rest your arm on the table. Your hand hangs over the edge, palm down.",
+  steps: ["Hold the phone flat against your palm. <b>Screen down.</b>", "<b>Bend your wrist down.</b>", "Stop when the dot is in the <b>green band</b>.", HOLDBAND, "<b>Bring your hand back up</b> and rest."],
+  rep: "Bend down, hold, back up.",
+  tip: "Only your hand moves. Your arm stays on the table." };
 G.fill = { unit: "glass|glasses",
-  goal: "Run the lemonade stand. Tip the jug just enough to pour, and keep it steady until the glass is full.",
-  ready: "Sit at a table with your forearm resting on it, phone upright in your fist like a jug.",
-  steps: ["<b>Tip the phone sideways</b> into the green band. Lemonade starts to pour.", "<b>Keep it steady</b> in the band until the glass fills to the line.", "<b>Turn it back up</b>. The glass goes to the next thirsty animal."],
+  goal: "Pour the lemonade! Tip the jug and fill the glass to the line.",
+  ready: "Sit at a table. Rest your arm on the table.",
+  steps: ["Hold the phone <b>standing up</b> in your fist, like a jug.", "<b>Tip it to the side.</b> Lemonade pours.", "Keep the dot in the <b>green band</b>.", "<b>Hold it steady</b> until the glass is full.", "<b>Stand it back up.</b> A new glass comes."],
   rep: "Fill one glass.",
-  tip: "Tip too far and it stops pouring. Small adjustments keep you in the band." };
+  tip: "Tip too far and it stops pouring. Small moves." };
 G.soup = { unit: "spoonful",
-  goal: "Eat your soup. Turn your hand to scoop with the spoon, then lift it up to your mouth.",
-  ready: "Sit at a table, phone flat in your fist like a spoon resting in the bowl.",
-  steps: ["<b>Step 1: turn your hand</b> to scoop up the soup.", "<b>Step 2: lift the spoon</b> up to your mouth.", "<b>Lower it</b> back to the bowl for the next spoonful."],
-  rep: "Scoop, lift, back to the bowl.",
-  tip: "Bring the spoon to your mouth; keep your back against the chair." };
+  goal: "Eat your soup! Scoop with the spoon, then lift it to your mouth.",
+  ready: "Sit at a table.",
+  steps: ["Hold the phone flat in your fist, <b>like a spoon</b>.", "<b>Step 1: turn your hand</b> to scoop the soup.", "<b>Step 2: lift the spoon</b> up to your mouth.", "<b>Put it back down</b> to the bowl.", "Scoop again!"],
+  rep: "Scoop, lift, back down.",
+  tip: "Sit back in the chair. Bring the spoon to you." };
 G.sail = { unit: "",
-  goal: "Sail the boat down the channel between the buoys. Turn your hand to follow the wind as it shifts.",
-  ready: "Sit at a table with your forearm resting on it, phone flat in your fist.",
-  steps: ["<b>Turn your hand</b> left or right to steer.", "Keep the dot on the bar <b>inside the green part</b> to stay on course.", "Keep sailing until the time runs out and you reach the lighthouse."],
-  tip: "Smooth, slow turns work best. Look ahead to see where the channel bends." };
+  goal: "Sail the boat between the buoys. Turn your hand to steer.",
+  ready: "Sit at a table. Rest your arm on the table.",
+  steps: ["Hold the phone flat in your fist. <b>Screen up.</b>", "<b>Turn your hand</b> left or right to steer.", "Keep the dot on the bar <b>in the green</b>.", "Look ahead to see where to go.", "Keep sailing until the time is up."],
+  tip: "Slow, smooth turns work best." };
 
 // ---------------------------------------------------------------- Hand & fingers
 G.tap = { unit: "",
-  goal: "Tap the lit lane as fast as you can until the time runs out.",
-  ready: "Rest your affected hand next to the phone or the screen, fingers ready.",
-  steps: ["Find the <b>lit lane</b>.", "<b>Tap it</b> with your affected hand, as fast as you can.", "On levels 2 and 3 the light moves between fingers: follow it."],
-  tip: "Keep your wrist resting down and tap from the finger, not the whole arm." };
+  goal: "Tap the light as fast as you can!",
+  ready: "Put your hand next to the phone or the screen.",
+  steps: ["Find the <b>lit lane</b>.", "<b>Tap it</b> with your weaker hand.", "Tap again and again, <b>fast</b>!", "On harder levels the light moves. Follow it.", "Keep going until the time is up."],
+  tip: "Keep your wrist down. Tap with your finger." };
 G.rhythm = { unit: "note",
-  goal: "Play the falling notes. Tap each note's lane just as it reaches the green line.",
-  ready: "Put one finger over each lane on the phone or the screen.",
-  steps: ["<b>Watch the notes</b> fall down their lanes.", "When a note reaches the <b>green line</b>, tap its lane.", "Use the finger that sits over that lane."],
+  goal: "Play the music! Tap each note when it reaches the green line.",
+  ready: "Put one finger over each lane.",
+  steps: ["<b>Watch the notes</b> fall down.", "A note reaches the <b>green line</b>.", "<b>Tap its lane</b> right then.", "Use the finger over that lane.", "Get ready for the next note."],
   rep: "Each note, hit or missed.",
-  tip: "Watch the line, not the top of the screen." };
+  tip: "Watch the green line, not the top." };
 G.dial = { unit: "number",
-  goal: "Dial the phone number you see on the keypad. On level 3 the number disappears after 3 seconds, so remember it.",
-  ready: "Use the keypad on your phone, or the one on the screen.",
-  steps: ["<b>Read the number</b>. Say it out loud if that helps.", "<b>Type it</b> on the keypad with your affected hand.", "Use <b>←</b> to fix a mistake."],
-  tip: "Read it in small chunks, like 555 · 12 · 34." };
+  goal: "Type the phone number you see.",
+  ready: "Use the number keys on your phone or on the screen.",
+  steps: ["<b>Read the number.</b> Say it out loud.", "<b>Type it</b> on the keys with your weaker hand.", "Made a mistake? Tap <b>←</b> to fix it.", "On level 3 the number hides after 3 seconds.", "Then do the next number."],
+  tip: "Read it in small parts, like 555 · 12 · 34." };
 G.pinch = { unit: "item",
-  goal: "Pick up the small items and drop them into the green box. Higher levels use smaller items.",
-  ready: "Use the touchscreen or trackpad with your affected hand.",
-  steps: ["<b>Press on an item</b> and keep your finger down.", "<b>Drag it</b> over to the green box.", "<b>Let go</b> inside the box."],
-  rep: "One item in the box.",
-  tip: "Go slowly and carefully. Accuracy matters more than speed." };
+  goal: "Pick up the small things and put them in the green box.",
+  ready: "Use the touch screen or trackpad with your weaker hand.",
+  steps: ["<b>Press on a thing</b> and keep your finger down.", "<b>Slide it</b> to the green box.", "<b>Let go</b> inside the box.", "Do the next one.", "Harder levels have smaller things."],
+  rep: "One thing in the box.",
+  tip: "Go slowly. Careful is better than fast." };
 G.grip = { unit: "squeeze|squeezes",
-  goal: "Squeeze a soft ball or rolled towel hard, then open your hand wide.",
-  ready: "Have a soft ball or a rolled-up towel. Rest your forearm on the table.",
-  steps: ["<b>Squeeze</b> the ball for a slow count of three.", "<b>Let go and open your fingers wide</b>.", "Press <b>Done</b> (on the phone, the screen, or the space bar)."],
+  goal: "Squeeze a soft ball hard. Then open your hand wide.",
+  ready: "Get a soft ball or a rolled-up towel. Rest your arm on the table.",
+  steps: ["Hold the ball in your weaker hand.", "<b>Squeeze it hard.</b> Count: 1, 2, 3.", "<b>Let go.</b> Open your fingers wide.", "Press <b>Done</b> (on the phone, the screen, or the space bar).", "Do it again."],
   rep: "Squeeze, open wide, press Done.",
-  tip: "Open your fingers all the way; the opening is as important as the squeeze." };
+  tip: "Open your fingers all the way." };
 G.putty = { unit: "squeeze|squeezes",
-  goal: "Squeeze a ball of putty or play dough in your fist, then roll it back into a ball.",
-  ready: "Have therapy putty or play dough. Sit at a table.",
-  steps: ["<b>Hold the putty</b> in your affected hand.", "<b>Squeeze it</b> as hard as is comfortable.", "<b>Roll it back</b> into a ball, then press <b>Done</b>."],
-  rep: "Squeeze, roll it back, press Done.",
+  goal: "Squeeze the putty in your hand. Then roll it back into a ball.",
+  ready: "Get therapy putty or play dough. Sit at a table.",
+  steps: ["Hold the putty in your weaker hand.", "<b>Squeeze it</b> as hard as is OK.", "<b>Roll it</b> back into a ball.", "Press <b>Done</b>.", "Do it again."],
+  rep: "Squeeze, roll, press Done.",
   tip: "Use all your fingers. Stop if your hand cramps." };
 G.curls = { unit: "curl",
-  goal: "Curl your fingers into a hook, then straighten them all the way.",
-  ready: "Rest your forearm on the table, palm up.",
-  steps: ["<b>Bend your fingers</b> into a hook, keeping the big knuckles straight.", "<b>Straighten them</b> all the way out.", "Press <b>Done</b> and do the next one."],
+  goal: "Bend your fingers into a hook. Then make them straight.",
+  ready: "Rest your arm on the table, palm up.",
+  steps: ["Keep your <b>big knuckles</b> straight.", "<b>Bend your fingers</b> into a hook.", "<b>Straighten them</b> all the way.", "Press <b>Done</b>.", "Do it again."],
   rep: "Hook, straighten, press Done.",
-  tip: "Move slowly and feel each finger bend. Use your other hand to help if needed." };
+  tip: "Go slowly. Your other hand can help." };
 G.thumbs = { unit: "round",
-  goal: "Touch your thumb to each fingertip in turn, from your index finger to your little finger.",
-  ready: "Hold your affected hand up in front of you, palm facing you.",
-  steps: ["Touch your thumb to your <b>index finger</b>.", "Then the <b>middle</b>, <b>ring</b> and <b>little</b> fingers.", "That's one round. Press <b>Done</b> and start again."],
-  rep: "Thumb to all four fingertips, then press Done.",
-  tip: "Make a round 'O' shape each time, tip to tip." };
+  goal: "Touch your thumb to each fingertip, one by one.",
+  ready: "Hold your weaker hand up. Palm facing you.",
+  steps: ["Thumb touches your <b>pointer finger</b>.", "Thumb touches your <b>middle finger</b>.", "Thumb touches your <b>ring finger</b>.", "Thumb touches your <b>little finger</b>.", "Press <b>Done</b>. Start again."],
+  rep: "Thumb to all four fingers, then press Done.",
+  tip: "Make a round 'O' shape each time." };
 G.clothespin = { unit: "",
-  goal: "Pinch clothespins open and clip them onto the edge of a box or cup, then take them off again.",
-  ready: "Put a box or cup and a few clothespins on the table in front of you.",
-  steps: ["<b>Pinch a clothespin open</b> with your affected hand.", "<b>Clip it</b> on the edge of the box.", "When they're all on, <b>take them off</b> again. Keep going until the time is up."],
-  tip: "Use the tips of your thumb and finger, not the whole hand." };
+  goal: "Squeeze clothespins open and clip them onto a box.",
+  ready: "Put a box or cup and some clothespins on the table.",
+  steps: ["Pick up a clothespin with your weaker hand.", "<b>Squeeze it open.</b>", "<b>Clip it</b> on the edge of the box.", "When all are on, <b>take them off</b>.", "Keep going until the time is up."],
+  tip: "Use your fingertips, not your whole hand." };
 G.coins = { unit: "",
-  goal: "Pick up coins one at a time and drop them into a cup.",
-  ready: "Spread some coins on the table next to a cup.",
-  steps: ["<b>Pick up one coin</b> with your affected hand.", "<b>Drop it</b> into the cup.", "When they're all in, tip them out and start again until the time is up."],
-  tip: "Slide a coin to the edge of the table if it's hard to pick up flat." };
+  goal: "Pick up coins one at a time. Drop them in a cup.",
+  ready: "Put some coins on the table next to a cup.",
+  steps: ["<b>Pick up one coin</b> with your weaker hand.", "<b>Drop it</b> in the cup.", "Do the next coin.", "When all are in, tip them out.", "Keep going until the time is up."],
+  tip: "Hard to pick up? Slide the coin to the table edge first." };
 G.buttons = { unit: "",
-  goal: "Practise getting dressed: undo the buttons on a shirt, then do them up again.",
-  ready: "Lay a buttoned shirt on the table, or wear one.",
-  steps: ["<b>Undo the buttons</b>, using both hands.", "<b>Do them up</b> again.", "Keep going until the time is up."],
-  tip: "Start with the biggest buttons. Use your affected hand as much as you can." };
+  goal: "Practise getting dressed. Undo the buttons, then do them up.",
+  ready: "Put a shirt with buttons on the table, or wear one.",
+  steps: ["<b>Undo a button</b> with both hands.", "Undo all the buttons.", "<b>Do them up</b> again.", "Use your weaker hand as much as you can.", "Keep going until the time is up."],
+  tip: "Start with the biggest buttons." };
 G.knifefork = { unit: "",
-  goal: "Practise cutting food with a knife and fork, using both hands together.",
-  ready: "Put play dough or soft food on a plate, with a knife and fork.",
-  steps: ["Hold the <b>fork</b> in one hand and the <b>knife</b> in the other.", "<b>Cut small pieces</b>, holding the food still with the fork.", "Switch hands if you can. Keep going until the time is up."],
-  tip: "Press your index finger along the top of the knife for control." };
+  goal: "Practise cutting food with a knife and fork.",
+  ready: "Put play dough or soft food on a plate. Get a knife and fork.",
+  steps: ["Hold the <b>fork</b> in one hand.", "Hold the <b>knife</b> in the other hand.", "Hold the food still with the fork.", "<b>Cut small pieces</b> with the knife.", "Swap hands if you can. Keep going until the time is up."],
+  tip: "Put your pointer finger on top of the knife." };
 G.mole = { unit: "mole",
-  goal: "Whack the mole! Tap the hole it pops out of before it hides again.",
-  ready: "Rest your affected hand by the phone's keypad or the screen.",
-  steps: ["<b>Watch the holes</b>.", "When a mole pops up, <b>tap that hole</b> fast.", "Then get ready for the next one. Higher levels hide it faster."],
+  goal: "Whack the mole! Tap where it pops up, fast.",
+  ready: "Put your hand by the keys on the phone or the screen.",
+  steps: ["<b>Watch the holes.</b>", "A mole pops up.", "<b>Tap that hole</b> fast!", "Get ready for the next one.", "On harder levels, moles hide faster."],
   rep: "Each mole, hit or missed.",
-  tip: "Rest your hand in the middle so every hole is close." };
+  tip: "Rest your hand in the middle. Every hole is close." };
 G.scales = { unit: "pattern",
-  goal: "Play a finger pattern in order, like practising scales on a piano.",
-  ready: "Put one finger over each lane: index finger on lane 1.",
-  steps: ["<b>Read the numbers</b>: 1 is your index finger, 4 your little finger.", "<b>Tap the lanes in that order</b>, one finger at a time.", "Level 2 goes up and back down; level 3 skips around."],
-  tip: "Keep the other fingers still while one finger taps." };
+  goal: "Play the piano! Tap the fingers in order.",
+  ready: "Put one finger over each lane. Pointer finger on lane 1.",
+  steps: ["<b>Read the numbers.</b> 1 is your pointer finger.", "4 is your little finger.", "<b>Tap the lanes</b> in that order.", "One finger at a time.", "Then a new pattern comes."],
+  rep: "One whole pattern.",
+  tip: "Keep the other fingers still." };
 G.drum = { unit: "",
-  goal: "Play a drum roll: alternate two fingers as fast as you can until the time runs out.",
+  goal: "Play a drum roll! Tap two fingers, one then the other, fast.",
   ready: "Put two fingers over the two lit lanes.",
-  steps: ["<b>Tap one lane</b>, then <b>the other</b>.", "Keep going <b>back and forth</b> as fast as you can.", "Levels 2 and 3 use fingers further apart."],
-  tip: "Even taps beat fast messy ones; find a rhythm." };
+  steps: ["<b>Tap one lane.</b>", "<b>Tap the other lane.</b>", "Go back and forth.", "<b>Faster and faster!</b>", "Keep going until the time is up."],
+  tip: "Even taps are better than messy fast ones." };
 G.beat = { unit: "beat",
-  goal: "Tap exactly in time with a steady beat, like clapping along to music.",
-  ready: "Turn the sound on. Rest your finger over the button.",
-  steps: ["<b>Listen</b> to the beat for a moment.", "<b>Tap the button</b> exactly on each beat.", "Keep tapping in time until it stops."],
-  tip: "Nod your head along to the beat, then tap with it." };
+  goal: "Tap along with the music beat.",
+  ready: "Turn the sound on. Put your finger over the button.",
+  steps: ["<b>Listen</b> to the beat.", "Nod along to it.", "<b>Tap the button</b> on each beat.", "Stay in time.", "Keep going until it stops."],
+  tip: "Nod your head to the beat. Tap with the nod." };
 G.numhunt = { unit: "round",
-  goal: "The keys are shuffled. Find and tap 1 to 9 in order, as quickly as you can.",
-  ready: "Use the keypad on your phone, or the one on the screen.",
-  steps: ["<b>Find the 1</b> and tap it.", "Then find and tap <b>2, 3</b> and on up to <b>9</b>.", "The keys shuffle for every round."],
-  rep: "1 to 9 in order.",
-  tip: "Look across the whole keypad, left to right, before you tap." };
+  goal: "Find the numbers 1 to 9 and tap them in order.",
+  ready: "Use the number keys on your phone or on the screen.",
+  steps: ["<b>Find 1.</b> Tap it.", "<b>Find 2.</b> Tap it.", "Keep going: 3, 4, 5…", "Finish with <b>9</b>.", "The keys mix up for the next round."],
+  rep: "Tap 1 to 9 in order.",
+  tip: "Look across all the keys before you tap." };
 G.typeword = { unit: "word",
-  goal: "Type a short word on the letter pad.",
-  ready: "Use the letter pad on your phone, or the one on the screen.",
-  steps: ["<b>Read the word</b>.", "<b>Tap its letters</b> in order with your affected hand.", "Use <b>←</b> to fix a mistake."],
-  tip: "Say each letter out loud as you tap it." };
+  goal: "Type the word on the letter keys.",
+  ready: "Use the letter keys on your phone or on the screen.",
+  steps: ["<b>Read the word.</b> Say it out loud.", "<b>Tap the first letter.</b>", "Tap the next letters in order.", "Made a mistake? Tap <b>←</b> to fix it.", "Then a new word comes."],
+  tip: "Say each letter as you tap it." };
 G.tapcount = { unit: "round",
-  goal: "Tap exactly the number of times shown, then stop.",
-  ready: "Rest your finger over the button on the phone or the screen.",
-  steps: ["<b>Read the number</b>.", "<b>Tap that many times</b>, at your own pace, counting out loud.", "<b>Stop and wait</b>. It checks your count."],
-  rep: "One number tapped out.",
-  tip: "Count each tap out loud." };
+  goal: "Tap the button exactly the number of times shown.",
+  ready: "Put your finger over the button on the phone or the screen.",
+  steps: ["<b>Read the number.</b>", "<b>Tap that many times.</b>", "Count out loud: 1, 2, 3…", "Then <b>stop and wait</b>.", "It checks your count."],
+  rep: "Tap one number's worth.",
+  tip: "Go slowly and count each tap." };
 G.pegboard = { unit: "peg",
-  goal: "Put every peg into a hole as quickly as you can.",
-  ready: "Use the touchscreen or trackpad with your affected hand.",
-  steps: ["<b>Press on a peg</b> and keep your finger down.", "<b>Drag it</b> to an empty hole.", "<b>Let go</b> right over the hole. Fill them all."],
+  goal: "Put every peg in a hole, as fast as you can.",
+  ready: "Use the touch screen or trackpad with your weaker hand.",
+  steps: ["<b>Press on a peg</b> and keep your finger down.", "<b>Slide it</b> to an empty hole.", "<b>Let go</b> right over the hole.", "Do the next peg.", "Fill all the holes!"],
   rep: "One peg in a hole.",
-  tip: "Higher levels need more exact drops, so slow down near the hole." };
+  tip: "Slow down near the hole." };
 G.shake = { unit: "shake",
-  goal: "Shake the snow globe! Every shake swirls the snow, and a little winter village appears inside, piece by piece.",
-  ready: "Sit tall with the phone gripped tightly in your fist. Use a wrist strap and never let go.",
-  steps: ["<b>Hold the phone tightly</b>.", "<b>Shake it up and down</b> in short, quick movements.", "Keep going until the village is finished."],
-  tip: "Short shakes from the elbow. Keep a firm grip the whole time." };
+  goal: "Shake the snow globe! Each shake builds a little snowy village.",
+  ready: "Sit up tall. Put the wrist strap on.",
+  steps: ["Hold the phone <b>tight</b> in your fist.", "<b>Shake it up and down.</b> Short, quick shakes.", "Watch the snow swirl.", "Keep shaking!", "Stop when the village is finished."],
+  rep: "Each shake.",
+  tip: "Hold on tight. Shake from your elbow." };
 G.pengrip = { unit: "drawing",
-  goal: "Hold the phone like a pen and trace each picture on the paper. The crayon line follows you.",
-  ready: "Sit at a table with your forearm resting on it. Hold the phone upright, like a big pen.",
-  steps: ["<b>Tilt the phone</b> to move the pencil to the <b>orange start dot</b>.", "<b>Follow the dotted line</b> slowly to the end.", "A finished drawing is pinned up and the next one starts."],
-  rep: "From the orange dot all the way to the end of the line.",
-  tip: "Hold it with your fingertips, like a pen, and move slowly." };
+  goal: "Hold the phone like a pen and draw the picture.",
+  ready: "Sit at a table. Rest your arm on the table.",
+  steps: ["Hold the phone <b>standing up</b>, like a big pen.", "<b>Tip it</b> to move the pencil.", "Go to the <b>orange dot</b>. That is the start.", "<b>Follow the dotted line</b> slowly.", "Get to the end. Your drawing goes on the wall!"],
+  rep: "From the orange dot to the end of the line.",
+  tip: "Hold it with your fingertips, like a pen." };
 
 // ---------------------------------------------------------------- Trunk & legs
 G.lean = { unit: "lean",
-  goal: "Feed the ducks from the bench. Lean toward the duck with the ring and hold while it eats.",
-  ready: "Sit on a firm chair with your feet flat on the floor.",
-  steps: ["See which duck has the <b>ring</b>: left, right or in front.", "<b>Lean your body</b> that way, and hold while the duck eats.", "<b>Sit back up</b> in the middle for the next duck."],
-  rep: "Lean, hold, back to the middle.",
-  tip: "Lean from your hips, keeping your back long. Feet stay flat." };
+  goal: "Feed the ducks! Lean toward the duck with the ring.",
+  ready: "Sit on a firm chair. Feet flat on the floor.",
+  steps: ["Hold the phone <b>flat on your chest</b>.", "Find the duck with the <b>ring</b>: left, right or in front.", "<b>Lean your body</b> toward it.", "<b>Hold</b> while the duck eats.", "<b>Sit back up</b> in the middle."],
+  rep: "Lean, hold, sit back up.",
+  tip: "Keep your feet flat. Lean from your hips." };
 G.twist = { unit: "animal",
-  goal: "Look around the world and find the hidden animals. Turn your shoulders to look, and hold still on an animal to find it.",
-  ready: "Sit tall on a chair without wheels, feet flat. Keep your hips facing forward.",
-  steps: ["<b>Pick a world</b> from the list below.", "<b>Turn your shoulders</b> to look right, then left.", "When you see the animal you're looking for, <b>hold still</b> on it to find it."],
+  goal: "Look around and find the hidden animals!",
+  ready: "Sit up tall on a chair without wheels. Feet flat.",
+  steps: ["<b>Pick a world</b> from the list below.", "Hold the phone <b>flat on your chest</b>.", "<b>Turn your shoulders</b> to look left and right.", "See the animal? <b>Hold still</b> on it.", "Now find the next animal."],
   rep: "Each animal you find.",
-  tip: "Hips and knees stay facing forward; only your upper body turns." };
+  tip: "Keep your hips and knees facing forward." };
 G.sit2stand = { unit: "stand",
-  goal: "Stand up from your chair and sit down again. Each time you stand, you can see over the hedge to the balloon festival.",
-  ready: "Use a sturdy chair with armrests, against a wall. Have someone nearby.",
-  steps: ["<b>Scoot forward</b>, put your feet back, and lean forward.", "<b>Stand up</b> all the way, using the armrests if you need to.", "<b>Sit down slowly</b>, reaching back for the chair."],
+  goal: "Stand up from your chair, then sit down. You can see the balloons over the hedge!",
+  ready: "Use a strong chair with arms, against a wall. Have someone near you.",
+  steps: ["Hold the phone <b>flat on your chest</b>.", "<b>Move forward</b> in the chair. Feet back.", "Lean forward. <b>Stand up</b> all the way.", "<b>Sit down slowly.</b> Reach back for the chair.", "Rest. Then do it again."],
   rep: "Stand up and sit back down.",
-  tip: "Nose over toes as you stand. Sit down slowly, don't drop." };
+  tip: "Nose over toes as you stand. Sit down slowly." };
 G.balance = { unit: "",
-  goal: "Stand tall and still. A new block lands on the tower every few seconds; sway, and the tower wobbles.",
-  ready: "Stand at a counter you can hold, with someone nearby. Level 1: feet apart. Level 2: feet together. Level 3: one foot in front of the other.",
-  steps: ["<b>Stand tall</b> with your feet in position.", "Keep the dot <b>inside the green circle</b> by standing very still.", "Keep going until the time runs out."],
-  tip: "Look at one spot straight ahead. Breathe slowly." };
+  goal: "Stand tall and very still. Build a tall tower of blocks!",
+  ready: "Stand at a counter you can hold. Have someone near you.",
+  steps: ["Hold the phone <b>flat on your chest</b>.", "Level 1: feet apart. Level 2: feet together.", "Level 3: one foot in front of the other.", "<b>Stand very still.</b> Keep the dot in the green circle.", "Keep going until the time is up."],
+  tip: "Look at one spot in front of you. Breathe slowly." };
 G.march = { unit: "step",
-  goal: "Lead the animal parade! March in your chair, lifting one knee and then the other. Every lift is a step.",
-  ready: "Sit tall near the front of a sturdy chair, feet flat.",
-  steps: ["<b>Lift one knee</b> as high as is comfortable.", "<b>Lower it</b>, then lift the other knee.", "Keep a steady marching rhythm."],
+  goal: "Lead the animal parade! March in your chair.",
+  ready: "Sit up tall near the front of the chair. Feet flat.",
+  steps: ["Put the phone in your <b>front pocket</b>.", "<b>Lift one knee</b> up.", "Put it down.", "<b>Lift the other knee</b> up.", "Keep marching!"],
   rep: "Each knee lift.",
-  tip: "Sit up tall and don't lean back as you lift." };
+  tip: "Sit up tall. Don't lean back." };
 G.heelraise = { unit: "raise",
-  goal: "Lift your heels off the floor, hold, and lower them.",
-  ready: "Sit with your feet flat, or stand holding a counter.",
-  steps: ["<b>Lift both heels</b> up onto your toes.", "<b>Hold</b> for a count of two.", "<b>Lower slowly</b>, then press <b>Done</b>."],
+  goal: "Lift your heels up off the floor. Then put them down.",
+  ready: "Sit with feet flat. Or stand and hold a counter.",
+  steps: ["<b>Lift both heels up.</b> Stay on your toes.", "<b>Hold.</b> Count: 1, 2.", "<b>Put your heels down</b> slowly.", "Press <b>Done</b>.", "Do it again."],
   rep: "Up, hold, down, press Done.",
-  tip: "Go straight up and down, not rolling to the side of your foot." };
+  tip: "Go straight up and down." };
 G.anklepump = { unit: "pump",
-  goal: "Pump your ankles: point your toes up toward you, then down.",
-  ready: "Sit with your feet flat on the floor, or your legs out in front of you.",
-  steps: ["<b>Pull your toes up</b> toward your shins.", "<b>Point them down</b> away from you.", "Press <b>Done</b> and repeat in a steady rhythm."],
+  goal: "Pump your feet. Toes up, then toes down.",
+  ready: "Sit with your feet on the floor.",
+  steps: ["<b>Pull your toes up</b> toward you.", "<b>Push your toes down</b>, away from you.", "Press <b>Done</b>.", "Do it again.", "Keep a steady beat."],
   rep: "Toes up, toes down, press Done.",
-  tip: "Move slowly and go as far as is comfortable each way." };
+  tip: "Go slowly. Go as far as feels OK." };
 G.floor = { unit: "egg",
-  goal: "Gather the eggs. Lean forward toward the floor to reach the nest with your grabber, and hold to pick up the egg.",
-  ready: "Sit near the front of a sturdy chair, feet flat and apart.",
-  steps: ["<b>Lean forward</b> from your hips and reach down toward your feet.", "<b>Hold</b> there while the grabber picks up the egg.", "<b>Sit back up</b> tall. The hen lays the next one."],
+  goal: "Pick up the eggs! Lean down toward the floor to reach the nest.",
+  ready: "Sit near the front of a strong chair. Feet flat and apart.",
+  steps: ["Hold the phone <b>flat on your chest</b>.", "<b>Lean forward</b> and reach down to your feet.", "<b>Hold</b> while you pick up the egg.", "<b>Sit back up</b> tall.", "The hen lays a new egg."],
   rep: "Reach down, hold, sit up.",
-  tip: "Lean from your hips and keep your feet flat. Hold the chair if you feel unsteady." };
+  tip: "Keep your feet flat. Hold the chair if you feel wobbly." };
 G.sidereach = { unit: "apple",
-  goal: "Pick the apples. Reach out to the side to the glowing apple and hold; it drops into your basket.",
-  ready: "Sit tall in a sturdy chair, feet flat.",
-  steps: ["<b>Reach out to the side</b> past your knee, leaning your body with it.", "<b>Hold</b> while the apple is picked.", "<b>Sit back up</b> in the middle."],
-  rep: "Reach out, hold, back to the middle.",
-  tip: "Shift your weight onto that hip, but keep both feet flat on the floor." };
+  goal: "Pick the apples! Reach out to the side to the shiny apple.",
+  ready: "Sit up tall in a strong chair. Feet flat.",
+  steps: ["Hold the phone <b>flat on your chest</b>.", "<b>Reach out to the side</b>. Lean your body with it.", "<b>Hold</b> while you pick the apple.", "<b>Sit back up</b> in the middle.", "Find the next apple."],
+  rep: "Reach out, hold, sit up.",
+  tip: "Keep both feet flat on the floor." };
 G.rock = { unit: "stroke",
-  goal: "Row the boat down the river. Lean forward to reach the oars, then lean back to pull.",
-  ready: "Sit on a firm chair with your feet flat on the floor.",
-  steps: ["<b>Lean forward</b> from your hips to the front target.", "<b>Lean back</b> past upright to the back target.", "Keep rowing in a slow, steady rhythm."],
+  goal: "Row the boat! Lean forward, then lean back.",
+  ready: "Sit on a firm chair. Feet flat.",
+  steps: ["Hold the phone <b>flat on your chest</b>.", "<b>Lean forward.</b>", "<b>Lean back</b> a little past sitting straight.", "Keep rowing: forward, back.", "Nice and slow."],
   rep: "One lean forward and one back.",
-  tip: "Move from your hips with a straight back, slowly." };
+  tip: "Keep your back straight. Move from your hips." };
 G.trunkcircle = { unit: "circle",
-  goal: "Help the panda hula hoop. Circle your upper body and the hoop spins; every full circle earns a new hoop.",
-  ready: "Sit tall in a sturdy chair, feet flat.",
-  steps: ["<b>Lean out</b> until the dot on the round pad reaches the ring.", "<b>Circle your upper body</b> round the way the arrow points: forward, side, back, side.", "Halfway through, the arrow turns: <b>circle the other way</b>."],
-  rep: "Once all the way round the ring.",
-  tip: "Slow, smooth circles. Your hips stay on the chair." };
+  goal: "Help the panda spin the hula hoop! Move your body in a circle.",
+  ready: "Sit up tall in a strong chair. Feet flat.",
+  steps: ["Hold the phone <b>flat on your chest</b>.", "<b>Lean out</b> until the dot reaches the ring.", "<b>Circle your body</b> the way the arrow points.", "Forward, side, back, side.", "When the arrow turns around, <b>circle the other way</b>."],
+  rep: "One full circle.",
+  tip: "Slow circles. Stay sitting on the chair." };
 G.kneeext = { unit: "kick",
-  goal: "Straighten your knee to lift your foot up to the ball and hold it there. The ball powers up and flies into the net.",
-  ready: "Sit tall in a sturdy chair, feet flat.",
-  steps: ["<b>Straighten your knee</b> to lift your foot off the floor.", "<b>Hold</b> it up while the ball powers up.", "<b>Lower slowly</b> back to the floor."],
-  rep: "Lift, hold, lower.",
-  tip: "Pull your toes up toward you as you straighten." };
+  goal: "Straighten your leg to lift your foot. The ball flies into the net!",
+  ready: "Sit up tall in a strong chair. Feet flat.",
+  steps: ["Put the phone on your <b>shin</b>, below the knee.", "<b>Straighten your knee.</b> Your foot lifts up.", HOLD, "<b>Put your foot down</b> slowly.", "Rest. Then do it again."],
+  rep: "Lift, hold, down.",
+  tip: "Pull your toes up toward you." };
 G.kneeout = { unit: "opening",
-  goal: "Open the butterfly's wings. Move your knee out to the side and hold; the butterfly flies away and the next one lands.",
-  ready: "Sit tall with your feet flat on the floor.",
-  steps: ["<b>Let your knee move out</b> to the side, keeping your foot on the floor.", "<b>Hold</b> it out while the wings stay open.", "<b>Bring it back</b> to the middle."],
+  goal: "Open the butterfly's wings! Move your knee out to the side.",
+  ready: "Sit up tall. Feet flat on the floor.",
+  steps: ["Put the phone <b>flat on your thigh</b>, near the knee.", "<b>Move your knee out</b> to the side.", "Keep your foot on the floor.", "<b>Hold</b> while the wings are open.", "<b>Bring your knee back</b> to the middle."],
   rep: "Knee out, hold, back in.",
-  tip: "Keep your foot planted and your back still." };
+  tip: "Keep your back still." };
 G.foottilt = { unit: "lift",
-  goal: "Lift the front of your foot to raise the marble run, and hold it up while the marble rolls into the jar.",
+  goal: "Lift your toes to lift the marble run. The marble rolls into the jar!",
   ready: "Sit with your foot flat on the floor.",
-  steps: ["<b>Lift your toes</b> and the front of your foot, heel stays down.", "<b>Hold</b> while the marble rolls down.", "<b>Put your foot down</b> slowly."],
-  rep: "Lift, hold, lower.",
-  tip: "Keep your heel on the floor the whole time." };
+  steps: ["Put the phone <b>on top of your foot</b>.", "<b>Lift your toes up.</b> Keep your heel down.", HOLD, "<b>Put your foot down</b> slowly.", "Rest. Then do it again."],
+  rep: "Toes up, hold, down.",
+  tip: "Your heel stays on the floor." };
 G.ankletrace = { unit: "shape",
-  goal: "Walk the crab along the shells. Tilt your foot to move it, and it draws a line in the sand.",
-  ready: "Sit with your heel resting on the floor.",
-  steps: ["<b>Tilt your foot</b> to move the crab to the <b>orange start dot</b>.", "Tilt up, down and to the sides to <b>follow the line</b>.", "Reach the end of the shape. A wave washes it away for the next one."],
-  rep: "From the orange dot all the way to the end of the line.",
-  tip: "Move only at the ankle; your heel stays on the floor." };
+  goal: "Walk the crab along the shells! Tip your foot to move it.",
+  ready: "Sit with your heel on the floor.",
+  steps: ["Put the phone <b>on top of your foot</b>.", "<b>Tip your foot</b> to move the crab to the orange dot.", "Tip up, down and to the sides to <b>follow the line</b>.", "Get to the end of the shape.", "A wave washes it away. Here is a new one!"],
+  rep: "From the orange dot to the end.",
+  tip: "Only your ankle moves. Heel stays down." };
 G.toetap = { unit: "tap",
-  goal: "Play the animal band's big drum. Every tap of your foot hits the drum and the band bounces along.",
-  ready: "Sit tall with your feet flat on the floor.",
-  steps: ["<b>Tap your affected foot</b> forward on the floor.", "<b>Bring it back</b>.", "Keep a steady rhythm."],
-  tip: "Lift your foot clearly off the floor each time." };
+  goal: "Play the big drum! Tap your foot forward.",
+  ready: "Sit up tall. Feet flat on the floor.",
+  steps: ["Put the phone <b>on top of your foot</b>.", "<b>Tap your foot</b> forward on the floor.", "<b>Bring it back.</b>", "Do it again.", "Keep a steady beat."],
+  rep: "Each tap.",
+  tip: "Lift your foot up off the floor each time." };
 G.bridge = { unit: "bridge|bridges",
-  goal: "Lift your hips and the rope bridge rises out of the creek. Hold it up while an animal walks across.",
-  ready: "Lie on your back on a bed or mat, knees bent and feet flat.",
-  steps: ["<b>Squeeze your buttocks</b> and lift your hips.", "<b>Hold</b> while the animal walks across.", "<b>Lower slowly</b> back down."],
-  rep: "Lift, hold, lower.",
-  tip: "Push through your heels. Keep your shoulders and head relaxed on the bed." };
+  goal: "Lift your hips. The bridge comes up and an animal walks across!",
+  ready: "Lie on your back on a bed or mat. Knees bent. Feet flat.",
+  steps: ["Put the phone <b>flat on your thigh</b>.", "Squeeze your bottom.", "<b>Lift your hips up.</b>", "<b>Hold</b> while the animal walks across.", "<b>Lower down</b> slowly."],
+  rep: "Lift, hold, down.",
+  tip: "Push through your heels. Keep your head down." };
 G.standshift = { unit: "shift|shifts",
-  goal: "Help the penguin waddle home. Shift your weight from foot to foot and it waddles with you.",
-  ready: "Stand at a counter you can hold, feet hip-width apart, with someone nearby.",
-  steps: ["<b>Shift your weight</b> onto one foot, keeping both feet on the floor.", "Reach the ring, then <b>shift across</b> to the other foot.", "Keep going side to side, slowly."],
+  goal: "Help the penguin walk home! Move your weight from foot to foot.",
+  ready: "Stand at a counter you can hold. Have someone near you.",
+  steps: ["Hold the phone <b>flat on your chest</b>.", "Stand with feet apart.", "<b>Move your weight</b> onto one foot.", "<b>Move your weight</b> onto the other foot.", "Keep both feet on the floor."],
   rep: "One shift to the side.",
-  tip: "Move your hips over your foot; stay tall, don't bend sideways." };
+  tip: "Stand tall. Move your hips, not your shoulders." };
 G.minisquat = { unit: "squat",
-  goal: "Help the frog hop across the pond. Bend your knees a little and hold; the frog leaps to the next lily pad.",
-  ready: "Stand at a counter you can hold, with a chair behind you and someone nearby.",
-  steps: ["<b>Bend your knees</b> a little, as if starting to sit, heels down.", "<b>Hold</b> while the frog gets ready to jump.", "<b>Straighten up</b> tall."],
+  goal: "Help the frog jump! Bend your knees a little and hold.",
+  ready: "Stand at a counter you can hold. Chair behind you. Someone near you.",
+  steps: ["Put the phone in your <b>front pocket</b>.", "<b>Bend your knees a little</b>, like starting to sit.", "<b>Hold</b> while the frog gets ready.", "<b>Stand up tall.</b> The frog jumps!", "Rest. Then do it again."],
   rep: "Bend, hold, stand tall.",
-  tip: "Knees stay over your toes. Only a small bend is needed." };
+  tip: "Only a small bend. Heels stay down." };
 G.leanhold = { unit: "cake",
-  goal: "Blow out the birthday candles. Lean forward to the cake and hold the lean; the candles go out one by one.",
-  ready: "Sit tall in a sturdy chair, feet flat.",
-  steps: ["<b>Lean forward</b> from your hips into the green band.", "<b>Hold it</b> while the candles go out. The banner counts the seconds.", "<b>Sit back up</b> and rest."],
+  goal: "Blow out the birthday candles! Lean forward and hold.",
+  ready: "Sit up tall in a strong chair. Feet flat.",
+  steps: ["Hold the phone <b>flat on your chest</b>.", "<b>Lean forward</b> until the dot is in the green band.", HOLDBAND, "The candles go out one by one.", "<b>Sit back up</b> and rest."],
   rep: "Lean, hold until the candles are out, sit up.",
-  tip: "Lean as if getting ready to stand, nose toward your toes, back straight." };
+  tip: "Nose toward your toes. Keep your back straight." };
 G.crossreach = { unit: "turn",
-  goal: "Feed the animals at the farm fence. Turn your upper body to the side and hold the carrot out while the animal munches.",
-  ready: "Sit tall in a sturdy chair, feet flat.",
-  steps: ["<b>Turn your shoulders</b> to face the side where the animal waits.", "<b>Hold</b> while it eats.", "<b>Turn back</b> to the front."],
+  goal: "Feed the farm animals! Turn your body to the side.",
+  ready: "Sit up tall in a strong chair. Feet flat.",
+  steps: ["Hold the phone <b>flat on your chest</b>.", "<b>Turn your shoulders</b> to the side.", "Face the animal that is waiting.", "<b>Hold</b> while it eats.", "<b>Turn back</b> to the front."],
   rep: "Turn, hold, back to the front.",
-  tip: "Hips and knees stay facing forward." };
+  tip: "Keep your hips and knees facing forward." };
 G.neckturn = { unit: "photo",
-  goal: "Bird watching at the lake. Turn your head toward the bird that's singing to take its photo.",
-  ready: "Sit tall. Hold the phone flat on top of your head with one hand.",
-  steps: ["Listen and look for the <b>singing bird</b>.", "<b>Turn your head</b> slowly toward it to bring it to the middle.", "Then turn slowly to the other side for the next bird."],
-  rep: "One photo each side.",
-  tip: "Turn only as far as is comfortable; keep your shoulders still." };
+  goal: "Take photos of the birds! Turn your head to the bird that sings.",
+  ready: "Sit up tall.",
+  steps: ["Hold the phone <b>flat on top of your head</b>.", "Find the <b>singing bird</b>.", "<b>Turn your head</b> slowly toward it.", "Snap! You took its photo.", "<b>Turn slowly</b> to the other side."],
+  rep: "One photo on each side.",
+  tip: "Turn only as far as feels OK." };
 G.nod = { unit: "nod",
-  goal: "Say hello to the owl and the koi. Look up at the owl on the branch, then down at the fish in the pond.",
-  ready: "Sit tall. Hold the phone flat on top of your head with one hand.",
-  steps: ["<b>Tip your chin down</b> toward your chest to see the koi.", "<b>Lift it up</b> to look at the owl.", "Keep nodding slowly."],
+  goal: "Say hello to the owl and the fish! Look up, then look down.",
+  ready: "Sit up tall.",
+  steps: ["Hold the phone <b>flat on top of your head</b>.", "<b>Look down</b> at the fish. Chin to chest.", "<b>Look up</b> at the owl.", "Keep nodding slowly.", "Down, then up."],
   rep: "One nod down and up.",
-  tip: "Move slowly. Stop if you feel dizzy." };
+  tip: "Go slowly. Stop if you feel dizzy." };
 G.gaze = { unit: "turn",
-  goal: "Keep your eyes on the golden star in the middle of the screen while you turn your head from side to side.",
-  ready: "Sit tall, about an arm's length from the screen. Hold the phone flat on top of your head with one hand.",
-  steps: ["<b>Look at the golden star</b> in the middle of the screen.", "<b>Turn your head</b> a little to one side, eyes still on the star.", "Then turn to the other side. Every turn lights a star in the sky."],
+  goal: "Keep your eyes on the gold star while you turn your head.",
+  ready: "Sit up tall, an arm's length from the screen.",
+  steps: ["Hold the phone <b>flat on top of your head</b>.", "<b>Look at the gold star</b> on the screen.", "<b>Turn your head</b> a little to one side.", "Keep your eyes on the star!", "Turn to the other side."],
   rep: "Each turn of your head.",
-  tip: "Small, steady turns. If the star goes blurry, slow down." };
+  tip: "Small, slow turns. Is the star blurry? Slow down." };
 G.eartilt = { unit: "tip",
-  goal: "Keep the beach ball on its board. When the picture tips, tip your head the other way to level it.",
-  ready: "Sit tall. Hold the phone flat on top of your head with one hand.",
-  steps: ["Watch for the <b>picture to tip</b>.", "<b>Tip your head</b> the other way, ear toward shoulder, to level it.", "<b>Hold it level</b> so the ball stays on the board."],
-  rep: "Level the picture and hold.",
-  tip: "Keep your shoulders down; bring your ear to your shoulder, not your shoulder to your ear." };
+  goal: "Keep the ball on the board! When the picture tips, tip your head the other way.",
+  ready: "Sit up tall.",
+  steps: ["Hold the phone <b>flat on top of your head</b>.", "Watch the picture <b>tip</b>.", "<b>Tip your head</b> the other way. Ear toward shoulder.", "Make the picture <b>flat</b> again.", "<b>Hold it</b> so the ball stays on."],
+  rep: "Make it flat and hold.",
+  tip: "Keep your shoulders down." };
 G.sidebendhold = { unit: "hold",
-  goal: "Sail to the lighthouse. Lean your body to the side into the green band and hold it to fill the sail.",
-  ready: "Sit tall in a sturdy chair, feet flat.",
-  steps: ["<b>Lean sideways</b> into the green band.", "<b>Hold it</b> while the boat sails. The banner counts the seconds.", "<b>Sit back up</b> straight and rest."],
-  rep: "Lean, hold until you reach the lighthouse, sit up.",
-  tip: "Bend to the side, not forward. Keep both hips on the chair." };
+  goal: "Sail to the lighthouse! Lean to the side and hold.",
+  ready: "Sit up tall in a strong chair. Feet flat.",
+  steps: ["Hold the phone <b>flat on your chest</b>.", "<b>Lean your body</b> to the side.", "Stop when the dot is in the <b>green band</b>.", HOLDBAND, "<b>Sit back up</b> straight and rest."],
+  rep: "Lean, hold, sit up.",
+  tip: "Lean to the side, not forward." };
 G.kneelift = { unit: "lift",
-  goal: "Fly the hot-air balloon. Lift your knee into the breeze and hold it there to drift across the valley.",
-  ready: "Sit tall in a sturdy chair, both feet flat.",
-  steps: ["<b>Lift your knee</b> up off the chair into the green band.", "<b>Hold it</b> while the balloon drifts. The banner counts the seconds.", "<b>Lower your foot</b> to the floor and rest."],
-  rep: "Lift, hold until you reach the flag, lower.",
-  tip: "Sit tall; don't lean back to lift." };
+  goal: "Fly the hot-air balloon! Lift your knee and hold it up.",
+  ready: "Sit up tall in a strong chair. Both feet flat.",
+  steps: ["Put the phone <b>flat on your thigh</b>, near the knee.", "<b>Lift your knee</b> up.", "Stop when the dot is in the <b>green band</b>.", HOLDBAND, "<b>Put your foot down</b> and rest."],
+  rep: "Lift, hold until you reach the flag, down.",
+  tip: "Sit up tall. Don't lean back." };
 G.penalty = { unit: "kick",
-  goal: "Kick the ball into the little goal on the green patch. A harder kick goes further.",
-  ready: "Sit tall with your foot on the floor.",
-  steps: ["Look where the goal is: near needs a soft kick, far a harder one.", "<b>Kick your lower leg forward</b>.", "Bring your foot back down. Change the next kick to match."],
-  rep: "Every kick counts. Landing in the goal scores.",
-  tip: "Kick by straightening your knee; your thigh stays on the chair." };
+  goal: "Kick the ball into the little goal! A harder kick goes further.",
+  ready: "Sit up tall. Feet on the floor.",
+  steps: ["Put the phone on your <b>shin</b>, below the knee.", "Look at the goal. Near? Kick softly. Far? Kick harder.", "<b>Kick your foot forward.</b>", "<b>Put your foot down.</b>", "See where it goes. Change your next kick."],
+  rep: "Every kick counts.",
+  tip: "Kick by straightening your knee." };
 G.anklecircles = { unit: "circle",
-  goal: "Spin the potter's wheel. Circle your foot to turn it; each circle makes the clay pot a little taller.",
-  ready: "Sit with your heel resting on the floor.",
-  steps: ["<b>Tip your foot</b> until the dot on the round pad reaches the ring.", "<b>Circle your toes</b> all the way round, the way the arrow points.", "Halfway through, the arrow turns: <b>circle the other way</b>."],
-  rep: "Once all the way round the ring.",
-  tip: "Big circles from the ankle; your leg stays still." };
+  goal: "Spin the pottery wheel! Draw circles with your toes.",
+  ready: "Sit with your heel on the floor.",
+  steps: ["Put the phone <b>on top of your foot</b>.", "<b>Tip your foot</b> until the dot reaches the ring.", "<b>Draw a circle</b> with your toes, the way the arrow points.", "Keep making circles.", "When the arrow turns around, <b>go the other way</b>."],
+  rep: "One full circle.",
+  tip: "Big circles from your ankle. Your leg stays still." };
 G.anklerock = { unit: "rock",
-  goal: "Rock the baby's cradle. Roll your foot to each side and the cradle rocks with it.",
+  goal: "Rock the baby's cradle! Roll your foot side to side.",
   ready: "Sit with your foot flat on the floor.",
-  steps: ["<b>Roll your foot</b> onto its outer edge.", "Then roll it onto its <b>inner edge</b>.", "Keep rocking gently side to side."],
-  rep: "One roll to each side.",
-  tip: "Your knee stays still; only the ankle rolls." };
+  steps: ["Put the phone <b>on top of your foot</b>.", "<b>Roll your foot</b> onto its outside edge.", "<b>Roll it</b> onto its inside edge.", "Keep rocking gently.", "Side to side."],
+  rep: "One roll each way.",
+  tip: "Only your ankle moves. Your knee stays still." };
 G.gaspedal = { unit: "speed",
-  goal: "Drive at the right speed. Press or lift your foot to match the speed sign, and hold it to set the cruise control.",
-  ready: "Sit with your heel resting on the floor, like on a car pedal.",
-  steps: ["<b>Read the speed sign</b> ahead.", "<b>Point your toes down</b> to speed up, or <b>lift them</b> to slow down, until the needle is in the green.", "<b>Hold steady</b> while the ring fills."],
+  goal: "Drive at the right speed! Press your foot like a car pedal.",
+  ready: "Sit with your heel on the floor.",
+  steps: ["Put the phone <b>on top of your foot</b>.", "<b>Read the speed</b> on the sign.", "<b>Push your toes down</b> to go faster.", "<b>Lift your toes</b> to go slower.", "Get the needle in the green. <b>Hold steady.</b>"],
   rep: "Match one speed and hold.",
-  tip: "Tiny movements; your heel stays down like a pivot." };
+  tip: "Tiny moves. Your heel stays down." };
 G.cycling = { unit: "pedal",
-  goal: "Ride your bike through the park. Pedal your legs as if riding; every push carries you toward the finish arch.",
-  ready: "Sit tall with your feet on a pedal exerciser or on the floor.",
-  steps: ["<b>Push your leg</b> forward and down.", "<b>Bring it back</b> up.", "Keep a steady pedalling rhythm."],
+  goal: "Ride your bike through the park! Move your legs like pedalling.",
+  ready: "Sit up tall. Use a pedal machine, or keep feet on the floor.",
+  steps: ["Put the phone <b>flat on your thigh</b>, near the knee.", "<b>Push your leg</b> forward and down.", "<b>Bring it back</b> up.", "Keep pedalling round and round.", "Ride to the finish!"],
   rep: "One push and one pull back.",
-  tip: "Keep a smooth, even pace rather than fast bursts." };
+  tip: "Keep a steady speed." };
 G.sidelegs = { unit: "lift",
-  goal: "Raise the toll gate. Lift your top leg and hold it up while the next little car drives through.",
-  ready: "Lie on your side on a bed or mat with your affected leg on top, bottom knee bent.",
-  steps: ["<b>Lift your top leg</b> up toward the ceiling, keeping it straight.", "<b>Hold</b> while the car drives through.", "<b>Lower it slowly</b>."],
-  rep: "Lift, hold, lower.",
-  tip: "Keep your toes pointing forward, not up at the ceiling." };
+  goal: "Lift the gate for the little cars! Lift your top leg up.",
+  ready: "Lie on your side on a bed or mat. Weaker leg on top. Bottom knee bent.",
+  steps: ["Put the phone <b>flat on your top thigh</b>, near the knee.", "<b>Lift your top leg up.</b> Keep it straight.", "<b>Hold</b> while the car drives through.", "<b>Lower it down</b> slowly.", "Rest. Then do it again."],
+  rep: "Lift, hold, down.",
+  tip: "Toes point forward, not up." };
 G.kneerolls = { unit: "roll",
-  goal: "Paint a rainbow. Roll your knees from side to side and the brush sweeps along the arc, one colour at a time.",
-  ready: "Lie on your back on a bed or mat, knees bent and together.",
-  steps: ["<b>Let both knees roll</b> slowly to one side.", "<b>Bring them back over</b> to the other side.", "Keep rolling gently until the rainbow is done."],
+  goal: "Paint a rainbow! Roll your knees from side to side.",
+  ready: "Lie on your back on a bed or mat. Knees bent and together.",
+  steps: ["Put the phone <b>flat on your thigh</b>.", "<b>Let both knees roll</b> to one side.", "<b>Bring them back</b> over to the other side.", "Keep rolling slowly.", "Each roll paints more of the rainbow."],
   rep: "One roll there and back.",
-  tip: "Keep your shoulders flat on the bed. Go only as far as is comfortable." };
+  tip: "Keep your shoulders flat on the bed." };
 G.slalom = { unit: "gate",
-  goal: "Ski down the mountain through the flag gates. Shift your weight left and right to steer.",
-  ready: "Stand at a counter you can hold, with someone nearby.",
-  steps: ["<b>Look at the next gate</b> coming down the hill.", "<b>Shift your weight</b> left or right to steer the skier into line with it.", "Line up early and hold steady as you go through."],
-  tip: "Move from your hips; keep both feet on the floor." };
+  goal: "Ski down the mountain! Move your weight left and right to steer.",
+  ready: "Stand at a counter you can hold. Have someone near you.",
+  steps: ["Hold the phone <b>flat on your chest</b>.", "Look at the next <b>flag gate</b>.", "<b>Move your weight</b> left or right to steer.", "Line up with the gate early.", "<b>Hold steady</b> as you ski through."],
+  rep: "Each gate.",
+  tip: "Keep both feet on the floor." };
 G.heeltoe = { unit: "rock",
-  goal: "Ride the seesaw. Rock your foot up and down and the panda and bunny go up and down with you.",
+  goal: "Ride the seesaw! Rock your foot up and down.",
   ready: "Sit with your foot flat on the floor.",
-  steps: ["<b>Lift your toes</b> to rock back onto your heel.", "Then <b>press down</b> onto your toes.", "Keep rocking slowly."],
-  rep: "One rock up and down.",
+  steps: ["Put the phone <b>on top of your foot</b>.", "<b>Lift your toes.</b> Rock back on your heel.", "<b>Lift your heel.</b> Rock forward on your toes.", "Keep rocking.", "Slow and steady."],
+  rep: "One rock each way.",
   tip: "Go all the way each way, slowly." };
 G.chestup = { unit: "lift",
-  goal: "Wake up the sunflower. Lift your chest and sit up tall, and the sunflower turns its face to the sun.",
-  ready: "Sit near the front of the chair, feet flat.",
-  steps: ["<b>Lift your chest</b> and lean back a little.", "<b>Hold</b> it tall while the bees come.", "<b>Relax</b> forward."],
+  goal: "Wake up the sunflower! Sit up tall and lift your chest.",
+  ready: "Sit near the front of the chair. Feet flat.",
+  steps: ["Hold the phone <b>flat on your chest</b>.", "<b>Lift your chest up.</b> Lean back a little.", "<b>Hold</b> it tall while the bees come.", "<b>Relax</b> forward.", "Rest. Then do it again."],
   rep: "Lift, hold, relax.",
-  tip: "Squeeze your shoulder blades together gently as you lift." };
+  tip: "Squeeze your shoulder blades together gently." };
 G.toeshold = { unit: "fish|fish",
-  goal: "Go fishing. Lift your toes to raise the rod into the green band and hold it to reel the fish in.",
+  goal: "Catch a fish! Lift your toes and hold to reel it in.",
   ready: "Sit with your heel on the floor.",
-  steps: ["<b>Lift your toes</b> up toward your shin, into the green band.", "<b>Hold</b> while you reel the fish in. The banner counts the seconds.", "<b>Lower your foot</b> and rest."],
-  rep: "Lift, hold until the fish is in, lower.",
-  tip: "Keep your heel down and lift from the ankle." };
+  steps: ["Put the phone <b>on top of your foot</b>.", "<b>Lift your toes up</b> toward you.", "Stop when the dot is in the <b>green band</b>.", HOLDBAND, "<b>Put your foot down</b> and rest."],
+  rep: "Lift, hold until the fish is in, down.",
+  tip: "Heel stays down. Lift from your ankle." };
 
 // ---------------------------------------------------------------- Therapy sessions
 G.mirror = { unit: "",
-  goal: "Trick your brain into seeing your affected arm move. Move both arms while you watch the reflection of your stronger arm.",
-  ready: "Put a mirror upright on the table between your arms, with the mirror facing your stronger arm.",
-  steps: ["<b>Hide your affected arm</b> behind the mirror.", "<b>Do each movement</b> on the screen with both arms together.", "<b>Watch the mirror</b> the whole time, not your hidden arm."],
-  tip: "Imagine the arm in the mirror is your affected arm." };
+  goal: "Watch your strong arm in a mirror. It looks like your weaker arm is moving!",
+  ready: "Put a mirror standing up on the table, between your arms.",
+  steps: ["The mirror faces your <b>strong arm</b>.", "<b>Hide your weaker arm</b> behind the mirror.", "Do each move on the screen <b>with both arms</b>.", "<b>Look in the mirror</b> the whole time.", "Keep going until the time is up."],
+  tip: "Pretend the arm in the mirror is your weaker arm." };
 G.imagery = { unit: "",
-  goal: "Practise in your mind. A spoken script walks you through picturing a movement in detail, then trying it.",
-  ready: "Sit somewhere quiet and turn the sound on.",
-  steps: ["<b>Close your eyes</b> if you like, and listen.", "<b>Picture each movement</b> in detail: what you see, feel and hear.", "Try the movement when asked. Press <b>Next step</b> to move on sooner."],
-  tip: "Imagine it from inside your body, as if you're really doing it." };
+  goal: "Practise in your mind. A voice helps you picture a move. Then you try it.",
+  ready: "Sit somewhere quiet. Turn the sound on.",
+  steps: ["<b>Close your eyes</b> if you like.", "<b>Listen</b> to the voice.", "<b>Picture the move</b> in your mind. See it and feel it.", "<b>Try the move</b> when it asks.", "Press <b>Next step</b> to go on sooner."],
+  tip: "Picture it as if you are really doing it." };
 
 // ---------------------------------------------------------------- Visual scanning
 G.cancel = { unit: "page",
-  goal: "Find and tap every star on the page. Make sure you look all the way to the left edge.",
+  goal: "Find every star on the page and tap it.",
   ready: "Sit straight in front of the screen.",
-  steps: ["<b>Start at the top left</b> corner.", "<b>Sweep across each row</b>, left to right, and tap every star.", "When you're sure, tap <b>I've found them all</b>."],
-  tip: "Check the left side twice before you finish." };
+  steps: ["<b>Start at the top left</b> corner.", "<b>Look across the row</b>, left to right.", "<b>Tap every star</b> you see.", "Do the next row. Then the next.", "Sure you found them all? Tap <b>I've found them all</b>."],
+  tip: "Look at the left side twice." };
 G.lookleft = { unit: "star",
-  goal: "Find the single star. The glowing bar on the left reminds you where to start looking.",
+  goal: "Find the star. Start looking on the left side.",
   ready: "Sit straight in front of the screen.",
-  steps: ["<b>Look at the glowing bar</b> on the left edge first.", "<b>Sweep your eyes</b> from left to right.", "<b>Tap the star</b> as soon as you see it."],
+  steps: ["Look at the <b>glowing bar</b> on the left first.", "<b>Move your eyes</b> slowly to the right.", "See the star? <b>Tap it!</b>", "Start on the left again.", "Find the next star."],
   tip: "Turn your head to the left, not just your eyes." };
 G.bisect = { unit: "line",
   goal: "Tap the exact middle of each line.",
   ready: "Sit straight in front of the screen.",
-  steps: ["<b>Look at both ends</b> of the line.", "<b>Tap where you think the middle is</b>.", "The green mark shows the true middle."],
-  tip: "Find the left end first; it is easy to miss." };
+  steps: ["Look at the <b>left end</b> of the line.", "Look at the <b>right end</b> of the line.", "<b>Tap the middle.</b>", "The green mark shows the real middle.", "Try the next line."],
+  tip: "Find the left end first. It is easy to miss." };
 
 // ---------------------------------------------------------------- Attention
 G.quick = { unit: "catch|catches",
-  goal: "Test your reactions: tap the moment the circle appears.",
-  ready: "Rest your finger over the button on the phone, or on the screen.",
-  steps: ["<b>Keep your finger ready</b> and watch the screen.", "<b>Wait</b> for the circle.", "<b>Tap</b> as soon as it appears. Tapping early doesn't count."],
-  tip: "Stay relaxed. Don't guess; wait for it." };
+  goal: "How fast are you? Tap the moment the circle shows up!",
+  ready: "Put your finger over the button on the phone or the screen.",
+  steps: ["<b>Keep your finger ready.</b>", "<b>Watch</b> the screen.", "<b>Wait</b> for the circle.", "It shows up. <b>Tap fast!</b>", "Tapping too early does not count."],
+  tip: "Stay relaxed. Wait for it." };
 G.gonogo = { unit: "circle",
-  goal: "Tap when the circle is green, but hold back when it is orange.",
-  ready: "Rest your finger over the button on the phone, or on the screen.",
-  steps: ["<b>Watch</b> the circle.", "<b>Green: tap</b>.", "<b>Orange: don't tap</b>; let it pass."],
-  tip: "Wait to see the colour before you move." };
+  goal: "Green means tap. Orange means wait!",
+  ready: "Put your finger over the button on the phone or the screen.",
+  steps: ["<b>Watch</b> the circle.", "Is it <b>green</b>? <b>Tap!</b>", "Is it <b>orange</b>? <b>Don't tap.</b>", "Let the orange one go away.", "Get ready for the next circle."],
+  tip: "See the colour first. Then decide." };
 G.watch = { unit: "",
-  goal: "Keep watch through the night. Shapes appear one at a time; tap only when you see a star.",
-  ready: "Rest your finger over the button on the phone, or on the screen.",
-  steps: ["<b>Watch the middle</b> of the screen.", "Most shapes are not stars: <b>let them go</b>.", "<b>Tap</b> when a star appears."],
-  tip: "Stay focused until the very end; stars can come at any time." };
+  goal: "Keep watch at night. Tap only when you see a star.",
+  ready: "Put your finger over the button on the phone or the screen.",
+  steps: ["<b>Watch the middle</b> of the screen.", "Shapes come one at a time.", "Not a star? <b>Don't tap.</b>", "A star? <b>Tap!</b>", "Keep watching until the time is up."],
+  tip: "Stars can come any time. Stay ready." };
 G.twoatonce = { unit: "",
-  goal: "Watch two things at once: tap even numbers on the left, and switch off the lamp on the right.",
-  ready: "Use the two keys on your phone, or the two halves of the screen.",
-  steps: ["<b>Watch both halves</b> of the screen.", "<b>Tap left</b> when an even number shows (2, 4, 6, 8).", "<b>Tap right</b> when the lamp lights up."],
-  tip: "Keep your eyes in the middle so you can see both sides." };
+  goal: "Watch two things at once! Even numbers on the left. The lamp on the right.",
+  ready: "Use the two keys on your phone, or the two sides of the screen.",
+  steps: ["<b>Watch both sides</b> of the screen.", "Left side: an <b>even number</b> (2, 4, 6, 8)? <b>Tap left.</b>", "Right side: the <b>lamp lights up</b>? <b>Tap right.</b>", "Do nothing for anything else.", "Keep going until the time is up."],
+  tip: "Look at the middle. You can see both sides." };
 G.trail = { unit: "trail",
-  goal: "Connect the circles in order, like a dot-to-dot. Level 3 switches between numbers and letters.",
-  ready: "Tilt the phone to move the pointer, or use the mouse or touchscreen.",
-  steps: ["<b>Find circle 1</b> and tap it.", "Then tap <b>2, 3</b> and so on.", "On level 3, go <b>1, A, 2, B, 3, C</b>…"],
-  tip: "Say the next one out loud before you look for it." };
+  goal: "Join the circles in order, like a dot-to-dot.",
+  ready: "Tip the phone to move the pointer. Or use the mouse or touch screen.",
+  steps: ["<b>Find circle 1.</b> Tap it.", "<b>Find circle 2.</b> Tap it.", "Keep going: 3, 4, 5…", "On level 3, go <b>1, A, 2, B, 3, C</b>…", "Join them all!"],
+  rep: "One whole trail.",
+  tip: "Say the next one out loud. Then look for it." };
 
 // ---------------------------------------------------------------- Memory
 G.simon = { unit: "pattern",
-  goal: "The bell flowers ring in a pattern. Watch it, then tilt your hand toward each flower in the same order; the frog hops to it.",
-  ready: "Sit at a table with your forearm resting on it, phone flat in your fist.",
-  steps: ["<b>Watch the whole pattern</b> first. Don't move yet.", "<b>Tilt your hand</b> toward each flower in order: up, right, down or left.", "<b>Come back to level</b> between moves."],
-  tip: "Say the directions out loud while you watch: up, left, up…" };
+  goal: "The flowers ring in a pattern. Watch, then copy it by tipping your hand!",
+  ready: "Sit at a table. Rest your arm on the table.",
+  steps: ["Hold the phone flat in your fist. <b>Screen up.</b>", "<b>Watch</b> the flowers ring. Don't move yet.", "<b>Tip your hand</b> toward the first flower.", "<b>Come back to flat.</b> Then tip to the next one.", "Copy the whole pattern!"],
+  rep: "One whole pattern.",
+  tip: "Say it out loud while you watch: up, left, up…" };
 G.pairs = { unit: "game",
-  goal: "Find all the matching pairs. Turn over two cards at a time.",
-  ready: "Tilt the phone to move the pointer, or use the mouse or touchscreen.",
-  steps: ["<b>Tap a card</b> to turn it over.", "<b>Tap a second card</b>. If they match, they stay up.", "If not, they turn back. <b>Remember where each picture was</b>."],
-  tip: "Work in rows so you remember positions." };
+  goal: "Find the matching pairs! Turn over two cards at a time.",
+  ready: "Tip the phone to move the pointer. Or use the mouse or touch screen.",
+  steps: ["<b>Tap a card.</b> It turns over.", "<b>Tap another card.</b>", "Same picture? They stay up!", "Not the same? They turn back.", "<b>Remember</b> where each picture was."],
+  rep: "Find all the pairs.",
+  tip: "Go row by row. It helps you remember." };
 G.nback = { unit: "letter",
-  goal: "Is this letter the same as the one before? On level 3, compare it with the letter two before.",
-  ready: "Use the Same and Different keys on your phone, or the screen.",
-  steps: ["<b>Watch the letter</b> in the box.", "Tap <b>Same</b> if it matches the earlier letter.", "Otherwise tap <b>Different</b>."],
-  tip: "Whisper the letters to yourself as they come." };
+  goal: "Is this letter the same as the one before?",
+  ready: "Use the Same and Different keys on your phone or the screen.",
+  steps: ["<b>Look at the letter.</b>", "Is it the <b>same</b> as the last letter? Tap <b>Same</b>.", "Is it <b>different</b>? Tap <b>Different</b>.", "On level 3, check the letter <b>two</b> before.", "Then the next letter comes."],
+  tip: "Whisper each letter to yourself." };
 G.span = { unit: "round",
-  goal: "Watch a string of digits, then type it back. It gets one longer each time you get it right.",
-  ready: "Use the keypad on your phone, or the one on the screen.",
-  steps: ["<b>Watch the digits</b> appear one at a time.", "<b>Type them back</b> in the same order.", "Each right answer adds a digit."],
-  tip: "Say them out loud in groups, like a phone number." };
+  goal: "Remember the numbers and type them back.",
+  ready: "Use the number keys on your phone or on the screen.",
+  steps: ["<b>Watch the numbers</b> one at a time.", "Remember them.", "<b>Type them back</b> in the same order.", "Right? Next time there is one more number!", "Keep going."],
+  tip: "Say them out loud, like a phone number." };
 G.wordlist = { unit: "list",
-  goal: "Study a list of words, then pick them out from a bigger list.",
-  ready: "Tap on the screen, or use the mouse.",
-  steps: ["<b>Read each word</b> and try to remember it.", "Tap <b>I'm ready</b> when you know them.", "<b>Pick the words</b> you studied, then tap <b>Done</b>."],
-  tip: "Make a little story that links the words together." };
+  goal: "Remember the words. Then find them in a bigger list.",
+  ready: "Tap the screen, or use the mouse.",
+  steps: ["<b>Read each word.</b> Say it out loud.", "Try to remember them all.", "Ready? Tap <b>I'm ready</b>.", "<b>Tap the words</b> you saw before.", "Tap <b>Done</b>."],
+  rep: "One whole list.",
+  tip: "Make a little story with the words." };
 G.shopping = { unit: "list",
-  goal: "Remember a shopping list, then fill your basket from the shelves.",
-  ready: "Tap on the screen, or use the mouse.",
-  steps: ["<b>Read the shopping list</b> and remember it.", "Tap <b>I'm ready</b>.", "<b>Tap each item</b> from your list on the shelves, then tap <b>Done</b>."],
-  tip: "Picture yourself walking round the shop picking each item." };
+  goal: "Remember the shopping list. Then fill your basket!",
+  ready: "Tap the screen, or use the mouse.",
+  steps: ["<b>Read the shopping list.</b>", "Try to remember it all.", "Ready? Tap <b>I'm ready</b>.", "<b>Tap each thing</b> from your list on the shelves.", "Tap <b>Done</b>."],
+  rep: "One whole list.",
+  tip: "Picture yourself in the shop, picking each thing." };
 G.faces = { unit: "",
-  goal: "Learn a few people's names, then name each face.",
-  ready: "Tap on the screen, or use the mouse.",
-  steps: ["<b>Look at each face</b> and say its name out loud.", "Tap <b>I'm ready</b> when you know them.", "<b>Pick the right name</b> for each face."],
-  tip: "Link each name to something about the face, like 'Rose has a red scarf'." };
+  goal: "Learn some names. Then put the right name with each face.",
+  ready: "Tap the screen, or use the mouse.",
+  steps: ["<b>Look at each face.</b>", "<b>Say the name</b> out loud.", "Ready? Tap <b>I'm ready</b>.", "Look at a face.", "<b>Tap the right name.</b>"],
+  tip: "Link the name to something you see, like a red scarf." };
 
 // ---------------------------------------------------------------- Reasoning
 G.sort = { unit: "word",
-  goal: "Sort the crates at the market. Read the word, then turn your hand toward the basket for its group.",
-  ready: "Sit at a table with your forearm resting on it, phone flat in your fist.",
-  steps: ["<b>Start with your hand level</b>.", "<b>Read the word</b> on the crate, and the two basket signs.", "<b>Turn your hand</b> left or right toward the right basket, and hold."],
-  tip: "Come back to level before each new word." };
+  goal: "Sort the boxes at the market! Turn your hand to the right basket.",
+  ready: "Sit at a table. Rest your arm on the table.",
+  steps: ["Hold the phone flat in your fist. <b>Screen up.</b>", "<b>Read the word</b> on the box.", "<b>Read the two baskets.</b> Which one does it go in?", "<b>Turn your hand</b> toward that basket. Hold.", "<b>Come back to flat</b> for the next word."],
+  rep: "Each word you sort.",
+  tip: "Take your time to read before you turn." };
 G.tower = { unit: "puzzle",
-  goal: "Move the whole stack of discs to the right-hand peg, one disc at a time. A big disc can never go on a smaller one.",
-  ready: "Tilt the phone to move the pointer, or use the mouse or touchscreen.",
-  steps: ["<b>Tap a peg</b> to pick up its top disc.", "<b>Tap another peg</b> to put it down.", "Get the whole stack onto the <b>right-hand peg</b>."],
-  rep: "One whole stack moved.",
-  tip: "Plan a few moves ahead. The smallest disc moves every other turn." };
+  goal: "Move all the rings to the peg on the right. Never put a big ring on a small one!",
+  ready: "Tip the phone to move the pointer. Or use the mouse or touch screen.",
+  steps: ["<b>Tap a peg.</b> You pick up its top ring.", "<b>Tap another peg.</b> You put the ring there.", "Only one ring at a time.", "A big ring can't go on a small one.", "Get them all on the <b>right peg</b>!"],
+  rep: "Move the whole stack.",
+  tip: "Think a few moves ahead." };
 G.errands = { unit: "plan",
-  goal: "Plan your day so every place is open when you get there.",
-  ready: "Tap on the screen, or use the mouse.",
-  steps: ["Each errand takes <b>one hour</b>, starting at 9:00.", "<b>Read when each place opens or closes</b>.", "<b>Tap the errands</b> in the order you'd do them."],
+  goal: "Plan your day! Go to each place while it is open.",
+  ready: "Tap the screen, or use the mouse.",
+  steps: ["You start at <b>9 o'clock</b>.", "Each job takes <b>one hour</b>.", "<b>Read when each place opens and closes.</b>", "<b>Tap the jobs</b> in the order you would do them.", "Check every place is open when you get there."],
   rep: "One whole day planned.",
-  tip: "Do the places that close early first." };
+  tip: "Go first to places that close early." };
 G.next = { unit: "pattern",
-  goal: "Find the number or shape that continues the pattern.",
-  ready: "Tap on the screen, or use the mouse.",
-  steps: ["<b>Look at the sequence</b>.", "<b>Work out the rule</b>: what changes each time?", "<b>Tap the answer</b> that comes next."],
-  tip: "Check the gap between each pair." };
+  goal: "What comes next? Find the pattern!",
+  ready: "Tap the screen, or use the mouse.",
+  steps: ["<b>Look at the row.</b>", "What changes each time?", "<b>Find the rule.</b>", "What comes next?", "<b>Tap your answer.</b>"],
+  tip: "Look at the change from one to the next." };
 G.rotate = { unit: "pair",
-  goal: "Is the shape on the right the same shape turned round, or a mirror image?",
-  ready: "Tilt the phone to move the pointer, or use the mouse or touchscreen.",
-  steps: ["<b>Look at both shapes</b>.", "<b>Imagine turning</b> the left one round.", "Tap <b>Same shape</b> or <b>Mirror image</b>."],
-  tip: "Pick one corner and follow where it goes." };
+  goal: "Is it the same shape turned around? Or a mirror picture?",
+  ready: "Tip the phone to move the pointer. Or use the mouse or touch screen.",
+  steps: ["<b>Look at both shapes.</b>", "<b>Picture turning</b> the left shape around.", "Does it match the right shape?", "Yes? Tap <b>Same shape</b>.", "No, it is flipped? Tap <b>Mirror image</b>."],
+  tip: "Pick one corner. Follow where it goes." };
 G.change = { unit: "sale",
-  goal: "Pay with exactly the right money. On level 3, give the change instead.",
-  ready: "Tap on the screen, or use the mouse.",
-  steps: ["<b>Read the price</b>.", "<b>Tap coins and notes</b> to add up to it.", "Tap <b>Undo</b> if you go over."],
-  tip: "Start with the biggest note or coin that fits." };
+  goal: "Pay with the right money!",
+  ready: "Tap the screen, or use the mouse.",
+  steps: ["<b>Read the price.</b>", "<b>Tap coins and notes</b> to add them up.", "Stop when it is <b>exactly</b> right.", "Too much? Tap <b>Undo</b>.", "On level 3, give the change back instead."],
+  tip: "Start with the biggest money that fits." };
 G.clock = { unit: "clock",
-  goal: "Read the clock and pick the right time.",
-  ready: "Tap on the screen, or use the mouse.",
-  steps: ["Look at the <b>short hand</b> for the hour.", "Look at the <b>long hand</b> for the minutes.", "<b>Tap the matching time</b>."],
-  tip: "Each number on the clock is 5 minutes for the long hand." };
+  goal: "What time is it? Read the clock.",
+  ready: "Tap the screen, or use the mouse.",
+  steps: ["Look at the <b>short hand</b>. That is the hour.", "Look at the <b>long hand</b>. That is the minutes.", "Each number on the clock is 5 minutes for the long hand.", "Work out the time.", "<b>Tap the right time.</b>"],
+  tip: "Start with the short hand." };
 G.ruleswitch = { unit: "card",
-  goal: "Match each card by colour, shape or number. Work out the rule, but watch out: it changes without warning.",
-  ready: "Tilt the phone to move the pointer, or use the mouse or touchscreen.",
-  steps: ["<b>Tap the top card</b> that the bottom card goes with.", "Use the right / wrong feedback to <b>find the rule</b>.", "When it starts saying 'Not that one', <b>the rule has changed</b>: try another."],
-  tip: "Say the rule you're using out loud: colour, shape or number." };
+  goal: "Match the cards. Is the rule colour, shape or number? Watch out, it changes!",
+  ready: "Tip the phone to move the pointer. Or use the mouse or touch screen.",
+  steps: ["Look at the card at the bottom.", "<b>Tap a top card</b> it goes with.", "Did it say right? Keep that rule.", "Wrong? <b>Try a different rule.</b>", "It says 'Not that one'? The rule changed!"],
+  tip: "Say the rule out loud: colour, shape or number." };
 
 // ---------------------------------------------------------------- Language
 G.nameit = { unit: "picture",
-  goal: "Say the name of the picture out loud, then tap the right word.",
-  ready: "Tap on the screen, or use the mouse.",
-  steps: ["<b>Look at the picture</b> and try to say its name.", "Tap <b>Hint</b> if the word won't come: first the first letter, then what it's for.", "<b>Tap the matching word</b>."],
-  tip: "Saying it out loud is the real exercise, even if it isn't perfect." };
+  goal: "Say the name of the picture out loud. Then tap the right word.",
+  ready: "Tap the screen, or use the mouse.",
+  steps: ["<b>Look at the picture.</b>", "<b>Say its name</b> out loud.", "Stuck? Tap <b>Hint</b>. It shows the first letter.", "Tap <b>Hint</b> again to hear what it is for.", "<b>Tap the right word.</b>"],
+  tip: "Saying it out loud is the real exercise. It doesn't need to be perfect." };
 G.wordpic = { unit: "word",
-  goal: "Hear and read a word, then tap the picture it names.",
-  ready: "Turn the sound on. Tap on the screen, or use the mouse.",
-  steps: ["<b>Listen</b> to the word.", "<b>Read it</b> at the top.", "<b>Tap the picture</b> it names."],
+  goal: "Hear a word. Tap its picture!",
+  ready: "Turn the sound on. Tap the screen, or use the mouse.",
+  steps: ["<b>Listen</b> to the word.", "<b>Read it</b> at the top.", "<b>Say it</b> out loud.", "Find its picture.", "<b>Tap the picture.</b>"],
   tip: "Say the word out loud before you choose." };
 G.wordweb = { unit: "picture",
-  goal: "Build a web of meaning: for each picture, choose its group, what it's for, where it's found and what it's like.",
-  ready: "Tap on the screen, or use the mouse.",
-  steps: ["<b>Look at the picture</b> and its name.", "<b>Answer each question</b> about it.", "Say your answers out loud; it helps the word stick."],
-  tip: "There's no rush. Think about how you use it at home." };
+  goal: "Learn all about each picture. What group is it in? What is it for?",
+  ready: "Tap the screen, or use the mouse.",
+  steps: ["<b>Look at the picture</b> and its name.", "What <b>group</b> is it in? Tap.", "What is it <b>for</b>? Tap.", "<b>Where</b> do you find it? What is it <b>like</b>? Tap.", "Say your answers out loud."],
+  tip: "Think about how you use it at home." };
 G.sentence = { unit: "sentence",
-  goal: "Pick the word that best finishes each sentence.",
-  ready: "Tap on the screen, or use the mouse.",
-  steps: ["<b>Read the sentence</b> out loud.", "<b>Think what word fits</b> the gap.", "<b>Tap it</b>."],
-  tip: "Read the whole sentence again with your word in it." };
+  goal: "Find the best word to finish the sentence.",
+  ready: "Tap the screen, or use the mouse.",
+  steps: ["<b>Read the sentence</b> out loud.", "Find the gap.", "<b>Which word fits?</b>", "<b>Tap it.</b>", "Read the sentence again with your word."],
+  tip: "Try each word in the gap." };
 G.spell = { unit: "word",
-  goal: "Tap the scrambled letters in the right order to spell the word.",
-  ready: "Tap on the screen, or use the mouse.",
-  steps: ["<b>Look at the picture</b> clue and say the word.", "<b>Tap the first letter</b>, then the next.", "Tap <b>Undo</b> to take a letter back."],
-  tip: "Sound the word out slowly, one letter at a time." };
+  goal: "Spell the word! Tap the letters in the right order.",
+  ready: "Tap the screen, or use the mouse.",
+  steps: ["<b>Look at the picture.</b> Say the word.", "<b>Tap the first letter.</b>", "Tap the next letter. And the next.", "Wrong letter? Tap <b>Undo</b>.", "Finish the word!"],
+  tip: "Say the word slowly, one sound at a time." };
 
 RC.GUIDES = G;
 })();

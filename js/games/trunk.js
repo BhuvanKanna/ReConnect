@@ -73,11 +73,10 @@ function TrunkTwist(S) {
   G.stats = () => [["Turned left", `${Math.round(-range[0])}°`], ["Turned right", `${Math.round(range[1])}°`], ["Scene", scn.name]];
   G.dispose = () => { if (world) { world.dispose(); world = null; } };
   G.debug = () => ({ kind: "value", target: side === 0 ? tgt : -tgt, val: yaw, side, view: world ? "3d" : "2d", quality: quality.level, found, name: name() });
-  G.draw = function (g, W, H, a, t) {
+  G.draw = RC.Scene3D.guard(G, function (g, W, H, a, t) {
     const raw = lastT == null ? 0 : t - lastT, dt = Math.min(0.05, Math.max(0, raw)); lastT = t;
     const q = world ? quality.sample() : 0;
-    if (q >= 2 && world) { world.dispose(); world = null; RC.Scene3D.off = true; }
-    if (!world && !RC.Scene3D.off && TW && TW.ready()) { world = TW.create({ scene: scn.id, bearing: tgt * GAIN, calm: RC.reduceMotion }); shown = -1; }
+    if (!world && TW && TW.ready()) { world = TW.create({ scene: scn.id, bearing: tgt * GAIN, calm: RC.reduceMotion }); shown = -1; }
     if (!world) return drawFlat(g, W, H);
     if (shown !== found) { if (shown >= 0) world.cheer(); world.show(found, (side === 0 ? 1 : -1) * tgt * GAIN); shown = found; if (pop) burst(); }
     view += (clamp(yaw * GAIN, -160, 160) - view) * Math.min(1, dt * 9);
@@ -97,7 +96,7 @@ function TrunkTwist(S) {
       label(g, sp.name.charAt(0).toUpperCase() + sp.name.slice(1), sp.x, Math.max(30 * unit, sp.y - r - 26 * unit), unit);
     }
     if (!sp.front || Math.abs(sp.off) > 14) arrow(g, W, H, sp.off > 0 ? 1 : -1, t, unit);
-  };
+  });
   function burst() { if (RC.reduceMotion) return; for (let i = 0; i < 26; i++) { const ang = Math.random() * TAU, v = 60 + Math.random() * 140; sparkle.push({ x: 0, y: 0, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v - 40, life: 0.9 }); } }
   function label(g, s, x, y, unit) {
     g.save(); g.font = `700 ${Math.round(22 * unit)}px ${T.display || "sans-serif"}`;

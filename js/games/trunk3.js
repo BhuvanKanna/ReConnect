@@ -61,11 +61,10 @@ function EarBalance(S) {
   G.stats = () => [["Head tipped left", `${Math.round(-ext[0])}°`], ["Head tipped right", `${Math.round(ext[1])}°`], ["Time level", `${Math.round(100 * levelT / Math.max(1, total))}%`], ["Balls dropped", String(falls)]];
   G.dispose = () => { if (world) { world.dispose(); world = null; } };
   G.debug = () => ({ kind: "value", target: -drift, val: roll, phase, net, ballX, view: world ? "3d" : "2d", quality: quality.level });
-  G.draw = function (g, W, H, a, t) {
+  G.draw = RC.Scene3D.guard(G, function (g, W, H, a, t) {
     const raw = lastT == null ? 0 : t - lastT, dt = Math.min(0.05, Math.max(0, raw)); lastT = t;
     const q = world ? quality.sample() : 0;
-    if (q >= 2 && world) { world.dispose(); world = null; RC.Scene3D.off = true; }
-    if (!world && !RC.Scene3D.off && B && B.ready()) world = B.create({ calm: RC.reduceMotion });
+    if (!world && B && B.ready()) world = B.create({ calm: RC.reduceMotion });
     const unit = Math.min(W, H) / 600;
     let bx = W / 2, by = H * 0.55;
     if (world) {
@@ -77,7 +76,7 @@ function EarBalance(S) {
     level(g, W, H, unit, t);
     sparkle = sparkle.filter((s) => (s.life -= dt) > 0); sparkle.forEach((s) => { s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 70 * dt; });
     g.fillStyle = "#ffd27a"; sparkle.forEach((s) => { g.globalAlpha = clamp(s.life / 0.9, 0, 1); g.beginPath(); g.arc(bx + s.x * unit, by + s.y * unit, 5 * unit, 0, TAU); g.fill(); }); g.globalAlpha = 1;
-  };
+  });
   function burst() { if (RC.reduceMotion) return; for (let i = 0; i < 24; i++) { const ang = Math.random() * TAU, v = 60 + Math.random() * 120; sparkle.push({ x: 0, y: 0, vx: Math.cos(ang) * v, vy: Math.sin(ang) * v - 50, life: 0.9 }); } }
   // A spirit level fixed to the screen: the bubble shows how tipped the picture is; middle = level.
   // A curved arrow beside it shows which way to tip your head.

@@ -87,6 +87,10 @@ function renderSetup() {
   const amount = c.durationS ? `for ${spoken(c.durationS)}` : c.reps && gd.unit ? `${c.reps} ${plural(gd.unit, c.reps)}` : c.reps ? `${c.reps} times` : "";
   const safe = safetyOf(d, gd);
   const phoneTxt = d.mount ? d.mount.replace("affected", sideTxt + " (affected)") : "";
+  // Picture of how to hold the phone (js/poses.js) and two-panel picture of the movement (js/moveart.js).
+  const readyCard = pose ? `<section class="brief-card ready" aria-labelledby="bReady"><h3 id="bReady">Get ready</h3>${RC.poses.svg(pose)}${gd.ready ? `<p class="brief-ready">${gd.ready}</p>` : ""}<details class="brief-phone"><summary>More help holding the phone</summary><p>${phoneTxt}</p></details></section>` : "";
+  const art = RC.moveArt ? RC.moveArt.svg(d.id) : "";
+  const moveCard = art ? `<section class="brief-card move" aria-labelledby="bMove"><h3 id="bMove">Move like this</h3>${art}</section>` : "";
   const level = d.params && d.params.level ? (d.control === "tilt" ? `${LEVEL_AMP[c.level]}° range` : `${["Easy", "Medium", "Hard"][c.level - 1]} level`) : "";
   stageWrap.classList.add("briefing");
   $("overlay").hidden = false; $("banner").hidden = true;
@@ -96,20 +100,13 @@ function renderSetup() {
       <p class="brief-goal">${gd.goal}</p>
       ${amount || level ? `<p class="brief-today"><span class="btag">Today</span>${[amount, level].filter(Boolean).map((s) => `<b>${s}</b>`).join('<span aria-hidden="true">·</span>')}</p>` : ""}
     </div>
-    ${!pose && (gd.ready || d.mount) ? `<p class="brief-note"><span class="btag">Get ready</span>${[gd.ready, d.mount ? `<b>Phone:</b> ${phoneTxt}` : ""].filter(Boolean).join(" ")}</p>` : ""}
-    <div class="brief-grid${pose ? " two" : ""}">
-      ${pose ? `<section class="brief-card ready" aria-labelledby="bReady">
-        <h3 id="bReady">Get ready</h3>
-        ${RC.poses.svg(pose)}
-        ${gd.ready ? `<p>${gd.ready}</p>` : ""}
-        <p class="brief-phone"><b>Phone:</b> ${phoneTxt}</p>
-      </section>` : ""}
-      <section class="brief-card do" aria-labelledby="bDo">
-        <h3 id="bDo">What to do</h3>
-        <ol class="brief-steps">${gd.steps.map((h) => `<li><span>${h}</span></li>`).join("")}</ol>
-        ${gd.rep ? `<p class="brief-rep"><b>One ${gd.unit ? plural(gd.unit, 1) : "repetition"}:</b> ${gd.rep}</p>` : c.durationS ? `<p class="brief-rep"><b>Keep going for ${spoken(c.durationS)}.</b> It ends by itself when the time is up.</p>` : ""}
-      </section>
-    </div>
+    ${readyCard || moveCard ? `<div class="brief-grid${readyCard && moveCard ? " two" : ""}">${readyCard}${moveCard}</div>` : ""}
+    ${!readyCard && (gd.ready || d.mount) ? `<p class="brief-note"><span class="btag">Get ready</span>${[gd.ready, d.mount ? `<b>Phone:</b> ${phoneTxt}` : ""].filter(Boolean).join(" ")}</p>` : ""}
+    <section class="brief-card do" aria-labelledby="bDo">
+      <h3 id="bDo">What to do</h3>
+      <ol class="brief-steps">${gd.steps.map((h) => `<li><span>${h}</span></li>`).join("")}</ol>
+      ${gd.rep ? `<p class="brief-rep"><b>That is one ${gd.unit ? plural(gd.unit, 1) : "repetition"}:</b> ${gd.rep}</p>` : c.durationS ? `<p class="brief-rep"><b>Keep going for ${spoken(c.durationS)}.</b> It stops by itself when the time is up.</p>` : ""}
+    </section>
     ${gd.tip ? `<p class="brief-note"><span class="btag tip">Tip</span>${gd.tip}</p>` : ""}
     ${safe ? `<p class="brief-note"><span class="btag safe">Safety</span>${safe}</p>` : ""}
     ${setupControls()}

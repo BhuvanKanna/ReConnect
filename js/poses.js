@@ -93,12 +93,12 @@ const POSES = {
     name: "Against your chest",
     text: "Hold the phone flat against your breastbone (or tuck it upright in a shirt pocket), screen facing out, top edge up.",
     flip: { roll: true },
-    svg: () => dot(70, 20, 12) + `<path class="pz-f" d="M58 36 Q90 36 92 60 L90 104 Q76 112 58 108 Z"/>` + bar(98, 62, 40, -90, 1) + label(108, 46, "screen faces out", "start") + label(108, 60, "top edge up", "start") + limb(64, 108, 64, 146, 14),
+    svg: () => dot(70, 20, 12) + `<path class="pz-shirt" d="M58 36 Q90 36 92 60 L90 104 Q76 112 58 108 Z"/>` + bar(98, 62, 40, -90, 1) + label(108, 46, "screen faces out", "start") + label(108, 60, "top edge up", "start") + limb(64, 108, 64, 146, 14),
   },
   head: {
     name: "On top of your head",
     text: "Hold the phone flat on top of your head with one hand, screen up, top edge pointing forward.",
-    svg: () => `<circle class="pz-f" cx="90" cy="70" r="30"/><path class="pz-f" d="M74 98 L106 98 L112 146 L68 146 Z"/>` + bar(92, 36, 46, 0) + limb(56, 128, 52, 70, 10) + limb(52, 70, 78, 40, 9) + label(92, 20, "screen up, top edge forward"),
+    svg: () => `<circle class="pz-f" cx="90" cy="70" r="30"/><path class="pz-shirt" d="M74 98 L106 98 L112 146 L68 146 Z"/>` + bar(92, 36, 46, 0) + limb(56, 128, 52, 70, 10) + limb(52, 70, 78, 40, 9) + label(92, 20, "screen up, top edge forward"),
   },
   belly: {
     name: "Against your lower belly",

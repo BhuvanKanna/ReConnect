@@ -152,11 +152,10 @@ P3.wrap = function (G, id, opts) {
   const o = opts || {}, flat = G.draw, quality = S3 ? S3.quality() : { sample: () => 2, level: 2 }, debug = G.debug;
   let world = null, lastT = null, lastReps = 0, sparkle = [], sx = 0, sy = 0;
   P3.ensure();
-  G.draw = function (g, W, H, a, t) {
+  G.draw = S3.guard(G, function (g, W, H, a, t) {
     const raw = lastT == null ? 0 : t - lastT, dt = Math.min(0.05, Math.max(0, raw)); lastT = t;
     const q = world ? quality.sample() : 0;
-    if (q >= 2 && world) { world.dispose(); world = null; S3.off = true; }
-    if (!world && !(S3 && S3.off) && P3.ready()) world = P3.create(id, G.S || {});
+    if (!world && P3.ready()) world = P3.create(id, G.S || {});
     if (!world) return flat.call(this, g, W, H, a, t);
     if (G.onStage) G.onStage(W, H);
     const v = G.view();
@@ -175,7 +174,7 @@ P3.wrap = function (G, id, opts) {
     sparkle = sparkle.filter((s) => (s.life -= dt) > 0);
     for (const s of sparkle) { s.x += s.vx * dt; s.y += s.vy * dt; s.vy += 90 * dt; g.globalAlpha = Math.min(1, s.life * 1.4); g.fillStyle = s.c; g.beginPath(); g.arc(sx + s.x, sy + s.y, 5, 0, RC.TAU); g.fill(); }
     g.globalAlpha = 1;
-  };
+  });
   const prev = G.dispose;
   G.dispose = () => { if (world) { world.dispose(); world = null; } if (prev) prev(); };
   G.debug = () => Object.assign(debug ? debug() : {}, { view: world ? "3d" : "2d", quality: quality.level });

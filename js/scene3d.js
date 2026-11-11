@@ -1,36 +1,66 @@
-// Shared pieces for the 3D exercises (Lantern Lift, Pour the Tea).
+// Shared pieces for every 3D exercise: loading three.js, the one renderer, and keeping 3D running.
 // three.js (vendor/three, MIT) is an ES module, so it is loaded on demand with import() the first time a
-// 3D exercise opens. Until it has loaded, or where WebGL isn't available, each exercise draws a flat 2D view.
+// 3D exercise opens. Only until it has loaded (or on a computer with no WebGL at all) does an exercise draw
+// its flat 2D view; loading and the renderer are retried, so 3D comes back by itself.
 (() => {
 "use strict";
 const RC = window.RC;
-const S3 = { THREE: null, failed: false, loading: null, renderer: null };
+const S3 = { THREE: null, loading: null, renderer: null, loadRetry: 0, rendererRetry: 0, lostAt: 0, coolUntil: 0 };
+const now = () => performance.now();
 
+// The exercises are always meant to be 3D. Nothing here gives up on 3D for good: if three.js fails to load
+// (a network blip) or the renderer can't be made, it tries again a few seconds later, and the exercise draws
+// its flat picture only until then.
 S3.ensure = function () {
-  if (S3.THREE || S3.failed || S3.loading) return;
+  if (S3.THREE || S3.loading || now() < S3.loadRetry) return;
   S3.loading = import(new URL("vendor/three/three.module.min.js", document.baseURI).href)
     .then((m) => { S3.THREE = m; })
-    .catch(() => { S3.failed = true; });
+    .catch(() => { S3.loadRetry = now() + 3000; })
+    .finally(() => { S3.loading = null; });
 };
-S3.ready = () => !!S3.THREE && !S3.failed;
+S3.ready = function () {
+  if (!S3.THREE) { S3.ensure(); return false; }
+  return now() >= S3.coolUntil && !!S3.getRenderer();
+};
 
 // One WebGL renderer is shared by every session and exercise, so playing again doesn't leak GPU contexts.
+// If the graphics card drops its context and doesn't give it back within 2 seconds, a new renderer takes
+// over; scenes are not tied to a renderer, so they carry on with the new one.
 S3.getRenderer = function () {
-  if (S3.renderer || S3.failed || !S3.THREE) return S3.renderer;
+  if (S3.renderer && S3.lostAt && now() - S3.lostAt > 2000) {
+    try { S3.renderer.dispose(); } catch (e) { /* already gone */ }
+    S3.renderer = null; S3.lostAt = 0;
+  }
+  if (S3.renderer || !S3.THREE || now() < S3.rendererRetry) return S3.renderer;
   const THREE = S3.THREE;
   try {
-    const r = new THREE.WebGLRenderer({ canvas: document.createElement("canvas"), antialias: true, powerPreference: "high-performance" });
+    const cv = document.createElement("canvas");
+    cv.addEventListener("webglcontextlost", (e) => { e.preventDefault(); S3.lostAt = now(); });
+    cv.addEventListener("webglcontextrestored", () => { S3.lostAt = 0; });
+    const r = new THREE.WebGLRenderer({ canvas: cv, antialias: true, powerPreference: "high-performance" });
     r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.05;
     r.outputColorSpace = THREE.SRGBColorSpace;
     r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
     S3.renderer = r;
-  } catch (e) { S3.failed = true; }
+  } catch (e) { S3.rendererRetry = now() + 3000; }
   return S3.renderer;
 };
 
+// Keep a game's 3D drawing going through errors: if drawing a frame throws, the game's scene is freed
+// (G.dispose) and rebuilt from scratch a moment later, instead of the exercise staying flat.
+S3.guard = function (G, draw) {
+  return function (...args) {
+    try { return draw.apply(this, args); } catch (e) {
+      console.error("3D scene error; rebuilding it", e);
+      try { if (G.dispose) G.dispose(); } catch (e2) { /* nothing left to free */ }
+      S3.coolUntil = now() + 600;
+    }
+  };
+};
+
 // Draw the scene at the stage's size and pixel ratio; returns the canvas to copy onto the stage.
-S3.renderTo = function (R, scene, cam, W, H, pr) {
-  const w = Math.round(W * pr), h = Math.round(H * pr), cv = R.domElement;
+S3.renderTo = function (R0, scene, cam, W, H, pr) {
+  const R = S3.getRenderer() || R0, w = Math.round(W * pr), h = Math.round(H * pr), cv = R.domElement;
   if (cv.width !== w || cv.height !== h) R.setSize(w, h, false);
   R.render(scene, cam);
   return cv;
@@ -66,19 +96,24 @@ S3.woodTexture = function (base, w, h) {
 };
 
 // Frame-rate guard. After a second of warm-up it averages the real time between frames (wall clock, not
-// game time, so a slow software renderer is caught too); if 3D is too slow
-// (under about 22 frames a second) it steps down: 0 = full quality, 1 = lower resolution and no shadows,
-// 2 = give up on 3D and draw the flat 2D view, so a slow computer still gets a playable game. Once that
-// happens, S3.off keeps the 3D exercises flat for the rest of the visit.
+// game time, so a slow software renderer is caught too). If 3D is slow (under about 22 frames a second) it
+// steps down to level 1: lower resolution and no shadows. It never switches 3D off; a slow moment (another
+// program busy, the phone reconnecting) only costs some sharpness, and it steps back up when frames are fast.
 S3.quality = function () {
   return {
     level: 0, n: 0, sum: 0, warm: 0,
     sample() {
-      const now = performance.now() / 1000, raw = this.last == null ? 0 : now - this.last; this.last = now;
+      const t = now() / 1000, raw = this.last == null ? 0 : t - this.last; this.last = t;
       if (!(raw > 0) || raw > 1) return this.level; // first frame, or the tab was hidden
       this.warm += raw; if (this.warm < 1) return this.level;
       this.n++; this.sum += raw;
-      if (this.n >= 12) { if (this.sum / this.n > 0.045 && this.level < 2) { this.level++; this.warm = 0.4; } this.n = 0; this.sum = 0; }
+      if (this.n >= 12) {
+        const avg = this.sum / this.n;
+        if (avg > 0.045 && this.level < 1) { this.level = 1; this.warm = 0.4; this.fast = 0; }
+        else if (this.level === 1 && avg < 0.022) { if (++this.fast >= 25) { this.level = 0; this.fast = 0; this.warm = 0.4; } }
+        else this.fast = 0;
+        this.n = 0; this.sum = 0;
+      }
       return this.level;
     },
   };

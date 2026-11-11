@@ -51,11 +51,10 @@ function PourTea(S) {
   G.stats = () => [["Spills", String(spills)], ["Pour time", `${pourTime.toFixed(1)} s`]];
   G.dispose = () => { if (world) { world.dispose(); world = null; } };
   G.debug = () => ({ state, val: prevR, fill, cup, view: world ? "3d" : "2d", quality: quality.level });
-  G.draw = function (g, W, H, a, t) {
+  G.draw = RC.Scene3D.guard(G, function (g, W, H, a, t) {
     const raw = lastT == null ? 0 : t - lastT, dt = Math.min(0.05, Math.max(0, raw)); lastT = t;
     const q = world ? quality.sample() : 0;
-    if (q >= 2 && world) { world.dispose(); world = null; RC.Scene3D.off = true; }
-    if (!world && !RC.Scene3D.off && P3 && P3.ready()) world = P3.create({ count: S.reps, dir: dir(), calm: reduceMotion });
+    if (!world && P3 && P3.ready()) world = P3.create({ count: S.reps, dir: dir(), calm: reduceMotion });
     if (!world) { drawFlat(g, W, H, a, t); drawSpeed(g, W, H, 1); return; }
     world.lowQuality(q >= 1);
     const pr = (g.getTransform ? g.getTransform().a : 1) * (q >= 1 ? 0.6 : 1), tip = a.roll * dir();
@@ -79,7 +78,7 @@ function PourTea(S) {
     if (state === "pour" && tip < thr * 0.9) turnArrow(g, c.x, c.y, rad, -90 + dir() * 62, -90 + dir() * 112, unit, t, idle > 3);
     else if ((state === "return" || state === "spilled") && Math.abs(a.roll) > amp * 0.3) turnArrow(g, c.x, c.y, rad, -90 + Math.sign(a.roll) * 112, -90 + Math.sign(a.roll) * 62, unit, t, false);
     drawSpeed(g, W, H, unit);
-  };
+  });
   // Arrow along an arc (angles in degrees; -90 is straight up, positive turns clockwise on screen).
   function turnArrow(g, cx, cy, r, a0, a1, unit, t, strong) {
     if (Math.abs(a1 - a0) < 8) return;
