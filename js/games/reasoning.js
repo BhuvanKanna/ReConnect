@@ -70,7 +70,6 @@ RC.register(Object.assign({ section: "reasoning" }, {
     brain: true, pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table. Turn your hand left or right to choose.",
     desc: "Read the word and turn your hand toward the group it belongs to.",
     source: "Constant Therapy categorization and reading tasks; FitMi object rotation.",
-    how: ["Start with your hand level.", "Read the word in the middle.", "Turn left or right toward its group and hold for a moment."],
     make: (S) => in3D(SortIt(S), "sort"),
   }));
 })();

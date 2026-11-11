@@ -74,7 +74,6 @@ RC.register(Object.assign({ section: "memory" }, {
     brain: true, pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table.",
     desc: "Watch the arrows light up, then repeat the pattern by tilting your hand in each direction.",
     source: "Simon-style serious games for stroke rehab; Constant Therapy sequence and memory tasks.",
-    how: ["Watch the whole pattern first.", "Tilt your hand toward each arrow in order.", "Return to level between moves."],
     make: (S) => in3D(MemoryMoves(S), "simon"),
   }));
 })();

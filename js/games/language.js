@@ -140,21 +140,21 @@ const ROUNDS = { params: { reps: [6, 10, 15], level: [1, 2, 3], durationS: null 
 [
   Object.assign({ id: "nameit", name: "Name It", movement: "Naming · word finding",
     desc: "Name the picture out loud, then tap the right word. Hints give the first letter, then what it's for.", source: "Picture naming with cueing (Tactus Naming Therapy; VoiceAdapt trial).",
-    how: ["Look at the picture and try to say its name.", "Tap Hint if the word won't come.", "Tap the matching word."], make: NameIt }, brain, ROUNDS),
+    make: NameIt }, brain, ROUNDS),
   Object.assign({ id: "wordpic", name: "Word to Picture", movement: "Word comprehension",
     desc: "Hear and read a word, then tap the matching picture.", source: "Constant Therapy auditory and reading comprehension.",
-    how: ["Turn the sound on to hear the word.", "Read the word at the top.", "Tap the picture it names."], make: WordPic }, brain, ROUNDS),
+    make: WordPic }, brain, ROUNDS),
   Object.assign({ id: "wordweb", name: "Word Web", movement: "Word meaning · semantic features",
     desc: "For each picture, choose its group, what it's used for, where it's found and what it's like.", source: "Semantic Feature Analysis for aphasia.",
     params: { reps: [8, 12, 16], level: [1, 2, 3], durationS: null }, defaults: { reps: 8, level: 1, durationS: null },
-    how: ["Look at the picture and its name.", "Answer each question about it.", "Saying the answer out loud helps."], make: WordWeb }, brain),
+    make: WordWeb }, brain),
   Object.assign({ id: "sentence", name: "Finish the Sentence", movement: "Sentence comprehension",
     desc: "Pick the word that best finishes each sentence.", source: "Constant Therapy sentence completion and reading comprehension.",
-    how: ["Read the sentence out loud.", "Think what word fits the gap.", "Tap it."], make: Sentence }, brain, ROUNDS),
+    make: Sentence }, brain, ROUNDS),
   Object.assign({ id: "spell", name: "Spell It", movement: "Spelling",
     desc: "Tap the scrambled letters in the right order to spell the word.", source: "Constant Therapy spelling and anagram tasks.",
     params: { reps: [5, 8, 10], level: [1, 2, 3], durationS: null }, defaults: { reps: 5, level: 1, durationS: null },
-    how: ["Look at the picture clue.", "Tap the first letter, then the next.", "Tap Undo to take a letter back."], make: SpellIt }, brain),
+    make: SpellIt }, brain),
 ].forEach((d) => RC.register(Object.assign({ section: "language" }, d)));
 
 defineArt("nameit", '<rect x="40" y="6" width="40" height="34" rx="6" fill="var(--a-bg)"/><circle cx="60" cy="23" r="9" fill="var(--a-hi)"/><rect x="34" y="46" width="52" height="10" rx="4" fill="var(--a-mute)" opacity=".35"/>');

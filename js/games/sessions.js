@@ -40,10 +40,10 @@ const TIME = { params: { reps: null, level: [1, 2, 3], durationS: [300, 600, 900
 [
   Object.assign({ id: "mirror", name: "Mirror Therapy", movement: "Visual feedback · both arms", control: "guided", pad: "done", mount: "",
     desc: "Move your stronger arm while watching its reflection, so the affected arm appears to move.", source: "Mirror therapy trials after stroke (upper-limb motor function).",
-    how: ["Put a mirror upright on the table between your arms.", "Hide your affected arm behind the mirror.", "Do each movement with both arms while watching the mirror."], make: (S) => Guided(S, { steps: MIRROR, mode: "time" }) }, TIME),
+    make: (S) => Guided(S, { steps: MIRROR, mode: "time" }) }, TIME),
   Object.assign({ id: "imagery", name: "Mental Practice", movement: "Motor imagery · guided", control: "guided", pad: "done", mount: "",
     desc: "A spoken script walks you through imagining a movement in detail, then trying it.", source: "Mental practice (motor imagery) added to therapy after stroke.",
-    how: ["Sit somewhere quiet and turn the sound on.", "Listen and picture each movement in detail.", "Press Next step if you want to move on sooner."], make: MentalPractice }, TIME),
+    make: MentalPractice }, TIME),
 ].forEach((d) => RC.register(Object.assign({ section: "sessions" }, d)));
 
 defineArt("mirror", '<rect x="57" y="8" width="6" height="48" rx="2" fill="var(--a-go)" opacity=".5"/><path d="M28 44 q10 -22 24 -6" stroke="var(--a-hi)" stroke-width="5" fill="none" stroke-linecap="round"/><path d="M92 44 q-10 -22 -24 -6" stroke="var(--a-hi)" stroke-width="5" fill="none" stroke-linecap="round" opacity=".35"/>');

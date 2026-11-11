@@ -20,10 +20,12 @@ let filter = "all", kind = "all", query = "";
 // Search: every word typed must appear in the exercise's name, movement, description or area (any order).
 const norm = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ");
 const hay = new Map();
+// The pre-exercise instructions (js/guides.js) count too, without their <b> marks.
+const guideText = (d) => { const g = RC.GUIDES && RC.GUIDES[d.id]; return g ? [g.goal, ...(g.steps || [])].join(" ").replace(/<[^>]+>/g, "") : ""; };
 const matches = (d) => {
   const words = norm(query).split(" ").filter(Boolean);
   if (!words.length) return true;
-  if (!hay.has(d.id)) { const sec = (RC.SECTIONS.find(([id]) => id === d.section) || [])[1]; hay.set(d.id, " " + norm([d.name, d.movement, d.desc, sec, (d.how || []).join(" ")].join(" "))); }
+  if (!hay.has(d.id)) { const sec = (RC.SECTIONS.find(([id]) => id === d.section) || [])[1]; hay.set(d.id, " " + norm([d.name, d.movement, d.desc, sec, guideText(d)].join(" "))); }
   const h = hay.get(d.id);
   return words.every((w) => h.includes(" " + w) || (w.length > 2 && h.includes(w)));
 };

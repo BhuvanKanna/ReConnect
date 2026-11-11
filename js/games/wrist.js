@@ -317,7 +317,6 @@ RC.register(Object.assign({ section: "wrist" }, {
     brain: false, pose: "handleTable", mount: "Hold the phone like a pan handle: screen up, pointing forward. Rest your forearm on the table.",
     desc: "Turn your hand to tip the teapot. Fill each cup to the green line.",
     source: "mRehab Slow Pour and Quick Twist; RAPAEL Smart Glove pouring and supination–pronation games.",
-    how: ["Rest your forearm on the table.", "Turn your hand slowly to pour.", "Stop at the green line. Turn the pot back up."],
     make: (S) => PourTea(S),
   }));
 RC.register(Object.assign({ section: "wrist" }, {
@@ -325,7 +324,6 @@ RC.register(Object.assign({ section: "wrist" }, {
     brain: true, pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table. Turn your hand as if turning a key.",
     desc: "Memorize the code, then turn your wrist to dial each number and hold it there.",
     source: "mRehab Unlock with Key and Turn Doorknob; Constant Therapy visual memory tasks.",
-    how: ["Read the code while it is showing.", "Turn your wrist to move the pointer to each number.", "Hold still on a number to enter it."],
     make: (S) => in3D(ComboLock(S), "lock"),
   }));
 RC.register(Object.assign({ section: "wrist" }, {
@@ -333,7 +331,6 @@ RC.register(Object.assign({ section: "wrist" }, {
     brain: true, pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table.",
     desc: "Tilt your hand like a tray to roll the ball to the flag without bumping the walls.",
     source: "RAPAEL Smart Glove wrist flexion/extension and radial/ulnar deviation games.",
-    how: ["Rest your forearm on the table so the wrist does the work.", "Tip the front of the phone down or up, or turn your hand left or right, to roll the ball.", "Gentle tilts are enough. Bring the phone level to stop."],
     make: (S) => in3D(TiltMaze(S), "maze"),
   }));
 
@@ -425,14 +422,14 @@ function SteadyCup(S) {
 [
   { id: "wristbend", name: "Wrist Bend", movement: "Wrist flexion and extension", pose: "edgeDown", mount: "Rest your forearm on the table with your wrist just past the edge. Palm down, grip the phone flat against your palm: screen facing the floor, top edge toward your fingertips.",
     desc: "Bend your wrist up to the top line, then down to the bottom one.", source: "FitMi wrist bend; RAPAEL wrist flexion and extension.",
-    how: ["Rest your forearm on the table with the wrist free.", "Bend your wrist up until the hand reaches the line.", "Then bend it down to the lower line."], make: (S) => in3D(WristBend(S), "wristbend") },
+    make: (S) => in3D(WristBend(S), "wristbend") },
   { id: "wiper", name: "Wrist Wiper", movement: "Radial and ulnar deviation", pose: "palmDown", mount: "Put your hand on top of the phone, palm down, and grip its sides: screen facing the table, top edge toward your fingertips. Rest your forearm on the table.",
     desc: "Sweep your hand side to side like a windscreen wiper.", source: "RAPAEL radial and ulnar deviation; GRASP wrist range of motion.",
-    how: ["Keep your forearm still on the table.", "Sweep your hand sideways toward the lit target, sliding on the table.", "Then sweep across to the other side."], make: (S) => in3D(WristWiper(S), "wiper") },
+    make: (S) => in3D(WristWiper(S), "wiper") },
   { id: "steady", name: "Steady Cup", movement: "Holding still · steadiness", pose: "palm", mount: "Lay the phone flat on your open palm, screen up, top edge toward your fingertips. Rest your forearm on the table.",
     desc: "Keep the dot inside the circle as it slowly gets smaller.", source: "mRehab Walk with Mug (keeping a cup level).",
     params: { reps: null, level: [1, 2, 3], durationS: [30, 60, 90] }, defaults: { reps: null, level: 2, durationS: 30 },
-    how: ["Rest your forearm on the table, hand level.", "Keep the orange dot inside the green circle.", "Small, slow corrections are best."], make: (S) => in3D(SteadyCup(S), "steady") },
+    make: (S) => in3D(SteadyCup(S), "steady") },
 ].forEach((d) => RC.register(Object.assign({ section: "wrist", control: "tilt" }, d)));
 
 defineArt("wristbend", '<rect x="18" y="32" width="46" height="12" rx="6" fill="var(--a-mute)" opacity=".3"/><rect x="62" y="20" width="32" height="12" rx="6" fill="var(--a-hi)" transform="rotate(-24 64 38)"/><path d="M64 38 L100 16 M64 38 L100 54" stroke="var(--a-hi)" stroke-width="1.5" stroke-dasharray="3 3"/>');

@@ -22,6 +22,7 @@ privacy, known limits). Read it before larger changes.
 | `js/plan.js`, `js/data.js` | Pure plan rules and storage/demo seed, unit-tested in Node |
 | `js/kit.js` | Shared building blocks: rep counter, tilt cursor, answer cards, keypad, guided session |
 | `js/games/*.js` | One file per library section (arm, wrist, hand, trunk, memory, ...) |
+| `js/guides.js` | The setup sheet's instructions for every exercise, keyed by id: goal, getting ready, numbered steps, what one rep is, a tip, the rep's name (`unit`). A new exercise needs an entry here; the sheet is drawn by `renderSetup()` in `js/engine.js` |
 | `js/link.js`, `js/relay.js`, `js/config.js` | Pairing: PeerJS (WebRTC) plus optional Cloudflare relay |
 | `relay/` | Cloudflare Worker relay (see `relay/README.md`) |
 | `js/scene3d.js`, `js/lift3d.js`, `js/pour3d.js`, `js/tilt3d.js`, `js/drive3d.js` | 3D scenes for Lantern Lift, Pour the Tea, Ear to Shoulder and Steering Wheel: shared three.js loader and renderer, then one scene per exercise. Each game keeps a 2D fallback in its `js/games/*.js` file and frees its scene through `G.dispose()` |

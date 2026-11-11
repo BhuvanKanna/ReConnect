@@ -13,7 +13,6 @@ const HAND = [
   { id: "pengrip", name: "Pen Grip Drawing", movement: "Tripod grip · fine control", control: "tilt", pose: "upright", mount: "Hold the phone upright in your fist, top edge up, screen facing you. Rest your forearm on the table.", art: ["path", "✏️"],
     desc: "Hold the phone like a pen and trace each shape.", source: "Handwriting retraining with a tripod (pen) grip from occupational therapy.",
     params: { reps: [5, 10, 15], level: [1, 2, 3], durationS: null }, defaults: { reps: 5, level: 1, durationS: null },
-    how: ["Hold the phone like a pen.", "Tilt it to move the dot to the orange start.", "Follow the shape's line to the end."],
     make: (S) => in3D(M.Path(S, { set: "shapes", cue: "Draw the shape" }), "pengrip") },
 ];
 HAND.forEach((d) => { defineArt(d.id, M.art(...d.art)); RC.register(Object.assign({ section: "hand" }, d)); });

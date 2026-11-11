@@ -103,7 +103,6 @@ RC.register(Object.assign({ section: "arm" }, {
     brain: false, pose: "handleArm", mount: "Hold the phone like a pan handle: screen up, pointing forward. Keep your elbow straight.",
     desc: "Lift your arm to raise the lantern into the gold ring.",
     source: "FitMi and Flint arm raises; Penumbra REAL shoulder range-of-motion activities.",
-    how: ["Rest your arm on the table.", "Lift your arm. Put the lantern in the gold ring.", "Hold still. Then lower slowly."],
     make: (S) => LanternLift(S),
   }));
 
@@ -261,20 +260,20 @@ function TraceIt(S) {
 const ARM = [
   { id: "sideraise", name: "Side Raise", movement: "Shoulder abduction", control: "tilt", pose: "handleHang", mount: "Grip the bottom of the phone in your fist, thumb forward, and let your arm hang straight down at your side, so the phone points at the floor with the screen facing forward. Keep your elbow straight.",
     desc: "Lift your arm out to the side to the line, hold, then lower.", source: "FitMi side arm raise; GRASP arm strengthening.",
-    how: ["Sit or stand tall with your arm hanging by your side.", "Lift it straight out to the side until the arm reaches the dashed line.", "Hold while the ring fills, then lower slowly."], make: (S) => in3D(SideRaise(S), "sideraise") },
+    make: (S) => in3D(SideRaise(S), "sideraise") },
   { id: "reach", name: "Reach Targets", movement: "Diagonal reach · aiming", control: "tilt", pose: "handleArm", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Point it at the screen and move your whole arm to steer.",
     desc: "Reach toward the lit circle on a 3×3 board and hold still on it.", source: "GRASP target board; FitMi diagonal reach.",
-    how: ["Hold your arm out, pointing the phone at the screen.", "Point at the lit circle to move the dot there.", "Hold still until the ring fills; a new circle lights up."], make: (S) => in3D(ReachTargets(S), "reach") },
+    make: (S) => in3D(ReachTargets(S), "reach") },
   { id: "cupmouth", name: "Cup to Mouth", movement: "Elbow flexion · drinking", control: "tilt", pose: "upright", mount: "Hold the phone upright in your fist, top edge up, screen facing you. Rest your forearm on the table.",
     desc: "Lift the cup to your mouth, hold for a sip, then lower it.", source: "mRehab Sip from Mug; FitMi bicep curl.",
-    how: ["Start with your forearm resting on the table.", "Bend your elbow to bring the phone to your mouth, tipping it toward you as if to sip.", "Hold for a sip while the ring fills, then lower."], make: (S) => in3D(CupToMouth(S), "cupmouth") },
+    make: (S) => in3D(CupToMouth(S), "cupmouth") },
   { id: "push", name: "Push Away", movement: "Elbow extension · forward push", control: "accel", pose: "handleArm", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up.",
     desc: "Push your hand forward in one smooth movement, then bring it back.", source: "FitMi straight push and forward punches.",
-    how: ["Start with your elbow bent and your hand near your chest.", "Push your hand straight forward.", "Bring it back and hold still before the next push."], make: (S) => in3D(PushAway(S), "push") },
+    make: (S) => in3D(PushAway(S), "push") },
   { id: "trace", name: "Trace It", movement: "Controlled multi-direction reaching", control: "tilt", pose: "handleArm", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Point it at the screen and move your whole arm to steer.",
     desc: "Steer the dot along a circle, a square or a figure-8.", source: "Penumbra REAL range-of-motion activities; RAPAEL house painting.",
     params: { reps: [5, 10, 15], level: [1, 2, 3], durationS: null }, defaults: { reps: 5, level: 1, durationS: null },
-    how: ["Hold your arm out, pointing the phone at the screen.", "Point slowly to move the dot along the line.", "Finish the shape; level 2 is a square, level 3 a figure-8."], make: (S) => in3D(TraceIt(S), "trace") },
+    make: (S) => in3D(TraceIt(S), "trace") },
 ];
 ARM.forEach((d) => RC.register(Object.assign({ section: "arm" }, d)));
 

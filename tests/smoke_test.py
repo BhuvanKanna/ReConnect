@@ -142,6 +142,8 @@ with sync_playwright() as p:
             make: (S) => { const G = RC.kit.base(S, 1); G.update = () => {}; G.status = () => ({ title: "Cursor test", text: "" }); G.stats = () => []; G.draw = () => {}; return G; } }); RC.patient.render()""")
         con.click(".tile[data-id='__cursortest']")
         check("Hold the phone" in con.inner_text("#sheet"), "tilt-cursor exercises say how to hold the phone")
+        missing = con.evaluate("RC.EXERCISES.filter((d) => d.id[0] !== '_' && !(RC.GUIDES[d.id] && RC.GUIDES[d.id].goal && RC.GUIDES[d.id].steps.length >= 3)).map((d) => d.id)")
+        check(not missing, f"every exercise has setup instructions in js/guides.js (missing: {missing})")
         con.click("#goPhone")
         check("Calibrating" in con.inner_text("#sheet"), "tilt-cursor exercises calibrate before starting")
         con.wait_for_function("window.__mend.Game.state === 'play'", timeout=8000)

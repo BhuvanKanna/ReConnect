@@ -144,13 +144,13 @@ const brain = { control: "touch", mount: "" };
   Object.assign({ id: "cancel", pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table. Tilt it to steer the pointer, or use the mouse or touchscreen.", name: "Cancel It", movement: "Visual scanning · neglect", cursor: true,
     desc: "Tap every star on the page. Look all the way to the left edge.", source: "Star and letter cancellation tasks used for neglect; Behavioural Inattention Test.",
     params: { reps: [1, 2, 3], level: [1, 2, 3], durationS: null }, defaults: { reps: 1, level: 1, durationS: null },
-    how: ["Start at the top left corner.", "Sweep across each row and tap every star.", "Tap 'I've found them all' when you're sure."], make: CancelIt }, brain),
+    make: CancelIt }, brain),
   Object.assign({ id: "lookleft", name: "Look Left Search", movement: "Visual search · left-side cue",
     desc: "Find the single star. A glowing bar on the left reminds you where to start.", source: "Visual scanning training with left anchoring (neglect rehabilitation trials).",
-    how: ["Look at the glowing bar on the left edge first.", "Sweep your eyes from left to right.", "Tap the star as soon as you see it."], make: LookLeft }, brain),
+    make: LookLeft }, brain),
   Object.assign({ id: "bisect", name: "Find the Middle", movement: "Line bisection · spatial attention",
     desc: "Tap the exact middle of each line.", source: "Line bisection test used to assess and train neglect.",
-    how: ["Look at both ends of the line.", "Tap where you think the middle is.", "The green mark shows the true middle."], make: FindMiddle }, brain),
+    make: FindMiddle }, brain),
 ].forEach((d) => RC.register(Object.assign({ section: "scanning" }, d)));
 
 const starPath = (x, y, r) => Array.from({ length: 10 }, (_, i) => { const a = -Math.PI / 2 + (i * Math.PI) / 5, q = i % 2 ? r * 0.45 : r; return `${(x + Math.cos(a) * q).toFixed(1)},${(y + Math.sin(a) * q).toFixed(1)}`; }).join(" ");

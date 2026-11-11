@@ -58,18 +58,61 @@ function setupControls() {
     ${locked ? '<p class="note assigned">Set by your therapist for today.</p>' : ""}`;
 }
 
+// The instructions for one exercise (js/guides.js), falling back to its short description.
+const guideOf = (d) => (RC.GUIDES && RC.GUIDES[d.id]) || { goal: d.desc, steps: [], unit: "" };
+// "lift" -> "lifts"; "glass|glasses" names an irregular plural.
+function plural(unit, n) {
+  const [one, many] = unit.split("|");
+  if (n === 1) return one;
+  if (many) return many;
+  return /(s|sh|ch|x)$/.test(one) ? one + "es" : /[^aeiou]y$/.test(one) ? one.slice(0, -1) + "ies" : one + "s";
+}
+const spoken = (s) => (s < 60 ? `${s} seconds` : s % 60 ? fmtTime(s) : `${s / 60} minute${s === 60 ? "" : "s"}`);
+// The safety line: the guide's own, or one chosen from where the exercise is done.
+function safetyOf(d, gd) {
+  if (gd.safe) return gd.safe;
+  const pose = RC.poses.poseOf(d);
+  if (d.safety === "standing") return "Stand at a sturdy counter you can hold, with a chair behind you and someone nearby. Sit down if you feel dizzy or unsteady.";
+  if (pose === "thighLying" || pose === "sideLying") return "Lie on a firm bed or a mat. Take your time getting down and back up.";
+  if (pose === "head") return "Move slowly and only as far as is comfortable. Stop if you feel dizzy.";
+  if (d.control === "tilt" || d.control === "accel") return "Sit in a sturdy chair without wheels. Move only as far as is comfortable, and stop if anything hurts.";
+  if (d.control === "guided") return "Go at your own pace, and stop if anything hurts.";
+  return null; // tap and brain games
+}
+
 function renderSetup() {
-  const d = Game.current.def; const sideTxt = patientSide() === "left" ? "left" : "right";
-  const phoneReady = Input.phone && !settings.mouse;
+  const d = Game.current.def, c = Game.current.cfg, gd = guideOf(d), sideTxt = patientSide() === "left" ? "left" : "right";
+  const phoneReady = Input.phone && !settings.mouse, pose = d.mount ? RC.poses.poseOf(d) : null;
+  // Today's amount in words, from the settings below (they re-render this sheet when changed).
+  const amount = c.durationS ? `for ${spoken(c.durationS)}` : c.reps && gd.unit ? `${c.reps} ${plural(gd.unit, c.reps)}` : c.reps ? `${c.reps} times` : "";
+  const safe = safetyOf(d, gd);
+  const phoneTxt = d.mount ? d.mount.replace("affected", sideTxt + " (affected)") : "";
+  const level = d.params && d.params.level ? (d.control === "tilt" ? `${LEVEL_AMP[c.level]}° range` : `${["Easy", "Medium", "Hard"][c.level - 1]} level`) : "";
+  stageWrap.classList.add("briefing");
   $("overlay").hidden = false; $("banner").hidden = true;
   $("sheet").innerHTML = `
-    <span class="eyebrow">${d.movement}</span>
-    <h2>${d.name}</h2>
-    <p>${d.desc}</p>
-    ${d.mount ? `<div class="pose">${RC.poses.svg(RC.poses.poseOf(d))}<p class="muted"><b>Phone:</b> ${d.mount.replace("affected", sideTxt + " (affected)")}</p></div>` : ""}
-    <ol class="howto">${d.how.map((h) => `<li>${h}</li>`).join("")}</ol>
+    <div class="brief-head">
+      <h2>${d.name}</h2>
+      <p class="brief-goal">${gd.goal}</p>
+      ${amount || level ? `<p class="brief-today"><span class="tag">Today</span>${[amount, level].filter(Boolean).map((s) => `<b>${s}</b>`).join('<span aria-hidden="true">·</span>')}</p>` : ""}
+    </div>
+    ${!pose && (gd.ready || d.mount) ? `<p class="brief-note"><span class="tag">Get ready</span>${[gd.ready, d.mount ? `<b>Phone:</b> ${phoneTxt}` : ""].filter(Boolean).join(" ")}</p>` : ""}
+    <div class="brief-grid${pose ? " two" : ""}">
+      ${pose ? `<section class="brief-card ready" aria-labelledby="bReady">
+        <h3 id="bReady">Get ready</h3>
+        ${RC.poses.svg(pose)}
+        ${gd.ready ? `<p>${gd.ready}</p>` : ""}
+        <p class="brief-phone"><b>Phone:</b> ${phoneTxt}</p>
+      </section>` : ""}
+      <section class="brief-card do" aria-labelledby="bDo">
+        <h3 id="bDo">What to do</h3>
+        <ol class="brief-steps">${gd.steps.map((h) => `<li><span>${h}</span></li>`).join("")}</ol>
+        ${gd.rep ? `<p class="brief-rep"><b>One ${gd.unit ? plural(gd.unit, 1) : "repetition"}:</b> ${gd.rep}</p>` : c.durationS ? `<p class="brief-rep"><b>Keep going for ${spoken(c.durationS)}.</b> It ends by itself when the time is up.</p>` : ""}
+      </section>
+    </div>
+    ${gd.tip ? `<p class="brief-note"><span class="tag tip">Tip</span>${gd.tip}</p>` : ""}
+    ${safe ? `<p class="brief-note"><span class="tag safe">Safety</span>${safe}</p>` : ""}
     ${setupControls()}
-    <p class="note">Sit in a sturdy chair. Stop if anything hurts.</p>
     <div class="actions">
       <button class="btn amber" id="goPhone" ${phoneReady ? "" : "disabled"}>Start with phone</button>
       <button class="btn alt" id="goMouse">${phoneReady ? "Use mouse instead" : "Start in mouse mode"}</button>
@@ -94,7 +137,7 @@ function renderSetup() {
 }
 
 function startCalibration() {
-  Game.state = "calibrate"; pushStatus(true);
+  Game.state = "calibrate"; pushStatus(true); stageWrap.classList.remove("briefing");
   let n = 3; const samples = [];
   $("sheet").innerHTML = `<span class="eyebrow">Calibrating</span><h2>Rest in your starting position and hold still</h2>${RC.poses.svg(RC.poses.poseOf(Game.current.def))}<div class="count num" id="cnt">3</div><p class="muted">This sets the zero point, so every target is measured from where your arm is comfortable.</p>`;
   const iv = setInterval(() => {
@@ -115,7 +158,7 @@ function begin() {
   Game.release();
   Game.inst = Game.current.def.make(S);
   Game.inst.S = S;
-  Game.rec = []; Game.t0 = performance.now(); Game.state = "play";
+  Game.rec = []; Game.t0 = performance.now(); Game.state = "play"; stageWrap.classList.remove("briefing");
   Input.mouse = { p: 0, r: 0 }; Input.mf = { p: 0, r: 0 };
   $("overlay").hidden = true; $("banner").hidden = false;
   startPad();

@@ -58,7 +58,12 @@ hand, holding the mouse button stands in for a push, and touch exercises work wi
 
 The 169 motion-tracked exercises were cut to 74 in October 2026: each one left is a distinct phone movement
 in a distinct phone position, and the rest were the same movement under a different name. In the library, a search box finds exercises by name, movement, body area or description (every word typed must match), and **How you play** filters by Phone motion, Touch or Follow along. Every exercise has three levels and an assignable amount (reps,
-rounds or time). **About these exercises** in the
+rounds or time).
+
+Before each exercise starts, a setup sheet explains it in plain words: the goal and what happens on screen
+when you do it, today's amount, how to sit and hold the phone (with a picture), three or four numbered
+steps, what counts as one repetition, a tip for doing it well and a safety line for the position (seated,
+standing at a counter, lying down, head movements). The words for all 126 are in `js/guides.js`. **About these exercises** in the
 app, and [`docs/exercise-catalog.md`](docs/exercise-catalog.md), list the programs and studies each one comes from.
 
 ## What gets measured

@@ -178,21 +178,21 @@ const TIMED = { params: { reps: null, level: [1, 2, 3], durationS: [60, 120, 180
 [
   Object.assign({ id: "quick", name: "Quick Catch", movement: "Reaction time · alertness", pad: "done",
     desc: "Tap the moment the circle appears.", source: "RehaCom alertness; reaction-time training in attention rehabilitation.",
-    how: ["Keep your hand ready over the screen or the phone.", "Wait for the circle.", "Tap as soon as it appears; tapping early doesn't count."], make: QuickCatch }, brain, ROUNDS),
+    make: QuickCatch }, brain, ROUNDS),
   Object.assign({ id: "gonogo", name: "Go / No-Go", movement: "Response control", pad: "done",
     desc: "Tap when the circle is green; hold back when it is orange.", source: "Go/no-go tasks in computerised executive-function training after stroke.",
     params: { reps: [10, 20, 30], level: [1, 2, 3], durationS: null }, defaults: { reps: 20, level: 1, durationS: null },
-    how: ["Watch the circle.", "Green means tap.", "Orange means wait; let it pass."], make: GoNoGo }, brain),
+    make: GoNoGo }, brain),
   Object.assign({ id: "watch", name: "Night Watch", movement: "Sustained attention", pad: "done",
     desc: "Shapes appear one at a time. Tap only for the star.", source: "RehaCom vigilance; sustained attention training.",
-    how: ["Keep watching the middle of the screen.", "Most shapes are not stars; let them go.", "Tap when a star appears."], make: NightWatch }, brain, TIMED),
+    make: NightWatch }, brain, TIMED),
   Object.assign({ id: "twoatonce", name: "Two at Once", movement: "Divided attention", pad: "keys",
     desc: "Tap even numbers on the left and switch off the lamp on the right, both at once.", source: "RehaCom divided attention; dual-task training after stroke.",
-    how: ["Watch both halves of the screen.", "Tap the left side when an even number shows.", "Tap the right side when the lamp lights up."], make: TwoAtOnce }, brain, TIMED),
+    make: TwoAtOnce }, brain, TIMED),
   Object.assign({ id: "trail", pose: "handleTable", mount: "Grip the bottom of the phone in your fist like a pan handle: thumb on top, phone flat and pointing straight ahead, screen up. Rest your forearm on the table. Tilt it to steer the pointer, or use the mouse or touchscreen.", name: "Trail Connect", movement: "Visual search · task switching", cursor: true,
     desc: "Connect the circles in order. Level 3 alternates numbers and letters.", source: "Trail Making Test A and B, used in stroke cognitive rehabilitation.",
     params: { reps: [1, 2, 3], level: [1, 2, 3], durationS: null }, defaults: { reps: 1, level: 1, durationS: null },
-    how: ["Find circle 1 and tap it.", "Then tap 2, 3 and so on.", "On level 3, go 1, A, 2, B, 3, C…"], make: TrailConnect }, brain),
+    make: TrailConnect }, brain),
 ].forEach((d) => RC.register(Object.assign({ section: "attention" }, d)));
 
 defineArt("quick", '<circle cx="60" cy="32" r="20" fill="var(--a-hi)"/><path d="M60 6 v6 M60 52 v6 M34 32 h-6 M86 32 h6" stroke="var(--a-ink)" stroke-width="2.5" stroke-linecap="round"/>');
