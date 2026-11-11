@@ -369,9 +369,9 @@ td.kind { font-weight: 700; color: var(--muted); }
 .brief-goal { font-size: clamp(19px, 1.9vw, 22px); line-height: 1.4; margin: 2px 0 0; max-width: 62ch; }
 .brief-today { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 4px 0 0; font-size: 17px; color: var(--muted); }
 .brief-today b { color: var(--ink); }
-.tag { display: inline-block; font-size: 13px; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); margin-right: 8px; vertical-align: 1px; }
-.tag.tip { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent-ink); }
-.tag.safe { background: color-mix(in srgb, var(--warn) 14%, transparent); color: var(--warn); }
+.btag { display: inline-block; font-size: 13px; font-weight: 700; letter-spacing: .02em; text-transform: uppercase; padding: 3px 9px; border-radius: 999px; background: var(--primary-soft); color: var(--primary); margin-right: 8px; vertical-align: 1px; }
+.btag.tip { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent-ink); }
+.btag.safe { background: color-mix(in srgb, var(--warn) 14%, transparent); color: var(--warn); }
 .brief-grid { display: grid; gap: 14px; }
 .brief-grid.two { grid-template-columns: minmax(250px, 0.85fr) minmax(300px, 1.15fr); }
 .brief-card { background: var(--sunk); border-radius: var(--r); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }

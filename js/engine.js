@@ -94,9 +94,9 @@ function renderSetup() {
     <div class="brief-head">
       <h2>${d.name}</h2>
       <p class="brief-goal">${gd.goal}</p>
-      ${amount || level ? `<p class="brief-today"><span class="tag">Today</span>${[amount, level].filter(Boolean).map((s) => `<b>${s}</b>`).join('<span aria-hidden="true">·</span>')}</p>` : ""}
+      ${amount || level ? `<p class="brief-today"><span class="btag">Today</span>${[amount, level].filter(Boolean).map((s) => `<b>${s}</b>`).join('<span aria-hidden="true">·</span>')}</p>` : ""}
     </div>
-    ${!pose && (gd.ready || d.mount) ? `<p class="brief-note"><span class="tag">Get ready</span>${[gd.ready, d.mount ? `<b>Phone:</b> ${phoneTxt}` : ""].filter(Boolean).join(" ")}</p>` : ""}
+    ${!pose && (gd.ready || d.mount) ? `<p class="brief-note"><span class="btag">Get ready</span>${[gd.ready, d.mount ? `<b>Phone:</b> ${phoneTxt}` : ""].filter(Boolean).join(" ")}</p>` : ""}
     <div class="brief-grid${pose ? " two" : ""}">
       ${pose ? `<section class="brief-card ready" aria-labelledby="bReady">
         <h3 id="bReady">Get ready</h3>
@@ -110,8 +110,8 @@ function renderSetup() {
         ${gd.rep ? `<p class="brief-rep"><b>One ${gd.unit ? plural(gd.unit, 1) : "repetition"}:</b> ${gd.rep}</p>` : c.durationS ? `<p class="brief-rep"><b>Keep going for ${spoken(c.durationS)}.</b> It ends by itself when the time is up.</p>` : ""}
       </section>
     </div>
-    ${gd.tip ? `<p class="brief-note"><span class="tag tip">Tip</span>${gd.tip}</p>` : ""}
-    ${safe ? `<p class="brief-note"><span class="tag safe">Safety</span>${safe}</p>` : ""}
+    ${gd.tip ? `<p class="brief-note"><span class="btag tip">Tip</span>${gd.tip}</p>` : ""}
+    ${safe ? `<p class="brief-note"><span class="btag safe">Safety</span>${safe}</p>` : ""}
     ${setupControls()}
     <div class="actions">
       <button class="btn amber" id="goPhone" ${phoneReady ? "" : "disabled"}>Start with phone</button>
